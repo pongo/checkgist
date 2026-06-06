@@ -15,7 +15,7 @@
     "lint:oxlint": "oxlint src --fix",
     "lint:eslint": "eslint src --fix --cache",
     "format": "oxfmt src/",
-    "agent:lint": "oxlint -f unix src --fix && eslint --no-color src --fix --cache",
+    "agent:lint": "oxlint -f unix src && eslint --no-color src --cache",
     "agent:test": "vitest run --no-color --reporter=agent",
     "prepare": "simple-git-hooks"
   },
