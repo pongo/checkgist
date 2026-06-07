@@ -23,3 +23,10 @@ Finish the v1 feature by tightening cross-slice integration, filling behavior ga
 - [ ] `npm run agent:test` passes.
 - [ ] `npm run agent:lint` passes.
 - [ ] Any residual risks or intentionally deferred behavior are documented in the issue comments or implementation notes.
+
+## Implementation notes
+
+- Component coverage now exercises primary Pastebin and GitHub Gist loaded-source flows from canonical route through rendered Markdown files and checkbox hash persistence.
+- Integration coverage includes source-level errors, file-level errors, no-task-items notice, invalid hash normalization on the next checkbox change, copy failure feedback, and race-safe stale load handling.
+- No dev server or deploy command was used for verification.
+- Residual v1 risks remain the PRD risks: direct browser fetch behavior for GitHub/Pastebin can change, and Task Item State is positional and best-effort if source content changes.

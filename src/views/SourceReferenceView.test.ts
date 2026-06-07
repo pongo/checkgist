@@ -1,4 +1,4 @@
-import type { ComarkTree } from "comark";
+import type { ComarkElement, ComarkNode, ComarkTree } from "comark";
 import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h, nextTick, reactive } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -36,7 +36,10 @@ vi.mock("@/source-services/registry", async (importOriginal) => {
     ...actual,
     sourceRegistry: {
       services: [],
-      byType: new Map([["pastebin", { type: "pastebin", load: loadSource }]]),
+      byType: new Map([
+        ["github-gist", { type: "github-gist", load: loadSource }],
+        ["pastebin", { type: "pastebin", load: loadSource }],
+      ]),
     },
   };
 });
@@ -79,6 +82,31 @@ function createPastebinSource(pasteId: string, content: string): SourceContent {
   });
 }
 
+function createGitHubGistSource(gistId: string): SourceContent {
+  return createSource({
+    reference: { type: "github-gist", gistId },
+    metadata: {
+      title: gistId,
+      description: "Gist description",
+      url: `https://gist.github.com/${gistId}`,
+    },
+    files: [
+      {
+        status: "ready",
+        id: "one.md",
+        name: "one.md",
+        content: "- [ ] First task",
+      },
+      {
+        status: "ready",
+        id: "two.md",
+        name: "two.md",
+        content: "- [ ] Second task",
+      },
+    ],
+  });
+}
+
 function createDeferred<T>(): Deferred<T> {
   let resolve: Deferred<T>["resolve"] | undefined;
   let reject: Deferred<T>["reject"] | undefined;
@@ -106,12 +134,25 @@ function mountSourceReferenceView() {
             },
           },
           setup(props) {
-            return () => h("div", JSON.stringify((props.tree as ComarkTree).nodes));
+            return () => h("div", (props.tree as ComarkTree).nodes.map(renderComarkNode));
           },
         }),
       },
     },
   });
+}
+
+function renderComarkNode(node: ComarkNode): ReturnType<typeof h> | string | null {
+  if (typeof node === "string") {
+    return node;
+  }
+
+  if (!Array.isArray(node) || node[0] === null) {
+    return null;
+  }
+
+  const [tag, attributes, ...children] = node as ComarkElement;
+  return h(tag, attributes, children.map(renderComarkNode));
 }
 
 async function mountLoadedSource(source: SourceContent) {
@@ -159,6 +200,81 @@ describe("SourceReferenceView", () => {
     expect(wrapper.text()).toContain("HdpnureE");
     expect(wrapper.text()).toContain("No task items found in this source.");
     expect(document.title).toBe("HdpnureE - Checkgist");
+  });
+
+  it("renders the primary Pastebin flow and updates the checkbox hash", async () => {
+    window.history.replaceState(null, "", "/pastebin.com/HdpnureE");
+    const wrapper = await mountLoadedSource(
+      createPastebinSource("HdpnureE", "- [ ] Pastebin task"),
+    );
+
+    expect(loadSource).toHaveBeenCalledWith(
+      { type: "pastebin", pasteId: "HdpnureE" } satisfies SourceReference,
+      { signal: expect.any(AbortSignal) },
+    );
+    expect(wrapper.text()).toContain("HdpnureE");
+    expect(wrapper.text()).toContain("Pastebin task");
+
+    await wrapper.get("input[type='checkbox']").setValue(true);
+
+    expect(window.location.hash).toBe("#1");
+  });
+
+  it("renders the primary GitHub Gist flow in file order and updates the checkbox hash", async () => {
+    route.path = "/gist.github.com/gist-1";
+    window.history.replaceState(null, "", "/gist.github.com/gist-1");
+    const wrapper = await mountLoadedSource(createGitHubGistSource("gist-1"));
+
+    expect(loadSource).toHaveBeenCalledWith(
+      { type: "github-gist", gistId: "gist-1" } satisfies SourceReference,
+      { signal: expect.any(AbortSignal) },
+    );
+    expect(wrapper.findAll("h2").map((heading) => heading.text())).toEqual(["one.md", "two.md"]);
+    expect(wrapper.text()).toContain("First task");
+    expect(wrapper.text()).toContain("Second task");
+    expect(wrapper.text()).toContain("Gist description");
+
+    await wrapper.findAll("input[type='checkbox']")[1]?.setValue(true);
+
+    expect(window.location.hash).toBe("#01");
+  });
+
+  it("renders file-level errors without hiding ready files", async () => {
+    const wrapper = await mountLoadedSource(
+      createSource({
+        files: [
+          {
+            status: "ready",
+            id: "ready.md",
+            name: "ready.md",
+            content: "- [ ] Ready task",
+          },
+          {
+            status: "error",
+            id: "broken.md",
+            name: "broken.md",
+            error: { message: "Raw file failed." },
+          },
+        ],
+      }),
+    );
+
+    expect(wrapper.text()).toContain("ready.md");
+    expect(wrapper.text()).toContain("Ready task");
+    expect(wrapper.text()).toContain("broken.md");
+    expect(wrapper.text()).toContain("Raw file failed.");
+  });
+
+  it("treats invalid hash state as unchecked and normalizes it on the next checkbox change", async () => {
+    window.history.replaceState(null, "", "/pastebin.com/HdpnureE#not-state");
+    const wrapper = await mountLoadedSource(createPastebinSource("HdpnureE", "- [x] Ignored"));
+    const checkbox = wrapper.get<HTMLInputElement>("input[type='checkbox']");
+
+    expect(checkbox.element.checked).toBe(false);
+
+    await checkbox.setValue(true);
+
+    expect(window.location.hash).toBe("#1");
   });
 
   it("does not render an empty Source Metadata description", async () => {
