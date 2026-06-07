@@ -24,6 +24,7 @@ const reference = computed(() => {
 const session = ref<ChecklistSession | null>(null);
 const isLoading = ref(false);
 const loadError = ref("");
+const copyFeedback = ref<"idle" | "success" | "error">("idle");
 
 let activeLoadToken = 0;
 let abortController: AbortController | null = null;
@@ -36,6 +37,7 @@ async function loadSource(referenceToLoad: SourceReference | null) {
   abortController = null;
   session.value = null;
   loadError.value = "";
+  copyFeedback.value = "idle";
 
   if (referenceToLoad === null) {
     document.title = "Checkgist";
@@ -80,6 +82,21 @@ async function loadSource(referenceToLoad: SourceReference | null) {
   }
 }
 
+async function copyCurrentChecklistSessionLink() {
+  copyFeedback.value = "idle";
+
+  try {
+    if (navigator.clipboard?.writeText === undefined) {
+      throw new Error("Clipboard is unavailable.");
+    }
+
+    await navigator.clipboard.writeText(window.location.href);
+    copyFeedback.value = "success";
+  } catch {
+    copyFeedback.value = "error";
+  }
+}
+
 watch(reference, (nextReference) => void loadSource(nextReference), { immediate: true });
 
 onMounted(() => {
@@ -104,15 +121,42 @@ onBeforeUnmount(() => {
           Home
         </RouterLink>
 
-        <a
-          v-if="session"
-          class="min-h-10 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
-          :href="session.source.metadata.url"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          View source
-        </a>
+        <div v-if="session" class="flex flex-wrap items-center justify-end gap-3">
+          <button
+            aria-describedby="copy-link-feedback"
+            class="min-h-10 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            type="button"
+            @click="copyCurrentChecklistSessionLink"
+          >
+            Copy link
+          </button>
+
+          <a
+            class="min-h-10 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            :href="session.source.metadata.url"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            View source
+          </a>
+
+          <p
+            v-if="copyFeedback === 'success'"
+            id="copy-link-feedback"
+            class="basis-full text-right text-sm font-medium text-green-700 dark:text-green-400"
+            role="status"
+          >
+            Link copied.
+          </p>
+          <p
+            v-else-if="copyFeedback === 'error'"
+            id="copy-link-feedback"
+            class="basis-full text-right text-sm font-medium text-red-700 dark:text-red-400"
+            role="alert"
+          >
+            Could not copy link.
+          </p>
+        </div>
       </header>
 
       <p v-if="isLoading" class="text-sm text-zinc-600 dark:text-zinc-400">Loading source...</p>

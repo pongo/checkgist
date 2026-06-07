@@ -13,6 +13,7 @@ const loadSource = vi.hoisted(() =>
     (reference: SourceReference, options: { signal?: AbortSignal }) => Promise<SourceContent>
   >(),
 );
+const writeClipboardText = vi.fn<(data: string) => Promise<void>>();
 
 vi.mock("vue-router", () => ({
   RouterLink: {
@@ -82,6 +83,14 @@ describe("SourceReferenceView", () => {
   beforeEach(() => {
     route.path = "/pastebin.com/HdpnureE";
     loadSource.mockReset();
+    writeClipboardText.mockReset();
+    writeClipboardText.mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: writeClipboardText,
+      },
+    });
     document.title = "Checkgist";
     window.history.replaceState(null, "", "/");
   });
@@ -100,6 +109,7 @@ describe("SourceReferenceView", () => {
     expect(sourceLink.text()).toBe("View source");
     expect(sourceLink.attributes("target")).toBe("_blank");
     expect(sourceLink.attributes("rel")).toBe("noopener noreferrer");
+    expect(wrapper.text()).toContain("Copy link");
 
     expect(wrapper.text()).toContain("Source description");
     expect(wrapper.find("h1").exists()).toBe(false);
@@ -144,5 +154,29 @@ describe("SourceReferenceView", () => {
     expect(wrapper.text()).toContain("Failed to load Pastebin source.");
     expect(wrapper.text()).not.toContain("View source");
     expect(document.title).toBe("Checkgist");
+  });
+
+  it("copies the current Checklist Session URL including route and Task Item State hash", async () => {
+    window.history.replaceState(null, "", "/pastebin.com/HdpnureE#10");
+    const wrapper = await mountLoadedSource(createSource());
+
+    await wrapper.get("button[aria-describedby='copy-link-feedback']").trigger("click");
+    await flushPromises();
+
+    expect(writeClipboardText).toHaveBeenCalledWith(
+      expect.stringMatching(/\/pastebin\.com\/HdpnureE#10$/),
+    );
+    expect(wrapper.text()).toContain("Link copied.");
+    expect(window.location.hash).toBe("#10");
+  });
+
+  it("shows a visible error when copying the Checklist Session URL fails", async () => {
+    writeClipboardText.mockRejectedValueOnce(new Error("denied"));
+    const wrapper = await mountLoadedSource(createSource());
+
+    await wrapper.get("button[aria-describedby='copy-link-feedback']").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.get("[role='alert']").text()).toBe("Could not copy link.");
   });
 });
