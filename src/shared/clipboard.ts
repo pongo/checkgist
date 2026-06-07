@@ -1,6 +1,6 @@
 // https://stackoverflow.com/a/65996386/136559
 export async function copyToClipboard(text: string): Promise<void> {
-  if (navigator.clipboard && window.isSecureContext) {
+  if (navigator.clipboard) {
     return navigator.clipboard.writeText(text);
   }
 
