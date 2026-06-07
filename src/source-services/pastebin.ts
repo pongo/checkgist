@@ -4,6 +4,7 @@ import type { PastebinReference, SourceContent, SourceService } from "./types";
 import { SourceLoadError } from "./types";
 
 const PASTEBIN_HOST = "pastebin.com";
+const CORS_PROXY_URL = "https://corsproxy.io/?url=";
 
 function isNonEmptySegment(segment: string | undefined): segment is string {
   return segment !== undefined && segment.length > 0;
@@ -15,6 +16,10 @@ function pastebinPageUrl(pasteId: string): string {
 
 function pastebinRawUrl(pasteId: string): string {
   return `https://pastebin.com/raw/${pasteId}`;
+}
+
+function proxiedUrl(url: string): string {
+  return `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
 }
 
 export const pastebinService: SourceService<PastebinReference> = {
@@ -60,7 +65,7 @@ export const pastebinService: SourceService<PastebinReference> = {
     let content: string;
 
     try {
-      content = await ofetch<string>(pastebinRawUrl(reference.pasteId), {
+      content = await ofetch<string>(proxiedUrl(pastebinRawUrl(reference.pasteId)), {
         signal: options?.signal,
       });
     } catch {

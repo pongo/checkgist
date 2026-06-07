@@ -27,7 +27,10 @@ describe("pastebinService.load", () => {
       { signal },
     );
 
-    expect(mockedOfetch).toHaveBeenCalledWith("https://pastebin.com/raw/HdpnureE", { signal });
+    expect(mockedOfetch).toHaveBeenCalledWith(
+      "https://corsproxy.io/?url=https%3A%2F%2Fpastebin.com%2Fraw%2FHdpnureE",
+      { signal },
+    );
     expect(source).toEqual({
       reference: { type: "pastebin", pasteId: "HdpnureE" },
       metadata: {
