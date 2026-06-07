@@ -13,6 +13,7 @@ import {
   unsupportedSourceUrlMessage,
 } from "@/source-services/registry";
 import type { SourceReference } from "@/source-services/types";
+import { copyToClipboard } from "@/shared/clipboard.ts";
 
 const route = useRoute();
 
@@ -90,7 +91,7 @@ async function copyCurrentChecklistSessionLink() {
       throw new Error("Clipboard is unavailable.");
     }
 
-    await navigator.clipboard.writeText(window.location.href);
+    await copyToClipboard(window.location.href);
     copyFeedback.value = "success";
   } catch {
     copyFeedback.value = "error";
