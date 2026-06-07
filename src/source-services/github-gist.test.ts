@@ -46,7 +46,7 @@ describe("githubGistService.load", () => {
     expect(source).toEqual({
       reference: { type: "github-gist", gistId: "gist-1" },
       metadata: {
-        title: "gist-1",
+        title: "Release checklist",
         description: "Release checklist",
         url: "https://gist.github.com/octocat/gist-1",
       },

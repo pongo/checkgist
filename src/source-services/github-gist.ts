@@ -26,8 +26,7 @@ function gistPageUrl(gistId: string): string {
   return `https://gist.github.com/${gistId}`;
 }
 
-function mapDescription(description: string | null | undefined) {
-  const trimmedDescription = description?.trim();
+function mapDescription(trimmedDescription: string | undefined) {
   return trimmedDescription === undefined || trimmedDescription.length === 0
     ? {}
     : { description: trimmedDescription };
@@ -131,11 +130,12 @@ export const githubGistService: SourceService<GitHubGistReference> = {
 
     const files = await Promise.all(apiFiles.map((file) => loadGistFile(file, options)));
 
+    const trimmedDescription = response.description?.trim();
     return {
       reference,
       metadata: {
-        title: reference.gistId,
-        ...mapDescription(response.description),
+        title: trimmedDescription || reference.gistId,
+        ...mapDescription(trimmedDescription),
         url: response.html_url ?? gistPageUrl(reference.gistId),
       },
       files,
