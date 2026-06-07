@@ -35,6 +35,13 @@ function onResetAll() {
 
 <template>
   <div class="space-y-6">
+    <p
+      v-if="!session.hasTaskItems"
+      class="rounded-md border border-zinc-200 bg-white p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+    >
+      No task items found in this source.
+    </p>
+
     <div class="flex justify-end">
       <button
         class="min-h-10 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
