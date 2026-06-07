@@ -24,6 +24,36 @@ function onTaskChange(file: ChecklistReadyFile, event: Event) {
   }
 }
 
+function onTaskLabelClick(file: ChecklistReadyFile, event: MouseEvent) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || target instanceof HTMLInputElement) {
+    return;
+  }
+
+  if (target.closest("a") !== null) {
+    return;
+  }
+
+  const label = target.closest(".checkgist-task-label");
+  if (!(label instanceof HTMLLabelElement)) {
+    return;
+  }
+
+  const checkbox = label.querySelector<HTMLInputElement>("input[type='checkbox']");
+  if (checkbox === null) {
+    return;
+  }
+
+  const taskIndex = Number(checkbox.dataset.checkgistTaskIndex);
+  const nextChecked = !checkbox.checked;
+  event.preventDefault();
+  checkbox.checked = nextChecked;
+
+  if (setTaskChecked(props.session, file.id, taskIndex, nextChecked)) {
+    replaceBrowserHashState(props.session);
+  }
+}
+
 function onResetFile(fileId: string) {
   if (resetFile(props.session, fileId)) {
     markdownRenderVersion.value += 1;
@@ -76,6 +106,7 @@ function onResetAll() {
 
         <article
           class="prose max-w-none text-zinc-950 dark:text-zinc-50"
+          @click="onTaskLabelClick(file, $event)"
           @change="onTaskChange(file, $event)"
         >
           <Suspense :key="`${file.id}:${markdownRenderVersion}`">

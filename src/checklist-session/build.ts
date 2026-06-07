@@ -17,6 +17,36 @@ export type BuildChecklistSessionOptions = {
 };
 
 const unsafeTags = ["script", "iframe", "object", "embed", "link", "style", "base", "meta"];
+const blockTags = new Set([
+  "address",
+  "article",
+  "aside",
+  "blockquote",
+  "details",
+  "div",
+  "dl",
+  "fieldset",
+  "figcaption",
+  "figure",
+  "footer",
+  "form",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "header",
+  "hr",
+  "main",
+  "nav",
+  "ol",
+  "p",
+  "pre",
+  "section",
+  "table",
+  "ul",
+]);
 
 export const checklistMarkdownPlugins = [
   taskList({ enabled: true }),
@@ -101,19 +131,61 @@ function prepareTaskItems(tree: ComarkTree): number {
   let taskItemIndex = 0;
 
   visitNodes(tree.nodes, (node) => {
-    if (!isTaskCheckbox(node)) {
-      return;
+    if (isTaskListItem(node)) {
+      taskItemIndex = prepareTaskItemLabels(node, taskItemIndex);
+    } else if (isTaskCheckbox(node)) {
+      if (node[1]["data-checkgist-task-index"] === undefined) {
+        prepareTaskCheckbox(node, taskItemIndex);
+        taskItemIndex += 1;
+      }
     }
-
-    node[1]["data-checkgist-task-index"] = String(taskItemIndex);
-    delete node[1][":checked"];
-    delete node[1].checked;
-    delete node[1][":disabled"];
-    delete node[1].disabled;
-    taskItemIndex += 1;
   });
 
   return taskItemIndex;
+}
+
+function prepareTaskItemLabels(node: ComarkElement, taskItemIndex: number): number {
+  let nextTaskItemIndex = taskItemIndex;
+
+  for (let childIndex = 2; childIndex < node.length; childIndex += 1) {
+    const child = node[childIndex] as ComarkNode;
+    if (!isTaskCheckbox(child)) {
+      continue;
+    }
+
+    prepareTaskCheckbox(child, nextTaskItemIndex);
+
+    const labelChildren: ComarkNode[] = [child];
+    let nextChildIndex = childIndex + 1;
+    while (nextChildIndex < node.length && isTaskLabelContent(node[nextChildIndex] as ComarkNode)) {
+      labelChildren.push(node[nextChildIndex] as ComarkNode);
+      nextChildIndex += 1;
+    }
+
+    if (labelChildren.length > 1) {
+      node.splice(childIndex, nextChildIndex - childIndex, [
+        "label",
+        { class: "checkgist-task-label" },
+        ...labelChildren,
+      ]);
+    }
+
+    nextTaskItemIndex += 1;
+  }
+
+  return nextTaskItemIndex;
+}
+
+function prepareTaskCheckbox(checkbox: ComarkElement, taskItemIndex: number): void {
+  checkbox[1]["data-checkgist-task-index"] = String(taskItemIndex);
+  delete checkbox[1][":checked"];
+  delete checkbox[1].checked;
+  delete checkbox[1][":disabled"];
+  delete checkbox[1].disabled;
+}
+
+function isTaskLabelContent(node: ComarkNode): boolean {
+  return !isElement(node) || !blockTags.has(node[0]);
 }
 
 function isTaskCheckbox(node: ComarkNode): node is ComarkElement {
@@ -128,6 +200,15 @@ function isTaskCheckbox(node: ComarkNode): node is ComarkElement {
     typeof className === "string" &&
     className.split(/\s+/).includes("task-list-item-checkbox")
   );
+}
+
+function isTaskListItem(node: ComarkNode): node is ComarkElement {
+  if (!isElement(node) || node[0] !== "li") {
+    return false;
+  }
+
+  const className = node[1].class;
+  return typeof className === "string" && className.split(/\s+/).includes("task-list-item");
 }
 
 function visitNodes(nodes: ComarkNode[], visit: (node: ComarkNode) => void): void {

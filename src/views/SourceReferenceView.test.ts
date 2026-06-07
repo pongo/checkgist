@@ -220,6 +220,18 @@ describe("SourceReferenceView", () => {
     expect(window.location.hash).toBe("#1");
   });
 
+  it("updates the checkbox hash when clicking Task Item text", async () => {
+    window.history.replaceState(null, "", "/pastebin.com/HdpnureE");
+    const wrapper = await mountLoadedSource(
+      createPastebinSource("HdpnureE", "- [ ] Clickable task text"),
+    );
+
+    await wrapper.get("label").trigger("click");
+
+    expect(wrapper.get<HTMLInputElement>("input[type='checkbox']").element.checked).toBe(true);
+    expect(window.location.hash).toBe("#1");
+  });
+
   it("renders the primary GitHub Gist flow in file order and updates the checkbox hash", async () => {
     route.path = "/gist.github.com/gist-1";
     window.history.replaceState(null, "", "/gist.github.com/gist-1");

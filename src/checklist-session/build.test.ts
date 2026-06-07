@@ -39,8 +39,33 @@ describe("buildChecklistSession", () => {
 
     expect(file.checked).toEqual([false, false, false]);
     expect(JSON.stringify(file.tree.nodes)).toContain("data-checkgist-task-index");
+    expect(JSON.stringify(file.tree.nodes)).toContain("checkgist-task-label");
     expect(JSON.stringify(file.tree.nodes)).not.toContain(":checked");
     expect(JSON.stringify(file.tree.nodes)).not.toContain(":disabled");
+  });
+
+  it("wraps Task Item checkboxes and inline text in labels", async () => {
+    const session = await buildChecklistSession(
+      createSource([
+        {
+          status: "ready",
+          id: "one.md",
+          name: "one.md",
+          content: "- [ ] Plain task\n- [ ] **Bold** task",
+        },
+      ]),
+    );
+
+    const file = session.files[0];
+    expect(file?.status).toBe("ready");
+    if (file?.status !== "ready") {
+      return;
+    }
+
+    const treeJson = JSON.stringify(file.tree.nodes);
+    expect(treeJson).toContain('["label",{"class":"checkgist-task-label"},["input"');
+    expect(treeJson).toContain("Plain task");
+    expect(treeJson).toContain("Bold");
   });
 
   it("applies initial Task Item State after a source is built", async () => {
