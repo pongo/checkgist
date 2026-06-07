@@ -68,6 +68,32 @@ describe("buildChecklistSession", () => {
     expect(treeJson).toContain("Bold");
   });
 
+  it("wraps parent Task Item text in nested lists", async () => {
+    const session = await buildChecklistSession(
+      createSource([
+        {
+          status: "ready",
+          id: "nested.md",
+          name: "nested.md",
+          content:
+            "- [x] Parent task\n  - [x] Sub-task done\n  - [ ] Sub-task pending\n- [ ] Another parent task",
+        },
+      ]),
+    );
+
+    const file = session.files[0];
+    expect(file?.status).toBe("ready");
+    if (file?.status !== "ready") {
+      return;
+    }
+
+    expect(file.checked).toEqual([false, false, false, false]);
+    const treeJson = JSON.stringify(file.tree.nodes);
+    expect(treeJson).toContain('["p",{},["label",{"class":"checkgist-task-label"},["input"');
+    expect(treeJson).toContain("Parent task");
+    expect(treeJson.match(/checkgist-task-label/g)).toHaveLength(4);
+  });
+
   it("applies initial Task Item State after a source is built", async () => {
     const session = await buildChecklistSession(
       createSource([

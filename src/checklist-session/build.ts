@@ -132,7 +132,7 @@ function prepareTaskItems(tree: ComarkTree): number {
 
   visitNodes(tree.nodes, (node) => {
     if (isTaskListItem(node)) {
-      taskItemIndex = prepareTaskItemLabels(node, taskItemIndex);
+      taskItemIndex = prepareTaskItemLabel(node, taskItemIndex);
     } else if (isTaskCheckbox(node)) {
       if (node[1]["data-checkgist-task-index"] === undefined) {
         prepareTaskCheckbox(node, taskItemIndex);
@@ -144,36 +144,72 @@ function prepareTaskItems(tree: ComarkTree): number {
   return taskItemIndex;
 }
 
-function prepareTaskItemLabels(node: ComarkElement, taskItemIndex: number): number {
-  let nextTaskItemIndex = taskItemIndex;
-
-  for (let childIndex = 2; childIndex < node.length; childIndex += 1) {
-    const child = node[childIndex] as ComarkNode;
-    if (!isTaskCheckbox(child)) {
-      continue;
-    }
-
-    prepareTaskCheckbox(child, nextTaskItemIndex);
-
-    const labelChildren: ComarkNode[] = [child];
-    let nextChildIndex = childIndex + 1;
-    while (nextChildIndex < node.length && isTaskLabelContent(node[nextChildIndex] as ComarkNode)) {
-      labelChildren.push(node[nextChildIndex] as ComarkNode);
-      nextChildIndex += 1;
-    }
-
-    if (labelChildren.length > 1) {
-      node.splice(childIndex, nextChildIndex - childIndex, [
-        "label",
-        { class: "checkgist-task-label" },
-        ...labelChildren,
-      ]);
-    }
-
-    nextTaskItemIndex += 1;
+function prepareTaskItemLabel(node: ComarkElement, taskItemIndex: number): number {
+  const taskContent = findTaskItemContent(node);
+  if (taskContent === null) {
+    return taskItemIndex;
   }
 
-  return nextTaskItemIndex;
+  prepareTaskCheckbox(taskContent.checkbox, taskItemIndex);
+
+  const labelChildren: ComarkNode[] = [taskContent.checkbox];
+  let nextChildIndex = taskContent.checkboxIndex + 1;
+  while (
+    nextChildIndex < taskContent.container.length &&
+    isTaskLabelContent(taskContent.container[nextChildIndex] as ComarkNode)
+  ) {
+    labelChildren.push(taskContent.container[nextChildIndex] as ComarkNode);
+    nextChildIndex += 1;
+  }
+
+  if (labelChildren.length > 1) {
+    taskContent.container.splice(
+      taskContent.checkboxIndex,
+      nextChildIndex - taskContent.checkboxIndex,
+      ["label", { class: "checkgist-task-label" }, ...labelChildren],
+    );
+  }
+
+  return taskItemIndex + 1;
+}
+
+function findTaskItemContent(node: ComarkElement): {
+  container: ComarkElement;
+  checkbox: ComarkElement;
+  checkboxIndex: number;
+} | null {
+  const directCheckbox = findDirectTaskCheckbox(node);
+  if (directCheckbox !== null) {
+    return { container: node, ...directCheckbox };
+  }
+
+  const firstContentNode = node[2] as ComarkNode | undefined;
+  if (
+    firstContentNode !== undefined &&
+    isElement(firstContentNode) &&
+    firstContentNode[0] === "p"
+  ) {
+    const paragraphCheckbox = findDirectTaskCheckbox(firstContentNode);
+    if (paragraphCheckbox !== null) {
+      return { container: firstContentNode, ...paragraphCheckbox };
+    }
+  }
+
+  return null;
+}
+
+function findDirectTaskCheckbox(node: ComarkElement): {
+  checkbox: ComarkElement;
+  checkboxIndex: number;
+} | null {
+  for (let childIndex = 2; childIndex < node.length; childIndex += 1) {
+    const child = node[childIndex] as ComarkNode;
+    if (isTaskCheckbox(child)) {
+      return { checkbox: child, checkboxIndex: childIndex };
+    }
+  }
+
+  return null;
 }
 
 function prepareTaskCheckbox(checkbox: ComarkElement, taskItemIndex: number): void {
