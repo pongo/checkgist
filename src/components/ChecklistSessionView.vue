@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ComarkRenderer } from "@comark/vue";
+import { ref } from "vue";
 
 import { replaceBrowserHashState } from "@/checklist-session/browser-state";
 import { resetAll, resetFile, setTaskChecked } from "@/checklist-session/state";
@@ -8,6 +9,8 @@ import type { ChecklistReadyFile, ChecklistSession } from "@/checklist-session/t
 const props = defineProps<{
   session: ChecklistSession;
 }>();
+
+const markdownRenderVersion = ref(0);
 
 function onTaskChange(file: ChecklistReadyFile, event: Event) {
   const target = event.target;
@@ -23,12 +26,14 @@ function onTaskChange(file: ChecklistReadyFile, event: Event) {
 
 function onResetFile(fileId: string) {
   if (resetFile(props.session, fileId)) {
+    markdownRenderVersion.value += 1;
     replaceBrowserHashState(props.session);
   }
 }
 
 function onResetAll() {
   resetAll(props.session);
+  markdownRenderVersion.value += 1;
   replaceBrowserHashState(props.session);
 }
 </script>
@@ -73,7 +78,7 @@ function onResetAll() {
           class="prose max-w-none text-zinc-950 dark:text-zinc-50"
           @change="onTaskChange(file, $event)"
         >
-          <Suspense>
+          <Suspense :key="`${file.id}:${markdownRenderVersion}`">
             <ComarkRenderer :tree="file.tree" />
             <template #fallback>
               <span class="sr-only">Loading Markdown...</span>

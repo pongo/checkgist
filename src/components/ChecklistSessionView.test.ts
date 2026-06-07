@@ -149,6 +149,8 @@ describe("ChecklistSessionView", () => {
     const session = createSession();
     const wrapper = mountSession(session);
 
+    await wrapper.findAll("input")[0]?.setValue(true);
+    await wrapper.findAll("input")[3]?.setValue(true);
     await wrapper.findAll("button")[1]?.trigger("click");
 
     expect(session.files[0]).toMatchObject({
@@ -159,6 +161,9 @@ describe("ChecklistSessionView", () => {
       status: "ready",
       checked: [false, true],
     });
+    expect(wrapper.findAll<HTMLInputElement>("input")[0]?.element.checked).toBe(false);
+    expect(wrapper.findAll<HTMLInputElement>("input")[1]?.element.checked).toBe(false);
+    expect(wrapper.findAll<HTMLInputElement>("input")[3]?.element.checked).toBe(true);
     expect(replaceBrowserHashState).toHaveBeenCalledWith(session);
   });
 
@@ -166,6 +171,8 @@ describe("ChecklistSessionView", () => {
     const session = createSession();
     const wrapper = mountSession(session);
 
+    await wrapper.findAll("input")[0]?.setValue(true);
+    await wrapper.findAll("input")[3]?.setValue(true);
     await wrapper.findAll("button")[0]?.trigger("click");
 
     expect(session.files[0]).toMatchObject({
@@ -180,6 +187,9 @@ describe("ChecklistSessionView", () => {
       status: "error",
       error: { message: "Broken file." },
     });
+    expect(
+      wrapper.findAll<HTMLInputElement>("input").map((input) => input.element.checked),
+    ).toEqual([false, false, false, false]);
     expect(replaceBrowserHashState).toHaveBeenCalledWith(session);
   });
 });
