@@ -1,0 +1,57 @@
+export type GitHubGistReference = {
+  type: "github-gist";
+  gistId: string;
+};
+
+export type PastebinReference = {
+  type: "pastebin";
+  pasteId: string;
+};
+
+export type SourceReference = GitHubGistReference | PastebinReference;
+
+export type SourceMetadata = {
+  title: string;
+  description?: string;
+  url: string;
+};
+
+export type SourceFileId = string;
+export type MarkdownContent = string;
+
+export type LoadError = {
+  message: string;
+};
+
+export type SourceTextFile = {
+  status: "ready";
+  id: SourceFileId;
+  name: string;
+  content: MarkdownContent;
+};
+
+export type SourceFileError = {
+  status: "error";
+  id: SourceFileId;
+  name: string;
+  error: LoadError;
+};
+
+export type SourceFile = SourceTextFile | SourceFileError;
+
+export type SourceContent = {
+  reference: SourceReference;
+  metadata: SourceMetadata;
+  files: SourceFile[];
+};
+
+export type SourceService<TReference extends SourceReference> = {
+  type: TReference["type"];
+  fromUrl(url: URL): TReference | null;
+  fromRoute(path: string[]): TReference | null;
+  toRoute(reference: TReference): string[];
+  load(
+    reference: TReference,
+    options?: { signal?: AbortSignal },
+  ): Promise<SourceContent>;
+};
