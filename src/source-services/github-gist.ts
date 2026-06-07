@@ -1,13 +1,83 @@
+import { ofetch } from "ofetch";
+
 import type {
   GitHubGistReference,
+  SourceFile,
   SourceContent,
   SourceService,
 } from "./types";
+import { SourceLoadError } from "./types";
 
 const GIST_HOST = "gist.github.com";
 
+type GitHubGistApiFile = {
+  filename?: string;
+  content?: string;
+  truncated?: boolean;
+  raw_url?: string;
+};
+
+type GitHubGistApiResponse = {
+  description?: string | null;
+  html_url?: string;
+  files?: Record<string, GitHubGistApiFile>;
+};
+
 function isNonEmptySegment(segment: string | undefined): segment is string {
   return segment !== undefined && segment.length > 0;
+}
+
+function gistPageUrl(gistId: string): string {
+  return `https://gist.github.com/${gistId}`;
+}
+
+function mapDescription(description: string | null | undefined) {
+  const trimmedDescription = description?.trim();
+  return trimmedDescription === undefined || trimmedDescription.length === 0
+    ? {}
+    : { description: trimmedDescription };
+}
+
+async function loadGistFile(
+  file: GitHubGistApiFile,
+  options?: { signal?: AbortSignal },
+): Promise<SourceFile> {
+  const filename = file.filename ?? "Untitled";
+
+  if (file.truncated === true) {
+    try {
+      if (!isNonEmptySegment(file.raw_url)) {
+        throw new Error("Missing raw URL.");
+      }
+
+      const content = await ofetch<string>(file.raw_url, {
+        signal: options?.signal,
+      });
+
+      return {
+        status: "ready",
+        id: filename,
+        name: filename,
+        content,
+      };
+    } catch {
+      return {
+        status: "error",
+        id: filename,
+        name: filename,
+        error: {
+          message: "Failed to load full content for this truncated gist file.",
+        },
+      };
+    }
+  }
+
+  return {
+    status: "ready",
+    id: filename,
+    name: filename,
+    content: file.content ?? "",
+  };
 }
 
 export const githubGistService: SourceService<GitHubGistReference> = {
@@ -44,7 +114,38 @@ export const githubGistService: SourceService<GitHubGistReference> = {
     return [GIST_HOST, reference.gistId];
   },
 
-  load(): Promise<SourceContent> {
-    throw new Error("GitHub Gist loading is not implemented in this slice.");
+  async load(
+    reference: GitHubGistReference,
+    options?: { signal?: AbortSignal },
+  ): Promise<SourceContent> {
+    let response: GitHubGistApiResponse;
+
+    try {
+      response = await ofetch<GitHubGistApiResponse>(
+        `https://api.github.com/gists/${reference.gistId}`,
+        { signal: options?.signal },
+      );
+    } catch {
+      throw new SourceLoadError("Failed to load GitHub Gist.");
+    }
+
+    const apiFiles = Object.values(response.files ?? {});
+    if (apiFiles.length === 0) {
+      throw new SourceLoadError("No files found in this gist.");
+    }
+
+    const files = await Promise.all(
+      apiFiles.map((file) => loadGistFile(file, options)),
+    );
+
+    return {
+      reference,
+      metadata: {
+        title: reference.gistId,
+        ...mapDescription(response.description),
+        url: response.html_url ?? gistPageUrl(reference.gistId),
+      },
+      files,
+    };
   },
 };

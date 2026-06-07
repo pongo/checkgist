@@ -1,13 +1,24 @@
+import { ofetch } from "ofetch";
+
 import type {
   PastebinReference,
   SourceContent,
   SourceService,
 } from "./types";
+import { SourceLoadError } from "./types";
 
 const PASTEBIN_HOST = "pastebin.com";
 
 function isNonEmptySegment(segment: string | undefined): segment is string {
   return segment !== undefined && segment.length > 0;
+}
+
+function pastebinPageUrl(pasteId: string): string {
+  return `https://pastebin.com/${pasteId}`;
+}
+
+function pastebinRawUrl(pasteId: string): string {
+  return `https://pastebin.com/raw/${pasteId}`;
 }
 
 export const pastebinService: SourceService<PastebinReference> = {
@@ -50,7 +61,34 @@ export const pastebinService: SourceService<PastebinReference> = {
     return [PASTEBIN_HOST, reference.pasteId];
   },
 
-  load(): Promise<SourceContent> {
-    throw new Error("Pastebin loading is not implemented in this slice.");
+  async load(
+    reference: PastebinReference,
+    options?: { signal?: AbortSignal },
+  ): Promise<SourceContent> {
+    let content: string;
+
+    try {
+      content = await ofetch<string>(pastebinRawUrl(reference.pasteId), {
+        signal: options?.signal,
+      });
+    } catch {
+      throw new SourceLoadError("Failed to load Pastebin source.");
+    }
+
+    return {
+      reference,
+      metadata: {
+        title: reference.pasteId,
+        url: pastebinPageUrl(reference.pasteId),
+      },
+      files: [
+        {
+          status: "ready",
+          id: reference.pasteId,
+          name: reference.pasteId,
+          content,
+        },
+      ],
+    };
   },
 };

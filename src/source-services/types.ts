@@ -23,6 +23,13 @@ export type LoadError = {
   message: string;
 };
 
+export class SourceLoadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SourceLoadError";
+  }
+}
+
 export type SourceTextFile = {
   status: "ready";
   id: SourceFileId;
