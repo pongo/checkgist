@@ -42,10 +42,7 @@ describe("githubGistService.load", () => {
       { signal },
     );
 
-    expect(mockedOfetch).toHaveBeenCalledWith(
-      "https://api.github.com/gists/gist-1",
-      { signal },
-    );
+    expect(mockedOfetch).toHaveBeenCalledWith("https://api.github.com/gists/gist-1", { signal });
     expect(source).toEqual({
       reference: { type: "github-gist", gistId: "gist-1" },
       metadata: {
@@ -171,8 +168,8 @@ describe("githubGistService.load", () => {
   it("throws a source-level load error when the gist has no files", async () => {
     mockedOfetch.mockResolvedValueOnce({ files: {} });
 
-    await expect(
-      githubGistService.load({ type: "github-gist", gistId: "gist-6" }),
-    ).rejects.toThrow("No files found in this gist.");
+    await expect(githubGistService.load({ type: "github-gist", gistId: "gist-6" })).rejects.toThrow(
+      "No files found in this gist.",
+    );
   });
 });

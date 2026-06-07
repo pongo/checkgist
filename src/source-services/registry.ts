@@ -7,8 +7,7 @@ export type SourceRegistry = {
   byType: ReadonlyMap<SourceReference["type"], SourceService<SourceReference>>;
 };
 
-export const unsupportedSourceUrlMessage =
-  "Enter a supported GitHub Gist or Pastebin URL.";
+export const unsupportedSourceUrlMessage = "Enter a supported GitHub Gist or Pastebin URL.";
 
 export function createSourceRegistry(
   services: ReadonlyArray<SourceService<SourceReference>>,
@@ -19,10 +18,7 @@ export function createSourceRegistry(
   };
 }
 
-export const sourceRegistry = createSourceRegistry([
-  githubGistService,
-  pastebinService,
-]);
+export const sourceRegistry = createSourceRegistry([githubGistService, pastebinService]);
 
 export function normalizeSourceUrlInput(input: string): URL | null {
   const trimmedInput = input.trim();

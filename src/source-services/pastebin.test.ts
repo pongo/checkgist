@@ -27,10 +27,7 @@ describe("pastebinService.load", () => {
       { signal },
     );
 
-    expect(mockedOfetch).toHaveBeenCalledWith(
-      "https://pastebin.com/raw/HdpnureE",
-      { signal },
-    );
+    expect(mockedOfetch).toHaveBeenCalledWith("https://pastebin.com/raw/HdpnureE", { signal });
     expect(source).toEqual({
       reference: { type: "pastebin", pasteId: "HdpnureE" },
       metadata: {

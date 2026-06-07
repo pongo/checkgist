@@ -33,9 +33,7 @@ describe("HomeView", () => {
     await wrapper.get("form").trigger("submit");
 
     expect(push).toHaveBeenCalledWith("/gist.github.com/abc123");
-    expect(wrapper.text()).not.toContain(
-      "Enter a supported GitHub Gist or Pastebin URL.",
-    );
+    expect(wrapper.text()).not.toContain("Enter a supported GitHub Gist or Pastebin URL.");
   });
 
   it("opens a normalized route from Enter submit", async () => {
@@ -56,8 +54,6 @@ describe("HomeView", () => {
     await wrapper.get("form").trigger("submit");
 
     expect(push).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain(
-      "Enter a supported GitHub Gist or Pastebin URL.",
-    );
+    expect(wrapper.text()).toContain("Enter a supported GitHub Gist or Pastebin URL.");
   });
 });

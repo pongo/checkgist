@@ -25,15 +25,11 @@ async function openSource() {
 </script>
 
 <template>
-  <main
-    class="min-h-screen bg-zinc-50 px-4 py-10 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50"
-  >
+  <main class="min-h-screen bg-zinc-50 px-4 py-10 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
     <section class="mx-auto flex w-full max-w-xl flex-col gap-6">
       <div class="space-y-2">
         <h1 class="text-4xl font-semibold tracking-normal">Checkgist</h1>
-        <p class="text-sm text-zinc-600 dark:text-zinc-400">
-          Supports GitHub Gist and Pastebin.
-        </p>
+        <p class="text-sm text-zinc-600 dark:text-zinc-400">Supports GitHub Gist and Pastebin.</p>
       </div>
 
       <form class="space-y-3" novalidate @submit.prevent="openSource">

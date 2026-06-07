@@ -57,8 +57,5 @@ export type SourceService<TReference extends SourceReference> = {
   fromUrl(url: URL): TReference | null;
   fromRoute(path: string[]): TReference | null;
   toRoute(reference: TReference): string[];
-  load(
-    reference: TReference,
-    options?: { signal?: AbortSignal },
-  ): Promise<SourceContent>;
+  load(reference: TReference, options?: { signal?: AbortSignal }): Promise<SourceContent>;
 };

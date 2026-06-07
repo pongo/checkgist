@@ -1,10 +1,6 @@
 import { ofetch } from "ofetch";
 
-import type {
-  PastebinReference,
-  SourceContent,
-  SourceService,
-} from "./types";
+import type { PastebinReference, SourceContent, SourceService } from "./types";
 import { SourceLoadError } from "./types";
 
 const PASTEBIN_HOST = "pastebin.com";
@@ -46,11 +42,7 @@ export const pastebinService: SourceService<PastebinReference> = {
 
   fromRoute(path: string[]): PastebinReference | null {
     const [host, pasteId, extra] = path;
-    if (
-      host !== PASTEBIN_HOST ||
-      extra !== undefined ||
-      !isNonEmptySegment(pasteId)
-    ) {
+    if (host !== PASTEBIN_HOST || extra !== undefined || !isNonEmptySegment(pasteId)) {
       return null;
     }
 

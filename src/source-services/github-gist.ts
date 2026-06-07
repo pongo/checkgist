@@ -1,11 +1,6 @@
 import { ofetch } from "ofetch";
 
-import type {
-  GitHubGistReference,
-  SourceFile,
-  SourceContent,
-  SourceService,
-} from "./types";
+import type { GitHubGistReference, SourceFile, SourceContent, SourceService } from "./types";
 import { SourceLoadError } from "./types";
 
 const GIST_HOST = "gist.github.com";
@@ -134,9 +129,7 @@ export const githubGistService: SourceService<GitHubGistReference> = {
       throw new SourceLoadError("No files found in this gist.");
     }
 
-    const files = await Promise.all(
-      apiFiles.map((file) => loadGistFile(file, options)),
-    );
+    const files = await Promise.all(apiFiles.map((file) => loadGistFile(file, options)));
 
     return {
       reference,

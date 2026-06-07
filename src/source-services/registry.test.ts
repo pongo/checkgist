@@ -58,10 +58,13 @@ describe("source service registry", () => {
   });
 
   it.each([
-    [["gist.github.com", "0123456789abcdef"], {
-      type: "github-gist",
-      gistId: "0123456789abcdef",
-    }],
+    [
+      ["gist.github.com", "0123456789abcdef"],
+      {
+        type: "github-gist",
+        gistId: "0123456789abcdef",
+      },
+    ],
     [["pastebin.com", "HdpnureE"], { type: "pastebin", pasteId: "HdpnureE" }],
   ])("parses canonical route %s", (path, expectedReference) => {
     expect(referenceFromRoute(path)).toEqual(expectedReference);
