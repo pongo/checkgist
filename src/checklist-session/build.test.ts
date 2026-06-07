@@ -42,6 +42,25 @@ describe("buildChecklistSession", () => {
     expect(JSON.stringify(file.tree.nodes)).not.toContain(":checked");
   });
 
+  it("applies initial Task Item State after a source is built", async () => {
+    const session = await buildChecklistSession(
+      createSource([
+        {
+          status: "ready",
+          id: "one.md",
+          name: "one.md",
+          content: "- [ ] One\n- [ ] Two",
+        },
+      ]),
+      { initialStateBits: "#10" },
+    );
+
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [true, false],
+    });
+  });
+
   it("renders Markdown content that has no Task Items", async () => {
     const session = await buildChecklistSession(
       createSource([

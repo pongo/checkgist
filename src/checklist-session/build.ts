@@ -6,12 +6,14 @@ import taskList from "comark/plugins/task-list";
 
 import type { SourceContent, SourceFile, SourceTextFile } from "@/source-services/types";
 
+import { applySessionState } from "./state";
 import type { ChecklistErrorFile, ChecklistReadyFile, ChecklistSession } from "./types";
 
 type ParseMarkdown = (markdown: string, options?: ParseOptions) => Promise<ComarkTree>;
 
 export type BuildChecklistSessionOptions = {
   parseMarkdown?: ParseMarkdown;
+  initialStateBits?: string | null;
 };
 
 const unsafeTags = ["script", "iframe", "object", "embed", "link", "style", "base", "meta"];
@@ -45,11 +47,14 @@ export async function buildChecklistSession(
     source.files.map((sourceFile) => buildChecklistFile(sourceFile, parseMarkdown)),
   );
 
-  return {
+  const session = {
     source,
     files,
     hasTaskItems: files.some((file) => file.status === "ready" && file.checked.length > 0),
   };
+
+  applySessionState(session, options.initialStateBits);
+  return session;
 }
 
 async function buildChecklistFile(
