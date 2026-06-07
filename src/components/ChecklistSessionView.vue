@@ -73,7 +73,12 @@ function onResetAll() {
           class="prose max-w-none text-zinc-950 dark:text-zinc-50"
           @change="onTaskChange(file, $event)"
         >
-          <ComarkRenderer :tree="file.tree" />
+          <Suspense>
+            <ComarkRenderer :tree="file.tree" />
+            <template #fallback>
+              <span class="sr-only">Loading Markdown...</span>
+            </template>
+          </Suspense>
         </article>
       </template>
 
