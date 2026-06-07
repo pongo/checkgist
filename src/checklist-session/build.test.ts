@@ -40,6 +40,7 @@ describe("buildChecklistSession", () => {
     expect(file.checked).toEqual([false, false, false]);
     expect(JSON.stringify(file.tree.nodes)).toContain("data-checkgist-task-index");
     expect(JSON.stringify(file.tree.nodes)).not.toContain(":checked");
+    expect(JSON.stringify(file.tree.nodes)).not.toContain(":disabled");
   });
 
   it("applies initial Task Item State after a source is built", async () => {

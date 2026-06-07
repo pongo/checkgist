@@ -149,6 +149,7 @@ describe("Checklist Session state", () => {
       [false, false, false],
       [false, false],
     ]);
+    expect(encodeSessionState(session)).toBe("");
   });
 
   it("normalizes hash-form state bits", () => {

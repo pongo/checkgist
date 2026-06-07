@@ -19,7 +19,7 @@ export type BuildChecklistSessionOptions = {
 const unsafeTags = ["script", "iframe", "object", "embed", "link", "style", "base", "meta"];
 
 export const checklistMarkdownPlugins = [
-  taskList(),
+  taskList({ enabled: true }),
   security({
     blockedTags: unsafeTags,
     allowedProtocols: ["http", "https", "mailto"],
@@ -108,6 +108,8 @@ function prepareTaskItems(tree: ComarkTree): number {
     node[1]["data-checkgist-task-index"] = String(taskItemIndex);
     delete node[1][":checked"];
     delete node[1].checked;
+    delete node[1][":disabled"];
+    delete node[1].disabled;
     taskItemIndex += 1;
   });
 

@@ -1,4 +1,6 @@
-import type { ChecklistSession } from "./types";
+import type { ComarkElement, ComarkNode } from "comark";
+
+import type { ChecklistReadyFile, ChecklistSession } from "./types";
 
 export function applySessionState(
   session: ChecklistSession,
@@ -19,6 +21,7 @@ export function applySessionState(
     });
   }
 
+  syncSessionTaskCheckboxes(session);
   return session;
 }
 
@@ -51,6 +54,7 @@ export function setTaskChecked(
   }
 
   file.checked[localTaskIndex] = checked;
+  syncReadyFileTaskCheckboxes(file);
   return true;
 }
 
@@ -64,6 +68,7 @@ export function resetFile(session: ChecklistSession, fileId: string): boolean {
   }
 
   file.checked = file.checked.map(() => false);
+  syncReadyFileTaskCheckboxes(file);
   return true;
 }
 
@@ -71,6 +76,7 @@ export function resetAll(session: ChecklistSession): ChecklistSession {
   for (const file of session.files) {
     if (file.status === "ready") {
       file.checked = file.checked.map(() => false);
+      syncReadyFileTaskCheckboxes(file);
     }
   }
 
@@ -84,4 +90,52 @@ export function parseStateBits(stateBits?: string | null): string {
 
   const normalized = stateBits.startsWith("#") ? stateBits.slice(1) : stateBits;
   return /^[01]*$/.test(normalized) ? normalized : "";
+}
+
+export function syncSessionTaskCheckboxes(session: ChecklistSession): void {
+  for (const file of session.files) {
+    if (file.status === "ready") {
+      syncReadyFileTaskCheckboxes(file);
+    }
+  }
+}
+
+function syncReadyFileTaskCheckboxes(file: ChecklistReadyFile): void {
+  visitNodes(file.tree.nodes, (node) => {
+    if (!isTaskCheckbox(node)) {
+      return;
+    }
+
+    const taskIndex = Number(node[1]["data-checkgist-task-index"]);
+    if (!Number.isInteger(taskIndex)) {
+      return;
+    }
+
+    if (file.checked[taskIndex] === true) {
+      node[1].checked = true;
+    } else {
+      delete node[1].checked;
+    }
+  });
+}
+
+function isTaskCheckbox(node: ComarkNode): node is ComarkElement {
+  if (!isElement(node)) {
+    return false;
+  }
+
+  return node[0] === "input" && node[1]["data-checkgist-task-index"] !== undefined;
+}
+
+function visitNodes(nodes: ComarkNode[], visit: (node: ComarkNode) => void): void {
+  for (const node of nodes) {
+    visit(node);
+    if (isElement(node)) {
+      visitNodes(node.slice(2) as ComarkNode[], visit);
+    }
+  }
+}
+
+function isElement(node: ComarkNode): node is ComarkElement {
+  return Array.isArray(node) && node[0] !== null;
 }
