@@ -1,6 +1,6 @@
 import type { ComarkTree } from "comark";
 import { flushPromises, mount } from "@vue/test-utils";
-import { defineComponent, h, reactive } from "vue";
+import { defineComponent, h, nextTick, reactive } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SourceContent, SourceReference } from "@/source-services/types";
@@ -14,6 +14,12 @@ const loadSource = vi.hoisted(() =>
   >(),
 );
 const writeClipboardText = vi.fn<(data: string) => Promise<void>>();
+
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason: unknown) => void;
+};
 
 vi.mock("vue-router", () => ({
   RouterLink: {
@@ -55,9 +61,41 @@ function createSource(overrides: Partial<SourceContent> = {}): SourceContent {
   };
 }
 
-async function mountLoadedSource(source: SourceContent) {
-  loadSource.mockResolvedValueOnce(source);
-  const wrapper = mount(SourceReferenceView, {
+function createPastebinSource(pasteId: string, content: string): SourceContent {
+  return createSource({
+    reference: { type: "pastebin", pasteId },
+    metadata: {
+      title: pasteId,
+      url: `https://pastebin.com/${pasteId}`,
+    },
+    files: [
+      {
+        status: "ready",
+        id: pasteId,
+        name: pasteId,
+        content,
+      },
+    ],
+  });
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve: Deferred<T>["resolve"] | undefined;
+  let reject: Deferred<T>["reject"] | undefined;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  if (resolve === undefined || reject === undefined) {
+    throw new Error("Deferred promise was not initialized.");
+  }
+
+  return { promise, resolve, reject };
+}
+
+function mountSourceReferenceView() {
+  return mount(SourceReferenceView, {
     global: {
       stubs: {
         ComarkRenderer: defineComponent({
@@ -74,6 +112,11 @@ async function mountLoadedSource(source: SourceContent) {
       },
     },
   });
+}
+
+async function mountLoadedSource(source: SourceContent) {
+  loadSource.mockResolvedValueOnce(source);
+  const wrapper = mountSourceReferenceView();
 
   await flushPromises();
   return wrapper;
@@ -178,5 +221,70 @@ describe("SourceReferenceView", () => {
     await flushPromises();
 
     expect(wrapper.get("[role='alert']").text()).toBe("Could not copy link.");
+  });
+
+  it("aborts the previous source load and ignores its stale resolved result", async () => {
+    const firstLoad = createDeferred<SourceContent>();
+    const secondLoad = createDeferred<SourceContent>();
+    loadSource.mockImplementation((reference) =>
+      reference.type === "pastebin" && reference.pasteId === "HdpnureE"
+        ? firstLoad.promise
+        : secondLoad.promise,
+    );
+    const wrapper = mountSourceReferenceView();
+    await nextTick();
+
+    const firstSignal = loadSource.mock.calls[0]?.[1].signal;
+    expect(firstSignal?.aborted).toBe(false);
+
+    route.path = "/pastebin.com/newer";
+    await nextTick();
+
+    expect(firstSignal?.aborted).toBe(true);
+    expect(loadSource).toHaveBeenLastCalledWith(
+      { type: "pastebin", pasteId: "newer" } satisfies SourceReference,
+      { signal: expect.any(AbortSignal) },
+    );
+
+    secondLoad.resolve(createPastebinSource("newer", "Newer Markdown."));
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("newer");
+    expect(wrapper.text()).toContain("Newer Markdown.");
+    expect(document.title).toBe("newer - Checkgist");
+
+    firstLoad.resolve(createPastebinSource("HdpnureE", "Stale Markdown."));
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Newer Markdown.");
+    expect(wrapper.text()).not.toContain("Stale Markdown.");
+    expect(document.title).toBe("newer - Checkgist");
+  });
+
+  it("ignores stale rejected source load errors while the current load renders normally", async () => {
+    const firstLoad = createDeferred<SourceContent>();
+    const secondLoad = createDeferred<SourceContent>();
+    loadSource.mockImplementation((reference) =>
+      reference.type === "pastebin" && reference.pasteId === "HdpnureE"
+        ? firstLoad.promise
+        : secondLoad.promise,
+    );
+    const wrapper = mountSourceReferenceView();
+    await nextTick();
+
+    route.path = "/pastebin.com/current";
+    await nextTick();
+
+    firstLoad.reject(new Error("Stale load failed."));
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Stale load failed.");
+
+    secondLoad.resolve(createPastebinSource("current", "Current Markdown."));
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Current Markdown.");
+    expect(wrapper.text()).not.toContain("Stale load failed.");
+    expect(document.title).toBe("current - Checkgist");
   });
 });
