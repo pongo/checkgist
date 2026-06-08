@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import HomeView from "./HomeView.vue";
@@ -23,6 +24,15 @@ describe("HomeView", () => {
     );
     expect(wrapper.text()).toContain("Supports GitHub Gist and Pastebin.");
     expect(wrapper.get("button").text()).toBe("Open");
+  });
+
+  it("focuses the source input when mounted", async () => {
+    const wrapper = mount(HomeView, { attachTo: document.body });
+
+    await nextTick();
+
+    expect(document.activeElement).toBe(wrapper.get("input").element);
+    wrapper.unmount();
   });
 
   it("opens a normalized route from the Open button", async () => {

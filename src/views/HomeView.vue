@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { nextTick, onMounted, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 
 import {
@@ -10,7 +10,13 @@ import {
 
 const router = useRouter();
 const sourceUrl = ref("");
+const sourceUrlInput = useTemplateRef("sourceUrlInput");
 const inputError = ref("");
+
+async function focusSourceInput() {
+  await nextTick();
+  sourceUrlInput.value?.focus();
+}
 
 async function openSource() {
   const reference = referenceFromUrlInput(sourceUrl.value);
@@ -22,6 +28,10 @@ async function openSource() {
   inputError.value = "";
   await router.push(routeForReference(reference));
 }
+
+onMounted(() => {
+  void focusSourceInput();
+});
 </script>
 
 <template>
@@ -37,6 +47,7 @@ async function openSource() {
         <div class="flex flex-col gap-3 sm:flex-row">
           <input
             id="source-url"
+            ref="sourceUrlInput"
             v-model="sourceUrl"
             aria-describedby="source-url-helper source-url-error"
             :aria-invalid="inputError.length > 0"
