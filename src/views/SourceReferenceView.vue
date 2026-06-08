@@ -119,14 +119,16 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="min-h-screen bg-zinc-50 px-4 py-6 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
-    <section class="mx-auto flex w-full max-w-4xl flex-col gap-6">
-      <header class="flex flex-wrap items-center justify-between gap-3">
+  <main class="min-h-screen bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <header class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+      <div
+        class="mx-auto flex min-h-20 w-full max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-5"
+      >
         <RouterLink
-          class="min-h-10 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          class="rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-600/30"
           to="/"
         >
-          Home
+          <h1 class="text-lg font-semibold tracking-normal">Checkgist</h1>
         </RouterLink>
 
         <div v-if="session" class="flex flex-wrap items-center justify-end gap-3">
@@ -155,8 +157,10 @@ onBeforeUnmount(() => {
             Reset all
           </button>
         </div>
-      </header>
+      </div>
+    </header>
 
+    <section class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6">
       <p v-if="isLoading" class="text-sm text-zinc-600 dark:text-zinc-400">Loading source...</p>
 
       <div

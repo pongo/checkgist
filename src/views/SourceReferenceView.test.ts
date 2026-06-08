@@ -208,7 +208,8 @@ describe("SourceReferenceView", () => {
       { type: "pastebin", pasteId: "HdpnureE" } satisfies SourceReference,
       { signal: expect.any(AbortSignal) },
     );
-    expect(wrapper.get("[data-router-link='/']").text()).toBe("Home");
+    expect(wrapper.get("[data-router-link='/']").text()).toBe("Checkgist");
+    expect(wrapper.get("h1").text()).toBe("Checkgist");
 
     const sourceLink = wrapper.get("a[href='https://pastebin.com/HdpnureE']");
     expect(sourceLink.text()).toBe("View source");
@@ -218,7 +219,6 @@ describe("SourceReferenceView", () => {
     expect(wrapper.text()).toContain("Copy link");
 
     expect(wrapper.text()).toContain("Source description");
-    expect(wrapper.find("h1").exists()).toBe(false);
     expect(wrapper.text()).toContain("HdpnureE");
     expect(wrapper.text()).toContain("No task items found in this source.");
     expect(document.title).toBe("HdpnureE - Checkgist");
