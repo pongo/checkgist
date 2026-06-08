@@ -35,11 +35,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="min-h-screen bg-white px-4 pt-14 text-zinc-950 sm:px-6 sm:pt-20">
+  <main
+    class="min-h-screen bg-white px-4 pt-14 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50 sm:px-6 sm:pt-20"
+  >
     <section class="mx-auto w-full max-w-xl">
       <div>
         <h1 class="text-4xl font-semibold tracking-normal">Checkgist</h1>
-        <p class="mt-2 text-base text-zinc-600">
+        <p class="mt-2 text-base text-zinc-600 dark:text-zinc-400">
           Turn Markdown task lists into interactive checklists
         </p>
       </div>
@@ -53,13 +55,13 @@ onMounted(() => {
             v-model="sourceUrl"
             aria-describedby="source-url-error"
             :aria-invalid="inputError.length > 0"
-            class="min-h-11 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:ring-2 focus:ring-zinc-950/10"
+            class="min-h-11 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:ring-2 focus:ring-zinc-950/10 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-blue-600/30"
             placeholder="Paste a GitHub Gist or supported URL"
             type="text"
             autocomplete="off"
           />
           <button
-            class="min-h-11 rounded-md bg-zinc-950 px-5 font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950/20"
+            class="min-h-11 rounded-md bg-zinc-950 px-5 font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950/20 dark:border dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800 dark:focus:ring-blue-600/30"
             type="submit"
           >
             Open
@@ -68,7 +70,7 @@ onMounted(() => {
         <p
           v-if="inputError"
           id="source-url-error"
-          class="text-sm font-medium text-red-700"
+          class="text-sm font-medium text-red-700 dark:text-red-300"
           role="alert"
         >
           {{ inputError }}
