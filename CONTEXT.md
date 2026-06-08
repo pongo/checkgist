@@ -33,7 +33,7 @@ Descriptive information about Source Content, such as its title, description, an
 _Avoid_: Source title, source info
 
 **Task Item**:
-A Markdown task-list item rendered as an interactive checkbox.
+A Markdown task-list item rendered as an interactive checkbox. When Source Content has no explicit Markdown task-list items, ordinary Markdown list items may be treated as Task Items.
 _Avoid_: Checkbox, todo
 
 **Task Item State**:

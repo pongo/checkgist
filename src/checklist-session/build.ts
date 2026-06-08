@@ -76,6 +76,18 @@ export async function buildChecklistSession(
   const files = await Promise.all(
     source.files.map((sourceFile) => buildChecklistFile(sourceFile, parseMarkdown)),
   );
+  const hasExplicitTaskItems = files.some(
+    (file) => file.status === "ready" && file.checked.length > 0,
+  );
+
+  if (!hasExplicitTaskItems) {
+    for (const file of files) {
+      if (file.status === "ready") {
+        const taskItemCount = prepareOrdinaryListItems(file.tree);
+        file.checked = Array.from({ length: taskItemCount }, () => false);
+      }
+    }
+  }
 
   const session = {
     source,
@@ -139,6 +151,36 @@ function prepareTaskItems(tree: ComarkTree): number {
         taskItemIndex += 1;
       }
     }
+  });
+
+  return taskItemIndex;
+}
+
+function prepareOrdinaryListItems(tree: ComarkTree): number {
+  let taskItemIndex = 0;
+
+  visitNodes(tree.nodes, (node) => {
+    if (!isOrdinaryListItem(node)) {
+      return;
+    }
+
+    const taskContent = findOrdinaryListItemContent(node);
+    if (taskContent === null) {
+      return;
+    }
+
+    const checkbox = createTaskCheckbox();
+    prepareTaskCheckbox(checkbox, taskItemIndex);
+
+    const labelChildren: ComarkNode[] = [checkbox, ...taskContent.labelChildren];
+    taskContent.container.splice(
+      taskContent.startIndex,
+      taskContent.endIndex - taskContent.startIndex,
+      ["label", { class: "checkgist-task-label" }, ...labelChildren],
+    );
+    addClassName(node, "task-list-item");
+    unwrapLeadingTaskItemParagraph(node, taskContent.container);
+    taskItemIndex += 1;
   });
 
   return taskItemIndex;
@@ -209,6 +251,55 @@ function findTaskItemContent(node: ComarkElement): {
   return null;
 }
 
+function findOrdinaryListItemContent(node: ComarkElement): {
+  container: ComarkElement;
+  labelChildren: ComarkNode[];
+  startIndex: number;
+  endIndex: number;
+} | null {
+  const firstContentNode = node[2] as ComarkNode | undefined;
+  if (
+    firstContentNode !== undefined &&
+    isElement(firstContentNode) &&
+    firstContentNode[0] === "p"
+  ) {
+    const paragraphContent = findListItemLabelContent(firstContentNode);
+    if (paragraphContent !== null) {
+      return { container: firstContentNode, ...paragraphContent };
+    }
+  }
+
+  const directContent = findListItemLabelContent(node);
+  if (directContent !== null) {
+    return { container: node, ...directContent };
+  }
+
+  return null;
+}
+
+function findListItemLabelContent(node: ComarkElement): {
+  labelChildren: ComarkNode[];
+  startIndex: number;
+  endIndex: number;
+} | null {
+  let startIndex = 2;
+  while (startIndex < node.length && !isTaskLabelContent(node[startIndex] as ComarkNode)) {
+    startIndex += 1;
+  }
+
+  let endIndex = startIndex;
+  while (endIndex < node.length && isTaskLabelContent(node[endIndex] as ComarkNode)) {
+    endIndex += 1;
+  }
+
+  const labelChildren = node.slice(startIndex, endIndex) as ComarkNode[];
+  if (!hasTaskLabelText(labelChildren)) {
+    return null;
+  }
+
+  return { labelChildren, startIndex, endIndex };
+}
+
 function findDirectTaskCheckbox(node: ComarkElement): {
   checkbox: ComarkElement;
   checkboxIndex: number;
@@ -223,12 +314,49 @@ function findDirectTaskCheckbox(node: ComarkElement): {
   return null;
 }
 
+function createTaskCheckbox(): ComarkElement {
+  return [
+    "input",
+    {
+      class: "task-list-item-checkbox",
+      type: "checkbox",
+    },
+  ];
+}
+
 function prepareTaskCheckbox(checkbox: ComarkElement, taskItemIndex: number): void {
   checkbox[1]["data-checkgist-task-index"] = String(taskItemIndex);
   delete checkbox[1][":checked"];
   delete checkbox[1].checked;
   delete checkbox[1][":disabled"];
   delete checkbox[1].disabled;
+}
+
+function addClassName(node: ComarkElement, className: string): void {
+  const currentClassName = node[1].class;
+  if (typeof currentClassName !== "string" || currentClassName.trim().length === 0) {
+    node[1].class = className;
+    return;
+  }
+
+  const classNames = currentClassName.split(/\s+/);
+  if (!classNames.includes(className)) {
+    node[1].class = [...classNames, className].join(" ");
+  }
+}
+
+function hasTaskLabelText(nodes: ComarkNode[]): boolean {
+  return nodes.some((node) => {
+    if (typeof node === "string") {
+      return node.trim().length > 0;
+    }
+
+    if (!isElement(node)) {
+      return false;
+    }
+
+    return hasTaskLabelText(elementChildren(node));
+  });
 }
 
 function isTaskLabelContent(node: ComarkNode): boolean {
@@ -256,6 +384,10 @@ function isTaskListItem(node: ComarkNode): node is ComarkElement {
 
   const className = node[1].class;
   return typeof className === "string" && className.split(/\s+/).includes("task-list-item");
+}
+
+function isOrdinaryListItem(node: ComarkNode): node is ComarkElement {
+  return isElement(node) && node[0] === "li" && !isTaskListItem(node);
 }
 
 function visitNodes(nodes: ComarkNode[], visit: (node: ComarkNode) => void): void {

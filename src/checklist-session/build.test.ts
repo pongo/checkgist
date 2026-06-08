@@ -135,6 +135,96 @@ describe("buildChecklistSession", () => {
     });
   });
 
+  it("converts ordinary list items to Task Items when Source Content has no explicit Task Items", async () => {
+    const session = await buildChecklistSession(
+      createSource([
+        {
+          status: "ready",
+          id: "one.md",
+          name: "one.md",
+          content: "- Install deps\n- Run tests\n  - Fix failures",
+        },
+        {
+          status: "ready",
+          id: "two.md",
+          name: "two.md",
+          content: "1. Deploy\n2. Verify logs",
+        },
+      ]),
+    );
+
+    expect(session.hasTaskItems).toBe(true);
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [false, false, false],
+    });
+    expect(session.files[1]).toMatchObject({
+      status: "ready",
+      checked: [false, false],
+    });
+
+    const treeJson = JSON.stringify(
+      session.files.flatMap((file) => (file.status === "ready" ? file.tree.nodes : [])),
+    );
+    expect(treeJson.match(/checkgist-task-label/g)).toHaveLength(5);
+    expect(treeJson).toContain('"class":"task-list-item"');
+    expect(treeJson).toContain('"data-checkgist-task-index"');
+  });
+
+  it("keeps ordinary list items unchanged when Source Content has explicit Task Items", async () => {
+    const session = await buildChecklistSession(
+      createSource([
+        {
+          status: "ready",
+          id: "explicit.md",
+          name: "explicit.md",
+          content: "- [ ] Explicit task",
+        },
+        {
+          status: "ready",
+          id: "ordinary.md",
+          name: "ordinary.md",
+          content: "- Plain list item",
+        },
+      ]),
+    );
+
+    expect(session.hasTaskItems).toBe(true);
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [false],
+    });
+    expect(session.files[1]).toMatchObject({
+      status: "ready",
+      checked: [],
+    });
+    expect(
+      JSON.stringify(session.files[1]?.status === "ready" ? session.files[1].tree.nodes : []),
+    ).not.toContain("checkgist-task-label");
+  });
+
+  it("skips ordinary list items that only group nested list items", async () => {
+    const session = await buildChecklistSession(
+      createSource([
+        {
+          status: "ready",
+          id: "nested.md",
+          name: "nested.md",
+          content: "-\n  - Child task",
+        },
+      ]),
+    );
+
+    expect(session.hasTaskItems).toBe(true);
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [false],
+    });
+    expect(
+      JSON.stringify(session.files[0]?.status === "ready" ? session.files[0].tree.nodes : []),
+    ).toContain("Child task");
+  });
+
   it("converts Source File errors to Checklist File errors", async () => {
     const session = await buildChecklistSession(
       createSource([
