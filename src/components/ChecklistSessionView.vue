@@ -84,13 +84,21 @@ defineExpose({
     <section
       v-for="file in session.files"
       :key="file.id"
-      class="space-y-3 border-t border-zinc-200 pt-5 first:border-t-0 first:pt-0 dark:border-zinc-800"
+      :class="
+        file.status === 'ready'
+          ? 'overflow-hidden rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950'
+          : ''
+      "
     >
       <template v-if="file.status === 'ready'">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <h2 class="break-all text-base font-semibold">{{ file.sourceFile.name }}</h2>
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/40"
+        >
+          <h2 class="break-all text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            {{ file.sourceFile.name }}
+          </h2>
           <button
-            class="min-h-9 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            class="min-h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
             type="button"
             @click="onResetFile(file.id)"
           >
@@ -99,7 +107,7 @@ defineExpose({
         </div>
 
         <article
-          class="markdown-body checkgist-markdown"
+          class="markdown-body checkgist-markdown px-4 py-5"
           @click="onTaskLabelClick(file, $event)"
           @change="onTaskChange(file, $event)"
         >
