@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
 
         <div v-if="session" class="flex flex-wrap items-center justify-end gap-3">
           <a
-            class="min-h-10 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            class="min-h-8 rounded-md border border-zinc-300 px-3 content-center text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
             :href="currentChecklistSessionUrl"
             @click.prevent="copyCurrentChecklistSessionLink"
           >
@@ -153,7 +153,7 @@ onBeforeUnmount(() => {
           </a>
 
           <a
-            class="min-h-10 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            class="min-h-8 rounded-md border border-zinc-300 px-3 content-center text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
             :href="session.source.metadata.url"
             rel="noopener noreferrer"
             target="_blank"
@@ -162,7 +162,7 @@ onBeforeUnmount(() => {
           </a>
 
           <button
-            class="min-h-10 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            class="min-h-8 rounded-md border border-zinc-300 px-3 content-center text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
             type="button"
             @click="resetCurrentChecklistSession"
           >
@@ -186,7 +186,7 @@ onBeforeUnmount(() => {
       <template v-else-if="session">
         <p
           v-if="session.source.metadata.description"
-          class="break-words text-sm leading-6 text-zinc-700 dark:text-zinc-300"
+          class="wrap-break-word text-sm leading-6 text-zinc-700 dark:text-zinc-300"
         >
           {{ session.source.metadata.description }}
         </p>
