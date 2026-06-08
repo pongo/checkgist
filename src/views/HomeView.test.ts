@@ -1,34 +1,48 @@
+import type { VueWrapper } from "@vue/test-utils";
 import { mount } from "@vue/test-utils";
 import { nextTick } from "vue";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { unsupportedSourceUrlMessage } from "@/source-services/registry";
 
 import HomeView from "./HomeView.vue";
 
-const push = vi.fn<(path: string) => Promise<void>>();
+const push = vi.hoisted(() => vi.fn<(path: string) => Promise<void>>());
+const homeViewMountOptions = {
+  global: {
+    stubs: {
+      RouterLink: true,
+    },
+  },
+} as const;
 
 vi.mock("vue-router", () => ({
   useRouter: () => ({ push }),
 }));
 
 describe("HomeView", () => {
+  let wrapper: VueWrapper | undefined;
+
   beforeEach(() => {
     push.mockReset();
   });
 
+  afterEach(() => {
+    wrapper?.unmount();
+    wrapper = undefined;
+  });
+
   it("focuses the source input when mounted", async () => {
-    const wrapper = mount(HomeView, { attachTo: document.body });
+    wrapper = mount(HomeView, { ...homeViewMountOptions, attachTo: document.body });
 
     await nextTick();
 
     expect(document.activeElement).toBe(wrapper.get("input").element);
-    wrapper.unmount();
   });
 
   it("opens a normalized route from the Open button", async () => {
     push.mockResolvedValueOnce(undefined);
-    const wrapper = mount(HomeView);
+    wrapper = mount(HomeView, homeViewMountOptions);
 
     await wrapper.get("input").setValue("gist.github.com/octocat/abc123/");
     await wrapper.get("form").trigger("submit");
@@ -39,7 +53,7 @@ describe("HomeView", () => {
 
   it("opens a normalized route from Enter submit", async () => {
     push.mockResolvedValueOnce(undefined);
-    const wrapper = mount(HomeView);
+    wrapper = mount(HomeView, homeViewMountOptions);
 
     await wrapper.get("input").setValue("https://pastebin.com/raw/HdpnureE");
     await wrapper.get("input").trigger("keydown.enter");
@@ -49,7 +63,7 @@ describe("HomeView", () => {
   });
 
   it("shows an inline error for unsupported input", async () => {
-    const wrapper = mount(HomeView);
+    wrapper = mount(HomeView, homeViewMountOptions);
 
     await wrapper.get("input").setValue("HdpnureE");
     await wrapper.get("form").trigger("submit");
