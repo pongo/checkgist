@@ -61,11 +61,15 @@ function onResetFile(fileId: string) {
   }
 }
 
-function onResetAll() {
+function resetAllTasks() {
   resetAll(props.session);
   markdownRenderVersion.value += 1;
   replaceBrowserHashState(props.session);
 }
+
+defineExpose({
+  resetAllTasks,
+});
 </script>
 
 <template>
@@ -76,16 +80,6 @@ function onResetAll() {
     >
       No task items found in this source.
     </p>
-
-    <div class="flex justify-end">
-      <button
-        class="min-h-10 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
-        type="button"
-        @click="onResetAll"
-      >
-        Reset all
-      </button>
-    </div>
 
     <section
       v-for="file in session.files"

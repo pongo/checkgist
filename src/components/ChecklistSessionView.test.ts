@@ -124,11 +124,7 @@ describe("ChecklistSessionView", () => {
     expect(wrapper.text()).toContain("two.md");
     expect(wrapper.text()).toContain("broken.md");
     expect(wrapper.text()).toContain("Broken file.");
-    expect(wrapper.findAll("button").map((button) => button.text())).toEqual([
-      "Reset all",
-      "Reset",
-      "Reset",
-    ]);
+    expect(wrapper.findAll("button").map((button) => button.text())).toEqual(["Reset", "Reset"]);
   });
 
   it("updates file-local checkbox state and replaces the browser hash", async () => {
@@ -151,7 +147,7 @@ describe("ChecklistSessionView", () => {
 
     await wrapper.findAll("input")[0]?.setValue(true);
     await wrapper.findAll("input")[3]?.setValue(true);
-    await wrapper.findAll("button")[1]?.trigger("click");
+    await wrapper.findAll("button")[0]?.trigger("click");
 
     expect(session.files[0]).toMatchObject({
       status: "ready",
@@ -164,32 +160,6 @@ describe("ChecklistSessionView", () => {
     expect(wrapper.findAll<HTMLInputElement>("input")[0]?.element.checked).toBe(false);
     expect(wrapper.findAll<HTMLInputElement>("input")[1]?.element.checked).toBe(false);
     expect(wrapper.findAll<HTMLInputElement>("input")[3]?.element.checked).toBe(true);
-    expect(replaceBrowserHashState).toHaveBeenCalledWith(session);
-  });
-
-  it("resets all ready files while tolerating error files", async () => {
-    const session = createSession();
-    const wrapper = mountSession(session);
-
-    await wrapper.findAll("input")[0]?.setValue(true);
-    await wrapper.findAll("input")[3]?.setValue(true);
-    await wrapper.findAll("button")[0]?.trigger("click");
-
-    expect(session.files[0]).toMatchObject({
-      status: "ready",
-      checked: [false, false],
-    });
-    expect(session.files[2]).toMatchObject({
-      status: "ready",
-      checked: [false, false],
-    });
-    expect(session.files[1]).toMatchObject({
-      status: "error",
-      error: { message: "Broken file." },
-    });
-    expect(
-      wrapper.findAll<HTMLInputElement>("input").map((input) => input.element.checked),
-    ).toEqual([false, false, false, false]);
     expect(replaceBrowserHashState).toHaveBeenCalledWith(session);
   });
 });

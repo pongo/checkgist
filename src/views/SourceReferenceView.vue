@@ -23,6 +23,7 @@ const reference = computed(() => {
 });
 
 const session = ref<ChecklistSession | null>(null);
+const checklistSessionView = ref<InstanceType<typeof ChecklistSessionView> | null>(null);
 const isLoading = ref(false);
 const loadError = ref("");
 const isCopyLinkCopied = ref(false);
@@ -99,6 +100,10 @@ async function copyCurrentChecklistSessionLink() {
   }, 2000);
 }
 
+function resetCurrentChecklistSession() {
+  checklistSessionView.value?.resetAllTasks();
+}
+
 watch(reference, (nextReference) => void loadSource(nextReference), { immediate: true });
 
 onMounted(() => {
@@ -141,6 +146,14 @@ onBeforeUnmount(() => {
           >
             View source
           </a>
+
+          <button
+            class="min-h-10 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            type="button"
+            @click="resetCurrentChecklistSession"
+          >
+            Reset all
+          </button>
         </div>
       </header>
 
@@ -162,7 +175,7 @@ onBeforeUnmount(() => {
           {{ session.source.metadata.description }}
         </p>
 
-        <ChecklistSessionView :session="session" />
+        <ChecklistSessionView ref="checklistSessionView" :session="session" />
       </template>
     </section>
   </main>

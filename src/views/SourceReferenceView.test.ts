@@ -1,4 +1,5 @@
 import type { ComarkElement, ComarkNode, ComarkTree } from "comark";
+import type { VueWrapper } from "@vue/test-utils";
 import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h, nextTick, reactive } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -169,6 +170,16 @@ async function mountLoadedSource(source: SourceContent) {
   return wrapper;
 }
 
+function getButtonByText(wrapper: VueWrapper, text: string) {
+  const button = wrapper.findAll("button").find((candidate) => candidate.text() === text);
+
+  if (button === undefined) {
+    throw new Error(`Button not found: ${text}`);
+  }
+
+  return button;
+}
+
 describe("SourceReferenceView", () => {
   beforeEach(() => {
     route.path = "/pastebin.com/HdpnureE";
@@ -203,6 +214,7 @@ describe("SourceReferenceView", () => {
     expect(sourceLink.text()).toBe("View source");
     expect(sourceLink.attributes("target")).toBe("_blank");
     expect(sourceLink.attributes("rel")).toBe("noopener noreferrer");
+    expect(wrapper.text()).toContain("Reset all");
     expect(wrapper.text()).toContain("Copy link");
 
     expect(wrapper.text()).toContain("Source description");
@@ -287,6 +299,52 @@ describe("SourceReferenceView", () => {
     expect(wrapper.text()).toContain("Raw file failed.");
   });
 
+  it("resets all ready files from the source header while tolerating error files", async () => {
+    window.history.replaceState(null, "", "/pastebin.com/HdpnureE");
+    const wrapper = await mountLoadedSource(
+      createSource({
+        files: [
+          {
+            status: "ready",
+            id: "one.md",
+            name: "one.md",
+            content: "- [ ] First task",
+          },
+          {
+            status: "error",
+            id: "broken.md",
+            name: "broken.md",
+            error: { message: "Raw file failed." },
+          },
+          {
+            status: "ready",
+            id: "two.md",
+            name: "two.md",
+            content: "- [ ] Second task",
+          },
+        ],
+      }),
+    );
+
+    const checkboxes = wrapper.findAll<HTMLInputElement>("input[type='checkbox']");
+    await checkboxes[0]?.setValue(true);
+    await checkboxes[1]?.setValue(true);
+
+    expect(window.location.hash).toBe("#11");
+
+    await getButtonByText(wrapper, "Reset all").trigger("click");
+    await nextTick();
+
+    expect(wrapper.text()).toContain("broken.md");
+    expect(wrapper.text()).toContain("Raw file failed.");
+    expect(
+      wrapper
+        .findAll<HTMLInputElement>("input[type='checkbox']")
+        .map((input) => input.element.checked),
+    ).toEqual([false, false]);
+    expect(window.location.hash).toBe("");
+  });
+
   it("treats invalid hash state as unchecked and normalizes it on the next checkbox change", async () => {
     window.history.replaceState(null, "", "/pastebin.com/HdpnureE#not-state");
     const wrapper = await mountLoadedSource(createPastebinSource("HdpnureE", "- [x] Ignored"));
@@ -342,7 +400,7 @@ describe("SourceReferenceView", () => {
     window.history.replaceState(null, "", "/pastebin.com/HdpnureE#10");
     const wrapper = await mountLoadedSource(createSource());
 
-    const copyLinkButton = wrapper.get("button");
+    const copyLinkButton = getButtonByText(wrapper, "Copy link");
     await copyLinkButton.trigger("click");
     await flushPromises();
 
@@ -369,12 +427,12 @@ describe("SourceReferenceView", () => {
     });
 
     await flushPromises();
-    await wrapper.get("button").trigger("click");
+    await getButtonByText(wrapper, "Copy link").trigger("click");
     await flushPromises();
 
     expect(wrapper.find("[role='alert']").exists()).toBe(false);
     expect(wrapper.text()).not.toContain("Could not copy link.");
-    expect(wrapper.get("button").text()).toBe("Copy link");
+    expect(getButtonByText(wrapper, "Copy link").text()).toBe("Copy link");
   });
 
   it("aborts the previous source load and ignores its stale resolved result", async () => {
