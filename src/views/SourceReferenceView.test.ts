@@ -1,7 +1,7 @@
 import type { ComarkElement, ComarkNode, ComarkTree } from "comark";
 import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h, nextTick, reactive } from "vue";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SourceContent, SourceReference } from "@/source-services/types";
 
@@ -122,9 +122,15 @@ function createDeferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-function mountSourceReferenceView() {
+function mountSourceReferenceView(options: { errorHandler?: (error: unknown) => void } = {}) {
   return mount(SourceReferenceView, {
     global: {
+      config:
+        options.errorHandler === undefined
+          ? undefined
+          : {
+              errorHandler: options.errorHandler,
+            },
       stubs: {
         ComarkRenderer: defineComponent({
           props: {
@@ -177,6 +183,10 @@ describe("SourceReferenceView", () => {
     });
     document.title = "Checkgist";
     window.history.replaceState(null, "", "/");
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("loads the source route and renders the loaded source shell", async () => {
@@ -328,27 +338,43 @@ describe("SourceReferenceView", () => {
   });
 
   it("copies the current Checklist Session URL including route and Task Item State hash", async () => {
+    vi.useFakeTimers();
     window.history.replaceState(null, "", "/pastebin.com/HdpnureE#10");
     const wrapper = await mountLoadedSource(createSource());
 
-    await wrapper.get("button[aria-describedby='copy-link-feedback']").trigger("click");
+    const copyLinkButton = wrapper.get("button");
+    await copyLinkButton.trigger("click");
     await flushPromises();
 
     expect(writeClipboardText).toHaveBeenCalledWith(
       expect.stringMatching(/\/pastebin\.com\/HdpnureE#10$/),
     );
-    expect(wrapper.text()).toContain("Link copied.");
+    expect(copyLinkButton.text()).toBe("Copied");
     expect(window.location.hash).toBe("#10");
+
+    vi.advanceTimersByTime(2000);
+    await nextTick();
+
+    expect(copyLinkButton.text()).toBe("Copy link");
   });
 
-  it("shows a visible error when copying the Checklist Session URL fails", async () => {
+  it("does not show a visible error when copying the Checklist Session URL fails", async () => {
     writeClipboardText.mockRejectedValueOnce(new Error("denied"));
-    const wrapper = await mountLoadedSource(createSource());
+    loadSource.mockResolvedValueOnce(createSource());
+    const wrapper = mountSourceReferenceView({
+      errorHandler: (error) => {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toBe("denied");
+      },
+    });
 
-    await wrapper.get("button[aria-describedby='copy-link-feedback']").trigger("click");
+    await flushPromises();
+    await wrapper.get("button").trigger("click");
     await flushPromises();
 
-    expect(wrapper.get("[role='alert']").text()).toBe("Could not copy link.");
+    expect(wrapper.find("[role='alert']").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Could not copy link.");
+    expect(wrapper.get("button").text()).toBe("Copy link");
   });
 
   it("aborts the previous source load and ignores its stale resolved result", async () => {
