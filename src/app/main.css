@@ -13,6 +13,22 @@
   max-width: 100%;
 }
 
+.checkgist-markdown ul {
+  list-style-type: disc;
+}
+
+.checkgist-markdown ul ul {
+  list-style-type: circle;
+}
+
+.checkgist-markdown ul ul ul {
+  list-style-type: square;
+}
+
+.checkgist-markdown ol {
+  list-style-type: decimal;
+}
+
 .checkgist-markdown .checkgist-task-label {
   cursor: pointer;
 }
