@@ -61,7 +61,7 @@ onMounted(() => {
             autocomplete="off"
           />
           <button
-            class="min-h-11 rounded-md bg-zinc-950 px-5 font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950/20 dark:border dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800 dark:focus:ring-blue-600/30"
+            class="min-h-11 rounded-md px-5 font-medium text-base transition border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-950/20 dark:border dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800 dark:focus:ring-blue-600/30 hover:bg-zinc-100"
             type="submit"
           >
             Open
