@@ -36,7 +36,7 @@ onMounted(() => {
 
 <template>
   <main
-    class="min-h-screen bg-white px-4 pt-14 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50 sm:px-6 sm:pt-20"
+    class="min-h-screen bg-white px-4 pt-14 text-zinc-950 sm:px-6 sm:pt-20 dark:bg-zinc-950 dark:text-zinc-50"
   >
     <section class="mx-auto w-full max-w-xl">
       <div>
@@ -45,7 +45,7 @@ onMounted(() => {
           Turn Markdown task lists into interactive checklists.
           <RouterLink
             to="/gist.github.com/6850950b2f317048e6c59fe2878c1fda"
-            class="border-b-2 border-[#0969da] hover:text-[#0969da] dark:hover:text-[#4493f8] dark:border-[#4493f8]"
+            class="border-b-2 border-[#0969da] hover:text-[#0969da] dark:border-[#4493f8] dark:hover:text-[#4493f8]"
             >Example</RouterLink
           >
         </p>
@@ -60,13 +60,13 @@ onMounted(() => {
             v-model="sourceUrl"
             aria-describedby="source-url-error"
             :aria-invalid="inputError.length > 0"
-            class="min-h-11 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:ring-2 focus:ring-zinc-950/10 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-blue-600/30"
+            class="min-h-11 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-base transition outline-none focus:ring-2 focus:ring-zinc-950/10 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-blue-600/30"
             placeholder="Paste a GitHub Gist or supported URL"
             type="text"
             autocomplete="off"
           />
           <button
-            class="min-h-11 rounded-md px-5 font-medium text-base transition border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-950/20 dark:border dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800 dark:focus:ring-blue-600/30 hover:bg-zinc-100"
+            class="min-h-11 rounded-md border border-zinc-300 px-5 text-base font-medium transition hover:bg-zinc-100 focus:ring-2 focus:ring-zinc-950/20 focus:outline-none dark:border dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800 dark:focus:ring-blue-600/30"
             type="submit"
           >
             Open

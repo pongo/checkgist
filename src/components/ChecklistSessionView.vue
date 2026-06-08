@@ -105,11 +105,11 @@ defineExpose({
         <div
           class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50 px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/40"
         >
-          <h2 class="break-all text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+          <h2 class="text-sm font-semibold break-all text-zinc-800 dark:text-zinc-200">
             {{ file.sourceFile.name }}
           </h2>
           <button
-            class="min-h-7 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+            class="min-h-7 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
             type="button"
             @click="onResetFile(file.id)"
           >
@@ -135,7 +135,7 @@ defineExpose({
         v-else
         class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300"
       >
-        <p class="break-all font-medium">{{ file.sourceFile.name }}</p>
+        <p class="font-medium break-all">{{ file.sourceFile.name }}</p>
         <p>{{ file.error.message }}</p>
       </div>
     </section>
