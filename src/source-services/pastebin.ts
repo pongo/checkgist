@@ -1,10 +1,8 @@
-import { ofetch } from "ofetch";
-
-import type { PastebinReference, SourceContent, SourceService } from "./types";
+import { corsProxySourceFetcher } from "./fetcher";
+import type { PastebinReference, SourceContent, SourceLoadOptions, SourceService } from "./types";
 import { SourceLoadError } from "./types";
 
 const PASTEBIN_HOST = "pastebin.com";
-const CORS_PROXY_URL = "https://corsproxy.io/?url=";
 
 function isNonEmptySegment(segment: string | undefined): segment is string {
   return segment !== undefined && segment.length > 0;
@@ -16,10 +14,6 @@ function pastebinPageUrl(pasteId: string): string {
 
 function pastebinRawUrl(pasteId: string): string {
   return `https://pastebin.com/raw/${pasteId}`;
-}
-
-function proxiedUrl(url: string): string {
-  return `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
 }
 
 export const pastebinService: SourceService<PastebinReference> = {
@@ -58,14 +52,12 @@ export const pastebinService: SourceService<PastebinReference> = {
     return [PASTEBIN_HOST, reference.pasteId];
   },
 
-  async load(
-    reference: PastebinReference,
-    options?: { signal?: AbortSignal },
-  ): Promise<SourceContent> {
+  async load(reference: PastebinReference, options?: SourceLoadOptions): Promise<SourceContent> {
     let content: string;
+    const fetcher = options?.fetcher ?? corsProxySourceFetcher;
 
     try {
-      content = await ofetch<string>(proxiedUrl(pastebinRawUrl(reference.pasteId)), {
+      content = await fetcher<string>(pastebinRawUrl(reference.pasteId), {
         signal: options?.signal,
       });
     } catch {

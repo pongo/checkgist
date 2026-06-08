@@ -1,6 +1,11 @@
-import { ofetch } from "ofetch";
-
-import type { GitHubGistReference, SourceFile, SourceContent, SourceService } from "./types";
+import { directSourceFetcher } from "./fetcher";
+import type {
+  GitHubGistReference,
+  SourceFile,
+  SourceContent,
+  SourceLoadOptions,
+  SourceService,
+} from "./types";
 import { SourceLoadError } from "./types";
 
 const GIST_HOST = "gist.github.com";
@@ -34,9 +39,10 @@ function mapDescription(trimmedDescription: string | undefined) {
 
 async function loadGistFile(
   file: GitHubGistApiFile,
-  options?: { signal?: AbortSignal },
+  options?: SourceLoadOptions,
 ): Promise<SourceFile> {
   const filename = file.filename ?? "Untitled";
+  const fetcher = options?.fetcher ?? directSourceFetcher;
 
   if (file.truncated === true) {
     try {
@@ -44,7 +50,7 @@ async function loadGistFile(
         throw new Error("Missing raw URL.");
       }
 
-      const content = await ofetch<string>(file.raw_url, {
+      const content = await fetcher<string>(file.raw_url, {
         signal: options?.signal,
       });
 
@@ -108,14 +114,12 @@ export const githubGistService: SourceService<GitHubGistReference> = {
     return [GIST_HOST, reference.gistId];
   },
 
-  async load(
-    reference: GitHubGistReference,
-    options?: { signal?: AbortSignal },
-  ): Promise<SourceContent> {
+  async load(reference: GitHubGistReference, options?: SourceLoadOptions): Promise<SourceContent> {
     let response: GitHubGistApiResponse;
+    const fetcher = options?.fetcher ?? directSourceFetcher;
 
     try {
-      response = await ofetch<GitHubGistApiResponse>(
+      response = await fetcher<GitHubGistApiResponse>(
         `https://api.github.com/gists/${reference.gistId}`,
         { signal: options?.signal },
       );

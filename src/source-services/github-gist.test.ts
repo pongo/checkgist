@@ -1,26 +1,24 @@
-import { ofetch } from "ofetch";
-import type { $Fetch } from "ofetch";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { githubGistService } from "./github-gist";
+import type { SourceFetcher } from "./types";
 import { SourceLoadError } from "./types";
 
-const ofetchMock = vi.hoisted(() => vi.fn<$Fetch>());
-
-vi.mock("ofetch", () => ({
-  ofetch: ofetchMock,
-}));
-
-const mockedOfetch = vi.mocked(ofetch);
-
 describe("githubGistService.load", () => {
+  const fetcherMock =
+    vi.fn<(url: string, options?: { signal?: AbortSignal }) => Promise<unknown>>();
+  const fetcher: SourceFetcher = async <TResponse>(
+    url: string,
+    options?: { signal?: AbortSignal },
+  ) => (await fetcherMock(url, options)) as TResponse;
+
   beforeEach(() => {
-    mockedOfetch.mockReset();
+    fetcherMock.mockReset();
   });
 
   it("loads a gist and maps metadata and files in API object value order", async () => {
     const signal = new AbortController().signal;
-    mockedOfetch.mockResolvedValueOnce({
+    fetcherMock.mockResolvedValueOnce({
       description: "  Release checklist  ",
       html_url: "https://gist.github.com/octocat/gist-1",
       files: {
@@ -39,10 +37,10 @@ describe("githubGistService.load", () => {
 
     const source = await githubGistService.load(
       { type: "github-gist", gistId: "gist-1" },
-      { signal },
+      { fetcher, signal },
     );
 
-    expect(mockedOfetch).toHaveBeenCalledWith("https://api.github.com/gists/gist-1", { signal });
+    expect(fetcherMock).toHaveBeenCalledWith("https://api.github.com/gists/gist-1", { signal });
     expect(source).toEqual({
       reference: { type: "github-gist", gistId: "gist-1" },
       metadata: {
@@ -68,7 +66,7 @@ describe("githubGistService.load", () => {
   });
 
   it("omits empty descriptions and uses a deterministic source URL fallback", async () => {
-    mockedOfetch.mockResolvedValueOnce({
+    fetcherMock.mockResolvedValueOnce({
       description: "   ",
       files: {
         "todo.md": {
@@ -79,10 +77,13 @@ describe("githubGistService.load", () => {
       },
     });
 
-    const source = await githubGistService.load({
-      type: "github-gist",
-      gistId: "gist-2",
-    });
+    const source = await githubGistService.load(
+      {
+        type: "github-gist",
+        gistId: "gist-2",
+      },
+      { fetcher },
+    );
 
     expect(source.metadata).toEqual({
       title: "gist-2",
@@ -92,7 +93,7 @@ describe("githubGistService.load", () => {
 
   it("loads full content for truncated files from their raw URL", async () => {
     const signal = new AbortController().signal;
-    mockedOfetch.mockResolvedValueOnce({
+    fetcherMock.mockResolvedValueOnce({
       description: null,
       files: {
         "large.md": {
@@ -103,18 +104,16 @@ describe("githubGistService.load", () => {
         },
       },
     });
-    mockedOfetch.mockResolvedValueOnce("- [ ] full content");
+    fetcherMock.mockResolvedValueOnce("- [ ] full content");
 
     const source = await githubGistService.load(
       { type: "github-gist", gistId: "gist-3" },
-      { signal },
+      { fetcher, signal },
     );
 
-    expect(mockedOfetch).toHaveBeenNthCalledWith(
-      2,
-      "https://gist.githubusercontent.com/raw-large",
-      { signal },
-    );
+    expect(fetcherMock).toHaveBeenNthCalledWith(2, "https://gist.githubusercontent.com/raw-large", {
+      signal,
+    });
     expect(source.files).toEqual([
       {
         status: "ready",
@@ -126,7 +125,7 @@ describe("githubGistService.load", () => {
   });
 
   it("returns a file-level error when a truncated raw file fetch fails", async () => {
-    mockedOfetch.mockResolvedValueOnce({
+    fetcherMock.mockResolvedValueOnce({
       files: {
         "large.md": {
           filename: "large.md",
@@ -135,12 +134,15 @@ describe("githubGistService.load", () => {
         },
       },
     });
-    mockedOfetch.mockRejectedValueOnce(new Error("raw failed"));
+    fetcherMock.mockRejectedValueOnce(new Error("raw failed"));
 
-    const source = await githubGistService.load({
-      type: "github-gist",
-      gistId: "gist-4",
-    });
+    const source = await githubGistService.load(
+      {
+        type: "github-gist",
+        gistId: "gist-4",
+      },
+      { fetcher },
+    );
 
     expect(source.files).toEqual([
       {
@@ -155,10 +157,10 @@ describe("githubGistService.load", () => {
   });
 
   it("throws a source-level load error when the Gist API request fails", async () => {
-    mockedOfetch.mockRejectedValueOnce(new Error("api failed"));
+    fetcherMock.mockRejectedValueOnce(new Error("api failed"));
 
     await expect(
-      githubGistService.load({ type: "github-gist", gistId: "gist-5" }),
+      githubGistService.load({ type: "github-gist", gistId: "gist-5" }, { fetcher }),
     ).rejects.toMatchObject({
       name: SourceLoadError.name,
       message: "Failed to load GitHub Gist.",
@@ -166,10 +168,10 @@ describe("githubGistService.load", () => {
   });
 
   it("throws a source-level load error when the gist has no files", async () => {
-    mockedOfetch.mockResolvedValueOnce({ files: {} });
+    fetcherMock.mockResolvedValueOnce({ files: {} });
 
-    await expect(githubGistService.load({ type: "github-gist", gistId: "gist-6" })).rejects.toThrow(
-      "No files found in this gist.",
-    );
+    await expect(
+      githubGistService.load({ type: "github-gist", gistId: "gist-6" }, { fetcher }),
+    ).rejects.toThrow("No files found in this gist.");
   });
 });

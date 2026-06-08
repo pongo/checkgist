@@ -1,36 +1,31 @@
-import { ofetch } from "ofetch";
-import type { $Fetch } from "ofetch";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { pastebinService } from "./pastebin";
+import type { SourceFetcher } from "./types";
 import { SourceLoadError } from "./types";
 
-const ofetchMock = vi.hoisted(() => vi.fn<$Fetch>());
-
-vi.mock("ofetch", () => ({
-  ofetch: ofetchMock,
-}));
-
-const mockedOfetch = vi.mocked(ofetch);
-
 describe("pastebinService.load", () => {
+  const fetcherMock =
+    vi.fn<(url: string, options?: { signal?: AbortSignal }) => Promise<unknown>>();
+  const fetcher: SourceFetcher = async <TResponse>(
+    url: string,
+    options?: { signal?: AbortSignal },
+  ) => (await fetcherMock(url, options)) as TResponse;
+
   beforeEach(() => {
-    mockedOfetch.mockReset();
+    fetcherMock.mockReset();
   });
 
   it("loads raw Pastebin content and maps one ready Source File", async () => {
     const signal = new AbortController().signal;
-    mockedOfetch.mockResolvedValueOnce("- [ ] pastebin task");
+    fetcherMock.mockResolvedValueOnce("- [ ] pastebin task");
 
     const source = await pastebinService.load(
       { type: "pastebin", pasteId: "HdpnureE" },
-      { signal },
+      { fetcher, signal },
     );
 
-    expect(mockedOfetch).toHaveBeenCalledWith(
-      "https://corsproxy.io/?url=https%3A%2F%2Fpastebin.com%2Fraw%2FHdpnureE",
-      { signal },
-    );
+    expect(fetcherMock).toHaveBeenCalledWith("https://pastebin.com/raw/HdpnureE", { signal });
     expect(source).toEqual({
       reference: { type: "pastebin", pasteId: "HdpnureE" },
       metadata: {
@@ -49,10 +44,10 @@ describe("pastebinService.load", () => {
   });
 
   it("throws a source-level load error when raw Pastebin loading fails", async () => {
-    mockedOfetch.mockRejectedValueOnce(new Error("pastebin failed"));
+    fetcherMock.mockRejectedValueOnce(new Error("pastebin failed"));
 
     await expect(
-      pastebinService.load({ type: "pastebin", pasteId: "HdpnureE" }),
+      pastebinService.load({ type: "pastebin", pasteId: "HdpnureE" }, { fetcher }),
     ).rejects.toMatchObject({
       name: SourceLoadError.name,
       message: "Failed to load Pastebin source.",

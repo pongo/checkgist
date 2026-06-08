@@ -52,10 +52,20 @@ export type SourceContent = {
   files: SourceFile[];
 };
 
+export type SourceFetcher = <TResponse>(
+  url: string,
+  options?: { signal?: AbortSignal },
+) => Promise<TResponse>;
+
+export type SourceLoadOptions = {
+  signal?: AbortSignal;
+  fetcher?: SourceFetcher;
+};
+
 export type SourceService<TReference extends SourceReference> = {
   type: TReference["type"];
   fromUrl(url: URL): TReference | null;
   fromRoute(path: string[]): TReference | null;
   toRoute(reference: TReference): string[];
-  load(reference: TReference, options?: { signal?: AbortSignal }): Promise<SourceContent>;
+  load(reference: TReference, options?: SourceLoadOptions): Promise<SourceContent>;
 };
