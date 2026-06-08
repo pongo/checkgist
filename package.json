@@ -24,6 +24,7 @@
     "@comark/vue": "^0.4.0",
     "@lucide/vue": "^1.17.0",
     "@tailwindcss/vite": "^4.3.0",
+    "github-markdown-css": "^5.9.0",
     "ofetch": "^1.5.1",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.3.0",

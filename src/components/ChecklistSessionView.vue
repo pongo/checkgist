@@ -99,7 +99,7 @@ defineExpose({
         </div>
 
         <article
-          class="prose max-w-none text-zinc-950 dark:text-zinc-50"
+          class="markdown-body checkgist-markdown"
           @click="onTaskLabelClick(file, $event)"
           @change="onTaskChange(file, $event)"
         >

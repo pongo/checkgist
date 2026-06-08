@@ -89,7 +89,10 @@ describe("buildChecklistSession", () => {
 
     expect(file.checked).toEqual([false, false, false, false]);
     const treeJson = JSON.stringify(file.tree.nodes);
-    expect(treeJson).toContain('["p",{},["label",{"class":"checkgist-task-label"},["input"');
+    expect(treeJson).not.toContain('["p",{},["label",{"class":"checkgist-task-label"},["input"');
+    expect(treeJson).toContain(
+      '["li",{"class":"task-list-item"},["label",{"class":"checkgist-task-label"},["input"',
+    );
     expect(treeJson).toContain("Parent task");
     expect(treeJson.match(/checkgist-task-label/g)).toHaveLength(4);
   });

@@ -1,1 +1,18 @@
 @import "tailwindcss";
+@import "github-markdown-css/github-markdown.css";
+
+.checkgist-markdown {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: none;
+  overflow-wrap: break-word;
+}
+
+.checkgist-markdown pre,
+.checkgist-markdown table {
+  max-width: 100%;
+}
+
+.checkgist-markdown .checkgist-task-label {
+  cursor: pointer;
+}
