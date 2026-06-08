@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ComarkRenderer } from "@comark/vue";
 import { ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
-import { replaceBrowserHashState } from "@/checklist-session/browser-state";
+import { encodeBrowserHashState } from "@/checklist-session/browser-state";
 import { resetAll, resetFile, setTaskChecked } from "@/checklist-session/state";
 import type { ChecklistReadyFile, ChecklistSession } from "@/checklist-session/types";
 
@@ -10,7 +11,17 @@ const props = defineProps<{
   session: ChecklistSession;
 }>();
 
+const route = useRoute();
+const router = useRouter();
 const markdownRenderVersion = ref(0);
+
+function replaceChecklistRouteHash() {
+  void router.replace({
+    path: route.path,
+    query: route.query,
+    hash: encodeBrowserHashState(props.session),
+  });
+}
 
 function onTaskChange(file: ChecklistReadyFile, event: Event) {
   const target = event.target;
@@ -20,7 +31,7 @@ function onTaskChange(file: ChecklistReadyFile, event: Event) {
 
   const taskIndex = Number(target.dataset.checkgistTaskIndex);
   if (setTaskChecked(props.session, file.id, taskIndex, target.checked)) {
-    replaceBrowserHashState(props.session);
+    replaceChecklistRouteHash();
   }
 }
 
@@ -50,21 +61,21 @@ function onTaskLabelClick(file: ChecklistReadyFile, event: MouseEvent) {
   checkbox.checked = nextChecked;
 
   if (setTaskChecked(props.session, file.id, taskIndex, nextChecked)) {
-    replaceBrowserHashState(props.session);
+    replaceChecklistRouteHash();
   }
 }
 
 function onResetFile(fileId: string) {
   if (resetFile(props.session, fileId)) {
     markdownRenderVersion.value += 1;
-    replaceBrowserHashState(props.session);
+    replaceChecklistRouteHash();
   }
 }
 
 function resetAllTasks() {
   resetAll(props.session);
   markdownRenderVersion.value += 1;
-  replaceBrowserHashState(props.session);
+  replaceChecklistRouteHash();
 }
 
 defineExpose({

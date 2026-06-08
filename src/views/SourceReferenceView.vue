@@ -17,9 +17,15 @@ import { copyToClipboard } from "@/shared/clipboard.ts";
 
 const route = useRoute();
 
-const reference = computed(() => {
-  const path = route.path.split("/").filter(Boolean);
+function referenceFromRoutePath(routePath: string): SourceReference | null {
+  const path = routePath.split("/").filter(Boolean);
   return referenceFromRoute(path);
+}
+
+const currentChecklistSessionUrl = computed(() => {
+  // Touch route.fullPath so Vue recomputes this value after router-managed hash changes.
+  void route.fullPath;
+  return window.location.href;
 });
 
 const session = ref<ChecklistSession | null>(null);
@@ -91,7 +97,7 @@ async function loadSource(referenceToLoad: SourceReference | null) {
 }
 
 async function copyCurrentChecklistSessionLink() {
-  await copyToClipboard(window.location.href);
+  await copyToClipboard(currentChecklistSessionUrl.value);
 
   clearTimeout(copyLinkResetTimeout);
   isCopyLinkCopied.value = true;
@@ -104,7 +110,13 @@ function resetCurrentChecklistSession() {
   checklistSessionView.value?.resetAllTasks();
 }
 
-watch(reference, (nextReference) => void loadSource(nextReference), { immediate: true });
+watch(
+  () => route.path,
+  (nextPath) => void loadSource(referenceFromRoutePath(nextPath)),
+  {
+    immediate: true,
+  },
+);
 
 onMounted(() => {
   stopHashStateListener = listenToBrowserHashState(() => session.value);
@@ -132,13 +144,13 @@ onBeforeUnmount(() => {
         </RouterLink>
 
         <div v-if="session" class="flex flex-wrap items-center justify-end gap-3">
-          <button
-            class="min-h-10 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
-            type="button"
-            @click="copyCurrentChecklistSessionLink"
+          <a
+            class="min-h-10 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            :href="currentChecklistSessionUrl"
+            @click.prevent="copyCurrentChecklistSessionLink"
           >
             {{ isCopyLinkCopied ? "Copied" : "Copy link" }}
-          </button>
+          </a>
 
           <a
             class="min-h-10 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"

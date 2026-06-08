@@ -8,7 +8,17 @@ import type { SourceContent, SourceReference } from "@/source-services/types";
 
 import SourceReferenceView from "./SourceReferenceView.vue";
 
-const route = reactive({ path: "/pastebin.com/HdpnureE" });
+const route = reactive({
+  path: "/pastebin.com/HdpnureE",
+  query: {} as Record<string, string>,
+  hash: "",
+  fullPath: "/pastebin.com/HdpnureE",
+});
+const routerReplace = vi.hoisted(() =>
+  vi.fn<
+    (location: { path: string; query?: Record<string, string>; hash?: string }) => Promise<void>
+  >(),
+);
 const loadSource = vi.hoisted(() =>
   vi.fn<
     (reference: SourceReference, options: { signal?: AbortSignal }) => Promise<SourceContent>
@@ -28,6 +38,10 @@ vi.mock("vue-router", () => ({
     template: '<a :href="to" :data-router-link="to"><slot /></a>',
   },
   useRoute: () => route,
+  useRouter: () => ({
+    replace: routerReplace,
+    resolve: (fullPath: string) => ({ href: fullPath }),
+  }),
 }));
 
 vi.mock("@/source-services/registry", async (importOriginal) => {
@@ -123,6 +137,15 @@ function createDeferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
+function setRouteLocation(fullPath: string) {
+  const url = new URL(fullPath, window.location.origin);
+  route.path = url.pathname;
+  route.query = Object.fromEntries(url.searchParams.entries());
+  route.hash = url.hash;
+  route.fullPath = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState(null, "", route.fullPath);
+}
+
 function mountSourceReferenceView(options: { errorHandler?: (error: unknown) => void } = {}) {
   return mount(SourceReferenceView, {
     global: {
@@ -180,10 +203,33 @@ function getButtonByText(wrapper: VueWrapper, text: string) {
   return button;
 }
 
+function getChecklistSessionLink(wrapper: VueWrapper) {
+  const link = wrapper
+    .findAll("a")
+    .find((candidate) => candidate.attributes("href")?.startsWith(window.location.origin));
+
+  if (link === undefined) {
+    throw new Error("Checklist Session link not found.");
+  }
+
+  return link;
+}
+
 describe("SourceReferenceView", () => {
   beforeEach(() => {
-    route.path = "/pastebin.com/HdpnureE";
+    setRouteLocation("/pastebin.com/HdpnureE");
     loadSource.mockReset();
+    routerReplace.mockReset();
+    routerReplace.mockImplementation(
+      (location: { path: string; query?: Record<string, string>; hash?: string }) => {
+        const search = new URLSearchParams(location.query ?? {}).toString();
+        const nextFullPath = `${location.path}${search.length > 0 ? `?${search}` : ""}${
+          location.hash ?? ""
+        }`;
+        setRouteLocation(nextFullPath);
+        return Promise.resolve();
+      },
+    );
     writeClipboardText.mockReset();
     writeClipboardText.mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
@@ -193,7 +239,6 @@ describe("SourceReferenceView", () => {
       },
     });
     document.title = "Checkgist";
-    window.history.replaceState(null, "", "/");
   });
 
   afterEach(() => {
@@ -216,7 +261,9 @@ describe("SourceReferenceView", () => {
     expect(sourceLink.attributes("target")).toBe("_blank");
     expect(sourceLink.attributes("rel")).toBe("noopener noreferrer");
     expect(wrapper.text()).toContain("Reset all");
-    expect(wrapper.text()).toContain("Copy link");
+    const copyLink = getChecklistSessionLink(wrapper);
+    expect(copyLink.text()).toBe("Copy link");
+    expect(copyLink.attributes("href")).toMatch(/\/pastebin\.com\/HdpnureE$/);
 
     expect(wrapper.text()).toContain("Source description");
     expect(wrapper.text()).toContain("HdpnureE");
@@ -225,7 +272,7 @@ describe("SourceReferenceView", () => {
   });
 
   it("renders the primary Pastebin flow and updates the checkbox hash", async () => {
-    window.history.replaceState(null, "", "/pastebin.com/HdpnureE");
+    setRouteLocation("/pastebin.com/HdpnureE");
     const wrapper = await mountLoadedSource(
       createPastebinSource("HdpnureE", "- [ ] Pastebin task"),
     );
@@ -240,10 +287,14 @@ describe("SourceReferenceView", () => {
     await wrapper.get("input[type='checkbox']").setValue(true);
 
     expect(window.location.hash).toBe("#1");
+    expect(getChecklistSessionLink(wrapper).attributes("href")).toMatch(
+      /\/pastebin\.com\/HdpnureE#1$/,
+    );
+    expect(loadSource).toHaveBeenCalledTimes(1);
   });
 
   it("updates the checkbox hash when clicking Task Item text", async () => {
-    window.history.replaceState(null, "", "/pastebin.com/HdpnureE");
+    setRouteLocation("/pastebin.com/HdpnureE");
     const wrapper = await mountLoadedSource(
       createPastebinSource("HdpnureE", "- [ ] Clickable task text"),
     );
@@ -255,8 +306,7 @@ describe("SourceReferenceView", () => {
   });
 
   it("renders the primary GitHub Gist flow in file order and updates the checkbox hash", async () => {
-    route.path = "/gist.github.com/gist-1";
-    window.history.replaceState(null, "", "/gist.github.com/gist-1");
+    setRouteLocation("/gist.github.com/gist-1");
     const wrapper = await mountLoadedSource(createGitHubGistSource("gist-1"));
 
     expect(loadSource).toHaveBeenCalledWith(
@@ -300,7 +350,7 @@ describe("SourceReferenceView", () => {
   });
 
   it("resets all ready files from the source header while tolerating error files", async () => {
-    window.history.replaceState(null, "", "/pastebin.com/HdpnureE");
+    setRouteLocation("/pastebin.com/HdpnureE");
     const wrapper = await mountLoadedSource(
       createSource({
         files: [
@@ -346,7 +396,7 @@ describe("SourceReferenceView", () => {
   });
 
   it("treats invalid hash state as unchecked and normalizes it on the next checkbox change", async () => {
-    window.history.replaceState(null, "", "/pastebin.com/HdpnureE#not-state");
+    setRouteLocation("/pastebin.com/HdpnureE#not-state");
     const wrapper = await mountLoadedSource(createPastebinSource("HdpnureE", "- [x] Ignored"));
     const checkbox = wrapper.get<HTMLInputElement>("input[type='checkbox']");
 
@@ -397,23 +447,24 @@ describe("SourceReferenceView", () => {
 
   it("copies the current Checklist Session URL including route and Task Item State hash", async () => {
     vi.useFakeTimers();
-    window.history.replaceState(null, "", "/pastebin.com/HdpnureE#10");
+    setRouteLocation("/pastebin.com/HdpnureE#10");
     const wrapper = await mountLoadedSource(createSource());
 
-    const copyLinkButton = getButtonByText(wrapper, "Copy link");
-    await copyLinkButton.trigger("click");
+    const copyLink = getChecklistSessionLink(wrapper);
+    await copyLink.trigger("click");
     await flushPromises();
 
     expect(writeClipboardText).toHaveBeenCalledWith(
       expect.stringMatching(/\/pastebin\.com\/HdpnureE#10$/),
     );
-    expect(copyLinkButton.text()).toBe("Copied");
+    expect(copyLink.text()).toBe("Copied");
+    expect(copyLink.attributes("href")).toMatch(/\/pastebin\.com\/HdpnureE#10$/);
     expect(window.location.hash).toBe("#10");
 
     vi.advanceTimersByTime(2000);
     await nextTick();
 
-    expect(copyLinkButton.text()).toBe("Copy link");
+    expect(copyLink.text()).toBe("Copy link");
   });
 
   it("does not show a visible error when copying the Checklist Session URL fails", async () => {
@@ -427,12 +478,12 @@ describe("SourceReferenceView", () => {
     });
 
     await flushPromises();
-    await getButtonByText(wrapper, "Copy link").trigger("click");
+    await getChecklistSessionLink(wrapper).trigger("click");
     await flushPromises();
 
     expect(wrapper.find("[role='alert']").exists()).toBe(false);
     expect(wrapper.text()).not.toContain("Could not copy link.");
-    expect(getButtonByText(wrapper, "Copy link").text()).toBe("Copy link");
+    expect(getChecklistSessionLink(wrapper).text()).toBe("Copy link");
   });
 
   it("aborts the previous source load and ignores its stale resolved result", async () => {
@@ -449,7 +500,7 @@ describe("SourceReferenceView", () => {
     const firstSignal = loadSource.mock.calls[0]?.[1].signal;
     expect(firstSignal?.aborted).toBe(false);
 
-    route.path = "/pastebin.com/newer";
+    setRouteLocation("/pastebin.com/newer");
     await nextTick();
 
     expect(firstSignal?.aborted).toBe(true);
@@ -484,7 +535,7 @@ describe("SourceReferenceView", () => {
     const wrapper = mountSourceReferenceView();
     await nextTick();
 
-    route.path = "/pastebin.com/current";
+    setRouteLocation("/pastebin.com/current");
     await nextTick();
 
     firstLoad.reject(new Error("Stale load failed."));
