@@ -5,6 +5,10 @@ import { useRoute, useRouter } from "vue-router";
 
 import { encodeBrowserHashState } from "@/checklist-session/browser-state";
 import { resetAll, resetFile, setTaskChecked } from "@/checklist-session/state";
+import {
+  findTaskItemLabelElement,
+  taskItemIndexFromCheckboxElement,
+} from "@/checklist-session/task-item-dom";
 import type { ChecklistReadyFile, ChecklistSession } from "@/checklist-session/types";
 
 const props = defineProps<{
@@ -29,7 +33,11 @@ function onTaskChange(file: ChecklistReadyFile, event: Event) {
     return;
   }
 
-  const taskIndex = Number(target.dataset.checkgistTaskIndex);
+  const taskIndex = taskItemIndexFromCheckboxElement(target);
+  if (taskIndex === null) {
+    return;
+  }
+
   if (setTaskChecked(props.session, file.id, taskIndex, target.checked)) {
     replaceChecklistRouteHash();
   }
@@ -45,8 +53,8 @@ function onTaskLabelClick(file: ChecklistReadyFile, event: MouseEvent) {
     return;
   }
 
-  const label = target.closest(".checkgist-task-label");
-  if (!(label instanceof HTMLLabelElement)) {
+  const label = findTaskItemLabelElement(target);
+  if (label === null) {
     return;
   }
 
@@ -55,7 +63,11 @@ function onTaskLabelClick(file: ChecklistReadyFile, event: MouseEvent) {
     return;
   }
 
-  const taskIndex = Number(checkbox.dataset.checkgistTaskIndex);
+  const taskIndex = taskItemIndexFromCheckboxElement(checkbox);
+  if (taskIndex === null) {
+    return;
+  }
+
   const nextChecked = !checkbox.checked;
   event.preventDefault();
   checkbox.checked = nextChecked;

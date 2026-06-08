@@ -36,6 +36,11 @@ _Avoid_: Source title, source info
 A Markdown task-list item rendered as an interactive checkbox. When Source Content has no explicit Markdown task-list items, ordinary Markdown list items may be treated as Task Items.
 _Avoid_: Checkbox, todo
 
+**Task Item Tree**:
+The prepared Markdown render tree for a Source File, annotated so Task Items can be indexed, clicked through labels, and synced with Task Item State.
+Ordinary Markdown list items are promoted to Task Items only when the whole Checklist Session has no explicit Task Items in any Source File.
+_Avoid_: Checkbox DOM, rendered task markup
+
 **Task Item State**:
 The global positional checked-or-unchecked state of the Task Items in the current Checklist Session. It is applied best-effort to the current source content, and trailing unchecked positions may be omitted.
 _Avoid_: Progress, checkbox state
