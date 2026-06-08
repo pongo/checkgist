@@ -170,7 +170,18 @@ function prepareTaskItemLabel(node: ComarkElement, taskItemIndex: number): numbe
     );
   }
 
+  unwrapLeadingTaskItemParagraph(node, taskContent.container);
+
   return taskItemIndex + 1;
+}
+
+function unwrapLeadingTaskItemParagraph(taskItem: ComarkElement, container: ComarkElement): void {
+  const firstContentNode = taskItem[2] as ComarkNode | undefined;
+  if (firstContentNode !== container || container[0] !== "p") {
+    return;
+  }
+
+  taskItem.splice(2, 1, ...elementChildren(container));
 }
 
 function findTaskItemContent(node: ComarkElement): {
