@@ -92,13 +92,13 @@ defineExpose({
     >
       <template v-if="file.status === 'ready'">
         <div
-          class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/40"
+          class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50 px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/40"
         >
           <h2 class="break-all text-sm font-semibold text-zinc-800 dark:text-zinc-200">
             {{ file.sourceFile.name }}
           </h2>
           <button
-            class="min-h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+            class="min-h-7 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
             type="button"
             @click="onResetFile(file.id)"
           >
