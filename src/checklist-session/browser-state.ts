@@ -1,11 +1,6 @@
 import type { ChecklistSession } from "./types";
 import { applySessionState, encodeSessionState } from "./state";
 
-type BrowserHashEnvironment = {
-  location: Pick<Location, "hash" | "pathname" | "search">;
-  history: Pick<History, "replaceState" | "state">;
-};
-
 type HashChangeTarget = Pick<Window, "addEventListener" | "removeEventListener">;
 
 export function applyBrowserHashState(
@@ -15,19 +10,10 @@ export function applyBrowserHashState(
   return applySessionState(session, location.hash);
 }
 
-export function replaceBrowserHashState(
-  session: ChecklistSession,
-  environment: BrowserHashEnvironment = {
-    location: window.location,
-    history: window.history,
-  },
-): void {
+export function encodeBrowserHashState(session: ChecklistSession): string {
   const encodedState = encodeSessionState(session);
-  const nextUrl = `${environment.location.pathname}${environment.location.search}${
-    encodedState.length > 0 ? `#${encodedState}` : ""
-  }`;
 
-  environment.history.replaceState(environment.history.state, "", nextUrl);
+  return encodedState.length > 0 ? `#${encodedState}` : "";
 }
 
 export function listenToBrowserHashState(

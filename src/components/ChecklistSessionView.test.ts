@@ -7,10 +7,19 @@ import type { ChecklistSession } from "@/checklist-session/types";
 
 import ChecklistSessionView from "./ChecklistSessionView.vue";
 
-const replaceBrowserHashState = vi.hoisted(() => vi.fn<(session: ChecklistSession) => void>());
+const route = vi.hoisted(() => ({
+  path: "/pastebin.com/source-1",
+  query: { debug: "1" },
+}));
+const routerReplace = vi.hoisted(() =>
+  vi.fn<
+    (location: { path: string; query: Record<string, string>; hash: string }) => Promise<void>
+  >(),
+);
 
-vi.mock("@/checklist-session/browser-state", () => ({
-  replaceBrowserHashState,
+vi.mock("vue-router", () => ({
+  useRoute: () => route,
+  useRouter: () => ({ replace: routerReplace }),
 }));
 
 function createTree(taskCount: number): ComarkTree {
@@ -114,7 +123,7 @@ function mountSession(session: ChecklistSession) {
 
 describe("ChecklistSessionView", () => {
   beforeEach(() => {
-    replaceBrowserHashState.mockReset();
+    routerReplace.mockReset();
   });
 
   it("renders per-file Reset controls for ready files and error files without reset controls", () => {
@@ -127,7 +136,7 @@ describe("ChecklistSessionView", () => {
     expect(wrapper.findAll("button").map((button) => button.text())).toEqual(["Reset", "Reset"]);
   });
 
-  it("updates file-local checkbox state and replaces the browser hash", async () => {
+  it("updates file-local checkbox state and replaces the route hash", async () => {
     const session = createSession();
     const wrapper = mountSession(session);
 
@@ -138,7 +147,11 @@ describe("ChecklistSessionView", () => {
       status: "ready",
       checked: [true, true],
     });
-    expect(replaceBrowserHashState).toHaveBeenCalledWith(session);
+    expect(routerReplace).toHaveBeenCalledWith({
+      path: "/pastebin.com/source-1",
+      query: { debug: "1" },
+      hash: "#1011",
+    });
   });
 
   it("resets only one ready file and preserves checked state in other files", async () => {
@@ -160,6 +173,10 @@ describe("ChecklistSessionView", () => {
     expect(wrapper.findAll<HTMLInputElement>("input")[0]?.element.checked).toBe(false);
     expect(wrapper.findAll<HTMLInputElement>("input")[1]?.element.checked).toBe(false);
     expect(wrapper.findAll<HTMLInputElement>("input")[3]?.element.checked).toBe(true);
-    expect(replaceBrowserHashState).toHaveBeenCalledWith(session);
+    expect(routerReplace).toHaveBeenLastCalledWith({
+      path: "/pastebin.com/source-1",
+      query: { debug: "1" },
+      hash: "#0001",
+    });
   });
 });

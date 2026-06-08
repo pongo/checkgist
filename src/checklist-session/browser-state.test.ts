@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { applySessionState } from "./state";
 import {
   applyBrowserHashState,
+  encodeBrowserHashState,
   listenToBrowserHashState,
-  replaceBrowserHashState,
 } from "./browser-state";
 import type { ChecklistSession } from "./types";
 
@@ -48,47 +48,17 @@ describe("browser Task Item State sync", () => {
     });
   });
 
-  it("replaces the current URL hash without adding a history entry", () => {
+  it("encodes the current browser hash state", () => {
     const session = createSession();
     applySessionState(session, "101");
-    const replaceState = vi.fn<History["replaceState"]>();
 
-    replaceBrowserHashState(session, {
-      location: {
-        pathname: "/checkgist/pastebin.com/source-1",
-        search: "?debug=1",
-        hash: "",
-      },
-      history: {
-        state: { current: true },
-        replaceState,
-      },
-    });
-
-    expect(replaceState).toHaveBeenCalledWith(
-      { current: true },
-      "",
-      "/checkgist/pastebin.com/source-1?debug=1#101",
-    );
+    expect(encodeBrowserHashState(session)).toBe("#101");
   });
 
-  it("removes the hash when encoded state is empty", () => {
+  it("returns an empty hash when encoded state is empty", () => {
     const session = createSession();
-    const replaceState = vi.fn<History["replaceState"]>();
 
-    replaceBrowserHashState(session, {
-      location: {
-        pathname: "/checkgist/pastebin.com/source-1",
-        search: "",
-        hash: "#100",
-      },
-      history: {
-        state: null,
-        replaceState,
-      },
-    });
-
-    expect(replaceState).toHaveBeenCalledWith(null, "", "/checkgist/pastebin.com/source-1");
+    expect(encodeBrowserHashState(session)).toBe("");
   });
 
   it("re-applies Task Item State on browser hash changes", () => {

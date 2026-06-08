@@ -17,9 +17,15 @@ import { copyToClipboard } from "@/shared/clipboard.ts";
 
 const route = useRoute();
 
-const reference = computed(() => {
-  const path = route.path.split("/").filter(Boolean);
+function referenceFromRoutePath(routePath: string): SourceReference | null {
+  const path = routePath.split("/").filter(Boolean);
   return referenceFromRoute(path);
+}
+
+const currentChecklistSessionUrl = computed(() => {
+  // Touch route.fullPath so Vue recomputes this value after router-managed hash changes.
+  void route.fullPath;
+  return window.location.href;
 });
 
 const session = ref<ChecklistSession | null>(null);
@@ -91,7 +97,7 @@ async function loadSource(referenceToLoad: SourceReference | null) {
 }
 
 async function copyCurrentChecklistSessionLink() {
-  await copyToClipboard(window.location.href);
+  await copyToClipboard(currentChecklistSessionUrl.value);
 
   clearTimeout(copyLinkResetTimeout);
   isCopyLinkCopied.value = true;
@@ -104,7 +110,13 @@ function resetCurrentChecklistSession() {
   checklistSessionView.value?.resetAllTasks();
 }
 
-watch(reference, (nextReference) => void loadSource(nextReference), { immediate: true });
+watch(
+  () => route.path,
+  (nextPath) => void loadSource(referenceFromRoutePath(nextPath)),
+  {
+    immediate: true,
+  },
+);
 
 onMounted(() => {
   stopHashStateListener = listenToBrowserHashState(() => session.value);
@@ -119,27 +131,29 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="min-h-screen bg-zinc-50 px-4 py-6 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
-    <section class="mx-auto flex w-full max-w-4xl flex-col gap-6">
-      <header class="flex flex-wrap items-center justify-between gap-3">
+  <main class="min-h-screen bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <header class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+      <div
+        class="mx-auto flex min-h-20 w-full max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-5"
+      >
         <RouterLink
-          class="min-h-10 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          class="rounded-sm focus:ring-2 focus:ring-blue-600/30 focus:outline-none"
           to="/"
         >
-          Home
+          <h1 class="text-lg font-semibold tracking-normal">Checkgist</h1>
         </RouterLink>
 
         <div v-if="session" class="flex flex-wrap items-center justify-end gap-3">
-          <button
-            class="min-h-10 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
-            type="button"
-            @click="copyCurrentChecklistSessionLink"
+          <a
+            class="min-h-8 content-center rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:hover:bg-zinc-900"
+            :href="currentChecklistSessionUrl"
+            @click.prevent="copyCurrentChecklistSessionLink"
           >
             {{ isCopyLinkCopied ? "Copied" : "Copy link" }}
-          </button>
+          </a>
 
           <a
-            class="min-h-10 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            class="min-h-8 content-center rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:hover:bg-zinc-900"
             :href="session.source.metadata.url"
             rel="noopener noreferrer"
             target="_blank"
@@ -148,15 +162,17 @@ onBeforeUnmount(() => {
           </a>
 
           <button
-            class="min-h-10 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            class="min-h-8 content-center rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:hover:bg-zinc-900"
             type="button"
             @click="resetCurrentChecklistSession"
           >
             Reset all
           </button>
         </div>
-      </header>
+      </div>
+    </header>
 
+    <section class="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6">
       <p v-if="isLoading" class="text-sm text-zinc-600 dark:text-zinc-400">Loading source...</p>
 
       <div
@@ -170,7 +186,7 @@ onBeforeUnmount(() => {
       <template v-else-if="session">
         <p
           v-if="session.source.metadata.description"
-          class="break-words text-sm leading-6 text-zinc-700 dark:text-zinc-300"
+          class="text-sm leading-6 wrap-break-word text-zinc-700 dark:text-zinc-300"
         >
           {{ session.source.metadata.description }}
         </p>

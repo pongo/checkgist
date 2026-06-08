@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ComarkRenderer } from "@comark/vue";
 import { ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
-import { replaceBrowserHashState } from "@/checklist-session/browser-state";
+import { encodeBrowserHashState } from "@/checklist-session/browser-state";
 import { resetAll, resetFile, setTaskChecked } from "@/checklist-session/state";
 import type { ChecklistReadyFile, ChecklistSession } from "@/checklist-session/types";
 
@@ -10,7 +11,17 @@ const props = defineProps<{
   session: ChecklistSession;
 }>();
 
+const route = useRoute();
+const router = useRouter();
 const markdownRenderVersion = ref(0);
+
+function replaceChecklistRouteHash() {
+  void router.replace({
+    path: route.path,
+    query: route.query,
+    hash: encodeBrowserHashState(props.session),
+  });
+}
 
 function onTaskChange(file: ChecklistReadyFile, event: Event) {
   const target = event.target;
@@ -20,7 +31,7 @@ function onTaskChange(file: ChecklistReadyFile, event: Event) {
 
   const taskIndex = Number(target.dataset.checkgistTaskIndex);
   if (setTaskChecked(props.session, file.id, taskIndex, target.checked)) {
-    replaceBrowserHashState(props.session);
+    replaceChecklistRouteHash();
   }
 }
 
@@ -50,21 +61,21 @@ function onTaskLabelClick(file: ChecklistReadyFile, event: MouseEvent) {
   checkbox.checked = nextChecked;
 
   if (setTaskChecked(props.session, file.id, taskIndex, nextChecked)) {
-    replaceBrowserHashState(props.session);
+    replaceChecklistRouteHash();
   }
 }
 
 function onResetFile(fileId: string) {
   if (resetFile(props.session, fileId)) {
     markdownRenderVersion.value += 1;
-    replaceBrowserHashState(props.session);
+    replaceChecklistRouteHash();
   }
 }
 
 function resetAllTasks() {
   resetAll(props.session);
   markdownRenderVersion.value += 1;
-  replaceBrowserHashState(props.session);
+  replaceChecklistRouteHash();
 }
 
 defineExpose({
@@ -84,13 +95,21 @@ defineExpose({
     <section
       v-for="file in session.files"
       :key="file.id"
-      class="space-y-3 border-t border-zinc-200 pt-5 first:border-t-0 first:pt-0 dark:border-zinc-800"
+      :class="
+        file.status === 'ready'
+          ? 'overflow-hidden rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950'
+          : ''
+      "
     >
       <template v-if="file.status === 'ready'">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <h2 class="break-all text-base font-semibold">{{ file.sourceFile.name }}</h2>
+        <div
+          class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50 px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-900/40"
+        >
+          <h2 class="text-sm font-semibold break-all text-zinc-800 dark:text-zinc-200">
+            {{ file.sourceFile.name }}
+          </h2>
           <button
-            class="min-h-9 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            class="min-h-7 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
             type="button"
             @click="onResetFile(file.id)"
           >
@@ -99,7 +118,7 @@ defineExpose({
         </div>
 
         <article
-          class="markdown-body checkgist-markdown"
+          class="markdown-body checkgist-markdown px-4 py-5"
           @click="onTaskLabelClick(file, $event)"
           @change="onTaskChange(file, $event)"
         >
@@ -116,7 +135,7 @@ defineExpose({
         v-else
         class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300"
       >
-        <p class="break-all font-medium">{{ file.sourceFile.name }}</p>
+        <p class="font-medium break-all">{{ file.sourceFile.name }}</p>
         <p>{{ file.error.message }}</p>
       </div>
     </section>
