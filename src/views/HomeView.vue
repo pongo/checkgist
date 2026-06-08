@@ -53,9 +53,10 @@ onMounted(() => {
             v-model="sourceUrl"
             aria-describedby="source-url-error"
             :aria-invalid="inputError.length > 0"
-            class="min-h-11 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+            class="min-h-11 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-base outline-none transition focus:ring-2 focus:ring-zinc-950/10"
             placeholder="Paste a GitHub Gist or supported URL"
             type="text"
+            autocomplete="off"
           />
           <button
             class="min-h-11 rounded-md bg-zinc-950 px-5 font-medium text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950/20"
