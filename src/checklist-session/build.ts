@@ -4,7 +4,7 @@ import { defineComarkPlugin } from "comark";
 import security from "comark/plugins/security";
 import taskList from "comark/plugins/task-list";
 
-import type { SourceContent, SourceFile, SourceTextFile } from "@/source-services/types";
+import type { LoadedSource, SourceFile, SourceTextFile } from "@/source-services/types";
 
 import { applySessionState } from "./state";
 import { prepareExplicitTaskItems, promoteOrdinaryListItems } from "./task-item-tree";
@@ -40,7 +40,7 @@ export const checklistMarkdownPlugins = [
 ] as const;
 
 export async function buildChecklistSession(
-  source: SourceContent,
+  source: LoadedSource,
   options: BuildChecklistSessionOptions = {},
 ): Promise<ChecklistSession> {
   const parseMarkdown = options.parseMarkdown ?? parse;

@@ -4,9 +4,9 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h, nextTick, reactive } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { SourceContent, SourceReference } from "@/source-services/types";
+import type { LoadedSource, SourceReference } from "@/source-services/types";
 
-import SourceReferenceView from "./SourceReferenceView.vue";
+import SourceReferencePage from "./SourceReferencePage.vue";
 
 const route = reactive({
   path: "/pastebin.com/HdpnureE",
@@ -20,9 +20,7 @@ const routerReplace = vi.hoisted(() =>
   >(),
 );
 const loadSource = vi.hoisted(() =>
-  vi.fn<
-    (reference: SourceReference, options: { signal?: AbortSignal }) => Promise<SourceContent>
-  >(),
+  vi.fn<(reference: SourceReference, options: { signal?: AbortSignal }) => Promise<LoadedSource>>(),
 );
 const writeClipboardText = vi.fn<(data: string) => Promise<void>>();
 
@@ -59,7 +57,7 @@ vi.mock("@/source-services/registry", async (importOriginal) => {
   };
 });
 
-function createSource(overrides: Partial<SourceContent> = {}): SourceContent {
+function createSource(overrides: Partial<LoadedSource> = {}): LoadedSource {
   return {
     reference: { type: "pastebin", pasteId: "HdpnureE" },
     metadata: {
@@ -79,7 +77,7 @@ function createSource(overrides: Partial<SourceContent> = {}): SourceContent {
   };
 }
 
-function createPastebinSource(pasteId: string, content: string): SourceContent {
+function createPastebinSource(pasteId: string, content: string): LoadedSource {
   return createSource({
     reference: { type: "pastebin", pasteId },
     metadata: {
@@ -97,7 +95,7 @@ function createPastebinSource(pasteId: string, content: string): SourceContent {
   });
 }
 
-function createGitHubGistSource(gistId: string): SourceContent {
+function createGitHubGistSource(gistId: string): LoadedSource {
   return createSource({
     reference: { type: "github-gist", gistId },
     metadata: {
@@ -146,8 +144,8 @@ function setRouteLocation(fullPath: string) {
   window.history.replaceState(null, "", route.fullPath);
 }
 
-function mountSourceReferenceView(options: { errorHandler?: (error: unknown) => void } = {}) {
-  return mount(SourceReferenceView, {
+function mountSourceReferencePage(options: { errorHandler?: (error: unknown) => void } = {}) {
+  return mount(SourceReferencePage, {
     global: {
       config:
         options.errorHandler === undefined
@@ -185,9 +183,9 @@ function renderComarkNode(node: ComarkNode): ReturnType<typeof h> | string | nul
   return h(tag, attributes, children.map(renderComarkNode));
 }
 
-async function mountLoadedSource(source: SourceContent) {
+async function mountLoadedSource(source: LoadedSource) {
   loadSource.mockResolvedValueOnce(source);
-  const wrapper = mountSourceReferenceView();
+  const wrapper = mountSourceReferencePage();
 
   await flushPromises();
   return wrapper;
@@ -215,7 +213,7 @@ function getChecklistSessionLink(wrapper: VueWrapper) {
   return link;
 }
 
-describe("SourceReferenceView", () => {
+describe("SourceReferencePage", () => {
   beforeEach(() => {
     setRouteLocation("/pastebin.com/HdpnureE");
     loadSource.mockReset();
@@ -436,7 +434,7 @@ describe("SourceReferenceView", () => {
 
   it("shows a source-level load error", async () => {
     loadSource.mockRejectedValueOnce(new Error("Failed to load Pastebin source."));
-    const wrapper = mount(SourceReferenceView);
+    const wrapper = mount(SourceReferencePage);
 
     await flushPromises();
 
@@ -470,7 +468,7 @@ describe("SourceReferenceView", () => {
   it("does not show a visible error when copying the Checklist Session URL fails", async () => {
     writeClipboardText.mockRejectedValueOnce(new Error("denied"));
     loadSource.mockResolvedValueOnce(createSource());
-    const wrapper = mountSourceReferenceView({
+    const wrapper = mountSourceReferencePage({
       errorHandler: (error) => {
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toBe("denied");
@@ -487,14 +485,14 @@ describe("SourceReferenceView", () => {
   });
 
   it("aborts the previous source load and ignores its stale resolved result", async () => {
-    const firstLoad = createDeferred<SourceContent>();
-    const secondLoad = createDeferred<SourceContent>();
+    const firstLoad = createDeferred<LoadedSource>();
+    const secondLoad = createDeferred<LoadedSource>();
     loadSource.mockImplementation((reference) =>
       reference.type === "pastebin" && reference.pasteId === "HdpnureE"
         ? firstLoad.promise
         : secondLoad.promise,
     );
-    const wrapper = mountSourceReferenceView();
+    const wrapper = mountSourceReferencePage();
     await nextTick();
 
     const firstSignal = loadSource.mock.calls[0]?.[1].signal;
@@ -525,14 +523,14 @@ describe("SourceReferenceView", () => {
   });
 
   it("ignores stale rejected source load errors while the current load renders normally", async () => {
-    const firstLoad = createDeferred<SourceContent>();
-    const secondLoad = createDeferred<SourceContent>();
+    const firstLoad = createDeferred<LoadedSource>();
+    const secondLoad = createDeferred<LoadedSource>();
     loadSource.mockImplementation((reference) =>
       reference.type === "pastebin" && reference.pasteId === "HdpnureE"
         ? firstLoad.promise
         : secondLoad.promise,
     );
-    const wrapper = mountSourceReferenceView();
+    const wrapper = mountSourceReferencePage();
     await nextTick();
 
     setRouteLocation("/pastebin.com/current");

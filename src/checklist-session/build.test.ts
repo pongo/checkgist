@@ -1,11 +1,11 @@
 import type { ComarkTree } from "comark";
 import { describe, expect, it } from "vitest";
 
-import type { SourceContent } from "@/source-services/types";
+import type { LoadedSource } from "@/source-services/types";
 
 import { buildChecklistSession } from "./build";
 
-function createSource(files: SourceContent["files"]): SourceContent {
+function createSource(files: LoadedSource["files"]): LoadedSource {
   return {
     reference: { type: "pastebin", pasteId: "source-1" },
     metadata: {

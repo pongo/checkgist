@@ -2,7 +2,7 @@ import type { ComarkTree } from "comark";
 
 import type {
   LoadError,
-  SourceContent,
+  LoadedSource,
   SourceFile,
   SourceFileId,
   SourceTextFile,
@@ -28,7 +28,7 @@ export type ChecklistErrorFile = {
 export type ChecklistFile = ChecklistReadyFile | ChecklistErrorFile;
 
 export type ChecklistSession = {
-  source: SourceContent;
+  source: LoadedSource;
   files: ChecklistFile[];
   hasTaskItems: boolean;
 };

@@ -2,7 +2,7 @@ import { directSourceFetcher } from "./fetcher";
 import type {
   GitHubGistReference,
   SourceFile,
-  SourceContent,
+  LoadedSource,
   SourceLoadOptions,
   SourceService,
 } from "./types";
@@ -114,7 +114,7 @@ export const githubGistService: SourceService<GitHubGistReference> = {
     return [GIST_HOST, reference.gistId];
   },
 
-  async load(reference: GitHubGistReference, options?: SourceLoadOptions): Promise<SourceContent> {
+  async load(reference: GitHubGistReference, options?: SourceLoadOptions): Promise<LoadedSource> {
     let response: GitHubGistApiResponse;
     const fetcher = options?.fetcher ?? directSourceFetcher;
 

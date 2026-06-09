@@ -3,17 +3,13 @@ import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
 import { listenToBrowserHashState } from "@/checklist-session/browser-state";
-import { formatBrowserTitle } from "@/checklist-session/browser-title";
-import { buildChecklistSession } from "@/checklist-session/build";
+import ChecklistSessionView from "@/checklist-session/ChecklistSessionView.vue";
+import { loadChecklistSession } from "@/checklist-session/load";
 import type { ChecklistSession } from "@/checklist-session/types";
-import ChecklistSessionCopyLink from "@/components/ChecklistSessionCopyLink.vue";
-import ChecklistSessionView from "@/components/ChecklistSessionView.vue";
-import {
-  referenceFromRoute,
-  sourceRegistry,
-  unsupportedSourceUrlMessage,
-} from "@/source-services/registry";
+import { referenceFromRoute } from "@/source-services/registry";
 import type { SourceReference } from "@/source-services/types";
+
+import ChecklistSessionCopyLink from "./ChecklistSessionCopyLink.vue";
 
 const route = useRoute();
 
@@ -39,35 +35,28 @@ async function loadSource(referenceToLoad: SourceReference | null) {
   session.value = null;
   loadError.value = "";
 
-  if (referenceToLoad === null) {
-    document.title = "Checkgist";
-    loadError.value = unsupportedSourceUrlMessage;
-    return;
-  }
-
-  const service = sourceRegistry.byType.get(referenceToLoad.type);
-  if (service === undefined) {
-    document.title = "Checkgist";
-    loadError.value = unsupportedSourceUrlMessage;
-    return;
-  }
-
   const controller = new AbortController();
   abortController = controller;
   isLoading.value = true;
 
   try {
-    const source = await service.load(referenceToLoad, { signal: controller.signal });
-    const nextSession = await buildChecklistSession(source, {
-      initialStateBits: window.location.hash,
+    const result = await loadChecklistSession(referenceToLoad, {
+      stateBits: window.location.hash,
+      signal: controller.signal,
     });
 
     if (loadToken !== activeLoadToken) {
       return;
     }
 
-    session.value = nextSession;
-    document.title = formatBrowserTitle(source.metadata.title);
+    if (result.status === "unsupported") {
+      document.title = "Checkgist";
+      loadError.value = result.message;
+      return;
+    }
+
+    session.value = result.session;
+    document.title = result.browserTitle;
   } catch (error) {
     if (loadToken !== activeLoadToken) {
       return;
