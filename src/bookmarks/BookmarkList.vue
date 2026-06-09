@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, useTemplateRef } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 
 import type { Bookmark } from "./db";
 import BookmarkListItem from "./BookmarkListItem.vue";
@@ -22,9 +22,18 @@ const { bookmarks, isReady, removeBookmark, renameBookmark, reorderBookmark, res
 const editingRoutePath = ref<string | null>(null);
 const recentlyRemoved = ref<Array<{ bookmark: Bookmark; position: number }>>([]);
 const bookmarkList = useTemplateRef("bookmarkList");
-const { dropIndicator, onDragStart, onDragEnd, onDragOver, onDrop } = useBookmarkDragDrop({
+const {
+  dropIndicator,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+  onDropBoundaryDragOver,
+  onDropBoundaryDrop,
+} = useBookmarkDragDrop({
   bookmarks,
   reorderBookmark,
+  dropBoundary: bookmarkList,
 });
 
 const rows = computed<BookmarkRow[]>(() => {
@@ -85,62 +94,6 @@ function getDropIndicatorPosition(row: BookmarkRow) {
     ? dropIndicator.value.position
     : null;
 }
-
-function isInsideBookmarkList(event: DragEvent) {
-  return event.target instanceof Node && (bookmarkList.value?.contains(event.target) ?? false);
-}
-
-function allowDropOnCurrentIndicator(event: DragEvent) {
-  if (dropIndicator.value === null) {
-    return;
-  }
-
-  event.preventDefault();
-
-  if (event.dataTransfer !== null) {
-    event.dataTransfer.dropEffect = "move";
-  }
-}
-
-async function dropOnCurrentIndicator(event: DragEvent) {
-  const targetRoutePath = dropIndicator.value?.routePath;
-
-  if (targetRoutePath === undefined) {
-    return;
-  }
-
-  const targetBookmark = bookmarks.value.find((bookmark) => bookmark.routePath === targetRoutePath);
-
-  if (targetBookmark !== undefined) {
-    await onDrop(targetBookmark, event);
-  }
-}
-
-function allowDocumentDrop(event: DragEvent) {
-  if (isInsideBookmarkList(event)) {
-    return;
-  }
-
-  allowDropOnCurrentIndicator(event);
-}
-
-async function dropOnDocument(event: DragEvent) {
-  if (isInsideBookmarkList(event)) {
-    return;
-  }
-
-  await dropOnCurrentIndicator(event);
-}
-
-onMounted(() => {
-  window.addEventListener("dragover", allowDocumentDrop);
-  window.addEventListener("drop", dropOnDocument);
-});
-
-onUnmounted(() => {
-  window.removeEventListener("dragover", allowDocumentDrop);
-  window.removeEventListener("drop", dropOnDocument);
-});
 </script>
 
 <template>
@@ -150,8 +103,8 @@ onUnmounted(() => {
     <ul
       ref="bookmarkList"
       class="mt-3 space-y-1"
-      @dragover.self="allowDropOnCurrentIndicator"
-      @drop.self="dropOnCurrentIndicator"
+      @dragover.self="onDropBoundaryDragOver"
+      @drop.self="onDropBoundaryDrop"
     >
       <BookmarkListItem
         v-for="(row, rowIndex) in rows"

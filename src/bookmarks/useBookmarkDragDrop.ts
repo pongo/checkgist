@@ -1,4 +1,4 @@
-import { ref, type Ref } from "vue";
+import { onMounted, onUnmounted, ref, type Ref } from "vue";
 
 import type { Bookmark } from "./db";
 
@@ -7,6 +7,7 @@ type DropIndicatorPosition = "before" | "after";
 type UseBookmarkDragDropOptions = {
   bookmarks: Readonly<Ref<readonly Bookmark[]>>;
   reorderBookmark: (routePath: string, toIndex: number) => Promise<void>;
+  dropBoundary: Readonly<Ref<HTMLElement | null>>;
 };
 
 export type BookmarkDropIndicator = {
@@ -14,7 +15,11 @@ export type BookmarkDropIndicator = {
   position: DropIndicatorPosition;
 };
 
-export function useBookmarkDragDrop({ bookmarks, reorderBookmark }: UseBookmarkDragDropOptions) {
+export function useBookmarkDragDrop({
+  bookmarks,
+  reorderBookmark,
+  dropBoundary,
+}: UseBookmarkDragDropOptions) {
   const draggedRoutePath = ref<string | null>(null);
   const dropIndicator = ref<BookmarkDropIndicator | null>(null);
 
@@ -112,11 +117,71 @@ export function useBookmarkDragDrop({ bookmarks, reorderBookmark }: UseBookmarkD
     clearDragState();
   }
 
+  function isInsideDropBoundary(event: DragEvent) {
+    return event.target instanceof Node && (dropBoundary.value?.contains(event.target) ?? false);
+  }
+
+  function allowDropOnCurrentIndicator(event: DragEvent) {
+    if (dropIndicator.value === null) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (event.dataTransfer !== null) {
+      event.dataTransfer.dropEffect = "move";
+    }
+  }
+
+  async function dropOnCurrentIndicator(event: DragEvent) {
+    const targetRoutePath = dropIndicator.value?.routePath;
+
+    if (targetRoutePath === undefined) {
+      return;
+    }
+
+    const targetBookmark = bookmarks.value.find(
+      (bookmark) => bookmark.routePath === targetRoutePath,
+    );
+
+    if (targetBookmark !== undefined) {
+      await onDrop(targetBookmark, event);
+    }
+  }
+
+  function allowDocumentDrop(event: DragEvent) {
+    if (isInsideDropBoundary(event)) {
+      return;
+    }
+
+    allowDropOnCurrentIndicator(event);
+  }
+
+  async function dropOnDocument(event: DragEvent) {
+    if (isInsideDropBoundary(event)) {
+      return;
+    }
+
+    await dropOnCurrentIndicator(event);
+  }
+
+  onMounted(() => {
+    window.addEventListener("dragover", allowDocumentDrop);
+    window.addEventListener("drop", dropOnDocument);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener("dragover", allowDocumentDrop);
+    window.removeEventListener("drop", dropOnDocument);
+  });
+
   return {
     dropIndicator,
     onDragStart,
     onDragEnd,
     onDragOver,
     onDrop,
+    onDropBoundaryDragOver: allowDropOnCurrentIndicator,
+    onDropBoundaryDrop: dropOnCurrentIndicator,
   };
 }
