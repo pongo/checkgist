@@ -129,74 +129,80 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
   <section v-if="shouldRender" class="mt-8 border-t border-zinc-200 pt-6 dark:border-zinc-800">
     <h2 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Bookmarks</h2>
 
-    <ul class="mt-3 space-y-1">
+    <ul class="mt-3 space-y-0.5">
       <li
         v-for="(row, rowIndex) in rows"
         :key="`${row.type}:${row.bookmark.routePath}`"
-        class="group flex min-h-10 items-center gap-2 rounded-md px-2 py-1.5"
-        :class="row.type === 'removed' ? 'bg-zinc-50 opacity-60 dark:bg-zinc-900/60' : ''"
+        class="group flex items-center gap-3"
+        :class="row.type === 'removed' ? 'opacity-60' : ''"
       >
-        <template v-if="row.type === 'bookmark'">
-          <RouterLink
-            v-if="editingRoutePath !== row.bookmark.routePath"
-            class="min-w-0 flex-1 truncate rounded-sm text-sm text-zinc-800 hover:text-[#0969da] focus:ring-2 focus:ring-blue-600/30 focus:outline-none active:cursor-grabbing dark:text-zinc-200 dark:hover:text-[#4493f8]"
-            :to="row.bookmark.routePath"
-            draggable="true"
-            @dragstart="onDragStart(row.bookmark, $event)"
-            @dragend="onDragEnd"
-            @dragover="onDragOver"
-            @drop="onDrop(row.bookmark, $event)"
-          >
-            {{ row.bookmark.title }}
-          </RouterLink>
-
-          <input
-            v-else
-            ref="editInput"
-            v-model="editingTitle"
-            class="min-h-8 min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-2 text-sm outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950"
-            type="text"
-            @blur="saveRename(row.bookmark)"
-            @keydown.enter.prevent="saveRename(row.bookmark)"
-            @keydown.escape.prevent="cancelRename"
-          />
-
-          <div
-            v-if="editingRoutePath !== row.bookmark.routePath"
-            class="flex shrink-0 items-center gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
-          >
-            <button
-              class="inline-flex size-8 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
-              type="button"
-              aria-label="Rename bookmark"
-              @click="startRename(row.bookmark)"
+        <span
+          class="size-1.5 shrink-0 rounded-full bg-zinc-950 dark:bg-zinc-50"
+          aria-hidden="true"
+        />
+        <div class="inline-flex max-w-full min-w-0 items-center gap-1.5">
+          <template v-if="row.type === 'bookmark'">
+            <RouterLink
+              v-if="editingRoutePath !== row.bookmark.routePath"
+              class="min-w-0 truncate rounded-sm text-base text-zinc-800 hover:text-[#0969da] focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-200 dark:hover:text-[#4493f8]"
+              :to="row.bookmark.routePath"
+              draggable="true"
+              @dragstart="onDragStart(row.bookmark, $event)"
+              @dragend="onDragEnd"
+              @dragover="onDragOver"
+              @drop="onDrop(row.bookmark, $event)"
             >
-              <Pencil class="size-4" aria-hidden="true" />
-            </button>
-            <button
-              class="inline-flex size-8 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
-              type="button"
-              aria-label="Delete bookmark"
-              @click="deleteBookmark(row.bookmark, rowIndex)"
-            >
-              <Trash2 class="size-4" aria-hidden="true" />
-            </button>
-          </div>
-        </template>
+              {{ row.bookmark.title }}
+            </RouterLink>
 
-        <template v-else>
-          <span class="min-w-0 flex-1 truncate text-sm text-zinc-700 dark:text-zinc-300">
-            {{ row.bookmark.title }}
-          </span>
-          <button
-            class="inline-flex min-h-8 shrink-0 items-center gap-2 rounded-md border border-zinc-300 bg-white px-2 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
-            type="button"
-            @click="restoreRemovedBookmark(row)"
-          >
-            <RotateCcw class="size-4" aria-hidden="true" />
-            Restore
-          </button>
-        </template>
+            <input
+              v-else
+              ref="editInput"
+              v-model="editingTitle"
+              class="min-h-8 min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-2 text-base outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950"
+              type="text"
+              @blur="saveRename(row.bookmark)"
+              @keydown.enter.prevent="saveRename(row.bookmark)"
+              @keydown.escape.prevent="cancelRename"
+            />
+
+            <div
+              v-if="editingRoutePath !== row.bookmark.routePath"
+              class="flex shrink-0 items-center gap-0.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+            >
+              <button
+                class="inline-flex size-7 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
+                type="button"
+                aria-label="Rename bookmark"
+                @click="startRename(row.bookmark)"
+              >
+                <Pencil class="size-3.5" aria-hidden="true" />
+              </button>
+              <button
+                class="inline-flex size-7 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
+                type="button"
+                aria-label="Delete bookmark"
+                @click="deleteBookmark(row.bookmark, rowIndex)"
+              >
+                <Trash2 class="size-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          </template>
+
+          <template v-else>
+            <span class="min-w-0 truncate text-base text-zinc-700 dark:text-zinc-300">
+              {{ row.bookmark.title }}
+            </span>
+            <button
+              class="inline-flex min-h-8 shrink-0 items-center gap-2 rounded-md border border-zinc-300 bg-white px-2 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+              type="button"
+              @click="restoreRemovedBookmark(row)"
+            >
+              <RotateCcw class="size-4" aria-hidden="true" />
+              Restore
+            </button>
+          </template>
+        </div>
       </li>
     </ul>
   </section>
