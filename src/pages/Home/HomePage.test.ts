@@ -70,5 +70,10 @@ describe("HomePage", () => {
 
     expect(push).not.toHaveBeenCalled();
     expect(wrapper.text()).toContain(unsupportedSourceUrlMessage);
+    const supportedSitesLink = wrapper.get("#source-url-error").get<HTMLAnchorElement>("a");
+    expect(supportedSitesLink.text()).toBe("See supported sites");
+    expect(supportedSitesLink.attributes("href")).toBe("https://github.com/pongo/checkgist");
+    expect(supportedSitesLink.attributes("target")).toBe("_blank");
+    expect(supportedSitesLink.attributes("rel")).toBe("noopener noreferrer");
   });
 });

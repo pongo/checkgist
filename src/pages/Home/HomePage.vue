@@ -82,7 +82,14 @@ onMounted(() => {
           class="text-sm font-medium text-red-700 dark:text-red-300"
           role="alert"
         >
-          {{ inputError }}
+          {{ inputError }}.
+          <a
+            href="https://github.com/pongo/checkgist"
+            class="border-b border-red-700 hover:text-red-800 dark:border-red-300 dark:hover:text-red-200"
+            rel="noopener noreferrer"
+            target="_blank"
+            >See supported sites</a
+          >
         </p>
       </form>
 
