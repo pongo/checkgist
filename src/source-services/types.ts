@@ -46,7 +46,7 @@ export type SourceFileError = {
 
 export type SourceFile = SourceTextFile | SourceFileError;
 
-export type SourceContent = {
+export type LoadedSource = {
   reference: SourceReference;
   metadata: SourceMetadata;
   files: SourceFile[];
@@ -67,5 +67,5 @@ export type SourceService<TReference extends SourceReference> = {
   fromUrl(url: URL): TReference | null;
   fromRoute(path: string[]): TReference | null;
   toRoute(reference: TReference): string[];
-  load(reference: TReference, options?: SourceLoadOptions): Promise<SourceContent>;
+  load(reference: TReference, options?: SourceLoadOptions): Promise<LoadedSource>;
 };

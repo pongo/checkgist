@@ -1,5 +1,5 @@
 import { corsProxySourceFetcher } from "./fetcher";
-import type { PastebinReference, SourceContent, SourceLoadOptions, SourceService } from "./types";
+import type { PastebinReference, LoadedSource, SourceLoadOptions, SourceService } from "./types";
 import { SourceLoadError } from "./types";
 
 const PASTEBIN_HOST = "pastebin.com";
@@ -52,7 +52,7 @@ export const pastebinService: SourceService<PastebinReference> = {
     return [PASTEBIN_HOST, reference.pasteId];
   },
 
-  async load(reference: PastebinReference, options?: SourceLoadOptions): Promise<SourceContent> {
+  async load(reference: PastebinReference, options?: SourceLoadOptions): Promise<LoadedSource> {
     let content: string;
     const fetcher = options?.fetcher ?? corsProxySourceFetcher;
 

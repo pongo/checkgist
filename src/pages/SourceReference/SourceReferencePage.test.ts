@@ -4,7 +4,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h, nextTick, reactive } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { SourceContent, SourceReference } from "@/source-services/types";
+import type { LoadedSource, SourceReference } from "@/source-services/types";
 
 import SourceReferencePage from "./SourceReferencePage.vue";
 
@@ -20,9 +20,7 @@ const routerReplace = vi.hoisted(() =>
   >(),
 );
 const loadSource = vi.hoisted(() =>
-  vi.fn<
-    (reference: SourceReference, options: { signal?: AbortSignal }) => Promise<SourceContent>
-  >(),
+  vi.fn<(reference: SourceReference, options: { signal?: AbortSignal }) => Promise<LoadedSource>>(),
 );
 const writeClipboardText = vi.fn<(data: string) => Promise<void>>();
 
@@ -59,7 +57,7 @@ vi.mock("@/source-services/registry", async (importOriginal) => {
   };
 });
 
-function createSource(overrides: Partial<SourceContent> = {}): SourceContent {
+function createSource(overrides: Partial<LoadedSource> = {}): LoadedSource {
   return {
     reference: { type: "pastebin", pasteId: "HdpnureE" },
     metadata: {
@@ -79,7 +77,7 @@ function createSource(overrides: Partial<SourceContent> = {}): SourceContent {
   };
 }
 
-function createPastebinSource(pasteId: string, content: string): SourceContent {
+function createPastebinSource(pasteId: string, content: string): LoadedSource {
   return createSource({
     reference: { type: "pastebin", pasteId },
     metadata: {
@@ -97,7 +95,7 @@ function createPastebinSource(pasteId: string, content: string): SourceContent {
   });
 }
 
-function createGitHubGistSource(gistId: string): SourceContent {
+function createGitHubGistSource(gistId: string): LoadedSource {
   return createSource({
     reference: { type: "github-gist", gistId },
     metadata: {
@@ -185,7 +183,7 @@ function renderComarkNode(node: ComarkNode): ReturnType<typeof h> | string | nul
   return h(tag, attributes, children.map(renderComarkNode));
 }
 
-async function mountLoadedSource(source: SourceContent) {
+async function mountLoadedSource(source: LoadedSource) {
   loadSource.mockResolvedValueOnce(source);
   const wrapper = mountSourceReferencePage();
 
@@ -487,8 +485,8 @@ describe("SourceReferencePage", () => {
   });
 
   it("aborts the previous source load and ignores its stale resolved result", async () => {
-    const firstLoad = createDeferred<SourceContent>();
-    const secondLoad = createDeferred<SourceContent>();
+    const firstLoad = createDeferred<LoadedSource>();
+    const secondLoad = createDeferred<LoadedSource>();
     loadSource.mockImplementation((reference) =>
       reference.type === "pastebin" && reference.pasteId === "HdpnureE"
         ? firstLoad.promise
@@ -525,8 +523,8 @@ describe("SourceReferencePage", () => {
   });
 
   it("ignores stale rejected source load errors while the current load renders normally", async () => {
-    const firstLoad = createDeferred<SourceContent>();
-    const secondLoad = createDeferred<SourceContent>();
+    const firstLoad = createDeferred<LoadedSource>();
+    const secondLoad = createDeferred<LoadedSource>();
     loadSource.mockImplementation((reference) =>
       reference.type === "pastebin" && reference.pasteId === "HdpnureE"
         ? firstLoad.promise

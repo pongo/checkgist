@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createSourceRegistry, unsupportedSourceUrlMessage } from "@/source-services/registry";
-import type { SourceContent, SourceReference, SourceService } from "@/source-services/types";
+import type { LoadedSource, SourceReference, SourceService } from "@/source-services/types";
 
 import { loadChecklistSession } from "./load";
 
 type PastebinReference = { type: "pastebin"; pasteId: string };
 type LoadPastebinSource = SourceService<PastebinReference>["load"];
 
-function createSource(overrides: Partial<SourceContent> = {}): SourceContent {
+function createSource(overrides: Partial<LoadedSource> = {}): LoadedSource {
   return {
     reference: { type: "pastebin", pasteId: "HdpnureE" },
     metadata: {
