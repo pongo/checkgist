@@ -3,6 +3,7 @@ import { nextTick, onMounted, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 
 import BookmarkList from "@/bookmarks/BookmarkList.vue";
+import HomePageGitHubCorner from "./HomePageGitHubCorner.vue";
 import {
   referenceFromUrlInput,
   routeForReference,
@@ -39,6 +40,8 @@ onMounted(() => {
   <main
     class="min-h-screen bg-white px-4 pt-14 text-zinc-950 sm:px-6 sm:pt-20 dark:bg-zinc-950 dark:text-zinc-50"
   >
+    <HomePageGitHubCorner />
+
     <section class="mx-auto w-full max-w-xl">
       <div>
         <h1 class="text-4xl font-semibold tracking-normal">Checkgist</h1>
