@@ -129,11 +129,11 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
   <section v-if="shouldRender" class="mt-8 border-t border-zinc-200 pt-6 dark:border-zinc-800">
     <h2 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Bookmarks</h2>
 
-    <ul class="mt-3 space-y-0.5">
+    <ul class="mt-3 space-y-1">
       <li
         v-for="(row, rowIndex) in rows"
         :key="`${row.type}:${row.bookmark.routePath}`"
-        class="group flex min-h-8 items-center gap-3"
+        class="group flex h-6 items-center gap-3"
         :class="row.type === 'removed' ? 'opacity-60' : ''"
       >
         <span
@@ -159,7 +159,7 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
               v-else
               ref="editInput"
               v-model="editingTitle"
-              class="min-h-8 min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-2 text-base outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950"
+              class="h-6 min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-2 text-base leading-6 outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950"
               type="text"
               @blur="saveRename(row.bookmark)"
               @keydown.enter.prevent="saveRename(row.bookmark)"
@@ -171,7 +171,7 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
               class="ml-auto flex shrink-0 items-center gap-0.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
             >
               <button
-                class="inline-flex size-7 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
+                class="inline-flex size-6 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
                 type="button"
                 aria-label="Rename bookmark"
                 @click="startRename(row.bookmark)"
@@ -179,7 +179,7 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
                 <Pencil class="size-3.5" aria-hidden="true" />
               </button>
               <button
-                class="inline-flex size-7 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
+                class="inline-flex size-6 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
                 type="button"
                 aria-label="Delete bookmark"
                 @click="deleteBookmark(row.bookmark, rowIndex)"
@@ -194,7 +194,7 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
               {{ row.bookmark.title }}
             </span>
             <button
-              class="ml-auto inline-flex min-h-8 shrink-0 items-center gap-2 rounded-md border border-zinc-300 bg-white px-2 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+              class="ml-auto inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
               type="button"
               @click="restoreRemovedBookmark(row)"
             >
