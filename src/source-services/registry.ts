@@ -7,7 +7,7 @@ export type SourceRegistry = {
   byType: ReadonlyMap<SourceReference["type"], SourceService<SourceReference>>;
 };
 
-export const unsupportedSourceUrlMessage = "Enter a supported GitHub Gist or Pastebin URL.";
+export const unsupportedSourceUrlMessage = "Enter a supported URL";
 
 export function createSourceRegistry(
   services: ReadonlyArray<SourceService<SourceReference>>,
