@@ -16,12 +16,14 @@ type BookmarkRow =
       bookmark: Bookmark;
       position: number;
     };
+type DropIndicatorPosition = "before" | "after";
 
 const { bookmarks, isReady, removeBookmark, renameBookmark, reorderBookmark, restoreBookmark } =
   useBookmarks();
 const editingRoutePath = ref<string | null>(null);
 const editingTitle = ref("");
 const draggedRoutePath = ref<string | null>(null);
+const dropIndicator = ref<{ routePath: string; position: DropIndicatorPosition } | null>(null);
 const recentlyRemoved = ref<Array<{ bookmark: Bookmark; position: number }>>([]);
 const editInput = useTemplateRef("editInput");
 
@@ -94,27 +96,77 @@ function onDragStart(bookmark: Bookmark, event: DragEvent) {
 
 function onDragEnd() {
   draggedRoutePath.value = null;
+  dropIndicator.value = null;
 }
 
-function onDragOver(event: DragEvent) {
+function getDraggedRoutePath(event: DragEvent): string {
+  return draggedRoutePath.value ?? event.dataTransfer?.getData("text/plain") ?? "";
+}
+
+function getDropPosition(event: DragEvent): DropIndicatorPosition {
+  if (!(event.currentTarget instanceof HTMLElement)) {
+    return "before";
+  }
+
+  const bounds = event.currentTarget.getBoundingClientRect();
+
+  if (bounds.height === 0) {
+    return "before";
+  }
+
+  return event.clientY > bounds.top + bounds.height / 2 ? "after" : "before";
+}
+
+function getDropIndex(
+  routePath: string,
+  targetBookmark: Bookmark,
+  position: DropIndicatorPosition,
+) {
+  const fromIndex = bookmarks.value.findIndex((bookmark) => bookmark.routePath === routePath);
+  const targetIndex = bookmarks.value.findIndex(
+    (bookmark) => bookmark.routePath === targetBookmark.routePath,
+  );
+
+  if (fromIndex === -1 || targetIndex === -1) {
+    return -1;
+  }
+
+  const targetInsertIndex = targetIndex + (position === "after" ? 1 : 0);
+  return fromIndex < targetInsertIndex ? targetInsertIndex - 1 : targetInsertIndex;
+}
+
+function onDragOver(targetBookmark: Bookmark, event: DragEvent) {
   event.preventDefault();
 
   if (event.dataTransfer !== null) {
     event.dataTransfer.dropEffect = "move";
   }
+
+  const routePath = getDraggedRoutePath(event);
+
+  dropIndicator.value =
+    routePath.length > 0 && routePath !== targetBookmark.routePath
+      ? {
+          routePath: targetBookmark.routePath,
+          position: getDropPosition(event),
+        }
+      : null;
 }
 
 async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
   event.preventDefault();
-  const routePath = draggedRoutePath.value ?? event.dataTransfer?.getData("text/plain") ?? "";
+  const routePath = getDraggedRoutePath(event);
 
   if (routePath.length === 0 || routePath === targetBookmark.routePath) {
     draggedRoutePath.value = null;
+    dropIndicator.value = null;
     return;
   }
 
-  const targetIndex = bookmarks.value.findIndex(
-    (bookmark) => bookmark.routePath === targetBookmark.routePath,
+  const targetIndex = getDropIndex(
+    routePath,
+    targetBookmark,
+    dropIndicator.value?.position ?? getDropPosition(event),
   );
 
   if (targetIndex !== -1) {
@@ -122,6 +174,7 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
   }
 
   draggedRoutePath.value = null;
+  dropIndicator.value = null;
 }
 </script>
 
@@ -133,8 +186,16 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
       <li
         v-for="(row, rowIndex) in rows"
         :key="`${row.type}:${row.bookmark.routePath}`"
-        class="group flex h-6 items-center gap-3"
-        :class="row.type === 'removed' ? 'opacity-60' : ''"
+        class="group relative flex h-6 items-center gap-3"
+        :class="[
+          row.type === 'removed' ? 'opacity-60' : '',
+          dropIndicator?.routePath === row.bookmark.routePath && dropIndicator.position === 'before'
+            ? 'before:absolute before:top-0 before:right-0 before:left-0 before:h-0.5 before:rounded-full before:bg-blue-600 dark:before:bg-blue-400'
+            : '',
+          dropIndicator?.routePath === row.bookmark.routePath && dropIndicator.position === 'after'
+            ? 'after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:rounded-full after:bg-blue-600 dark:after:bg-blue-400'
+            : '',
+        ]"
       >
         <span
           class="size-1.5 shrink-0 rounded-full bg-zinc-950 dark:bg-zinc-50"
@@ -149,7 +210,7 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
               draggable="true"
               @dragstart="onDragStart(row.bookmark, $event)"
               @dragend="onDragEnd"
-              @dragover="onDragOver"
+              @dragover="onDragOver(row.bookmark, $event)"
               @drop="onDrop(row.bookmark, $event)"
             >
               {{ row.bookmark.title }}

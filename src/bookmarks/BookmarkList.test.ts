@@ -179,4 +179,50 @@ describe("BookmarkList", () => {
       ]);
     });
   });
+
+  it("shows a drop indicator while dragging over another bookmark", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    wrapper = mountBookmarkList();
+    const dataTransfer = {
+      dropEffect: "",
+      effectAllowed: "",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/two"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+
+    await wrapper.get("a[href='/pastebin.com/two']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragover", { dataTransfer });
+
+    expect(wrapper.get("a[href='/pastebin.com/one']").element.closest("li")?.className).toContain(
+      "before:bg-blue-600",
+    );
+  });
+
+  it("drops before the target bookmark when dragging downward", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/three", title: "Three" });
+    wrapper = mountBookmarkList();
+    const dataTransfer = {
+      dropEffect: "",
+      effectAllowed: "",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/one"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/three']").trigger("dragover", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/three']").trigger("drop", { dataTransfer });
+
+    await vi.waitFor(() => {
+      expect(bookmarks.bookmarks.value).toEqual([
+        { routePath: "/pastebin.com/two", title: "Two", position: 0 },
+        { routePath: "/pastebin.com/one", title: "One", position: 1 },
+        { routePath: "/pastebin.com/three", title: "Three", position: 2 },
+      ]);
+    });
+  });
 });
