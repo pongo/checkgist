@@ -170,6 +170,18 @@ export function useBookmarkDragDrop({
     }
   }
 
+  function allowDropInsideBoundary(event: DragEvent) {
+    if (draggedRoutePath.value === null && dropIndicator.value === null) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (event.dataTransfer !== null) {
+      event.dataTransfer.dropEffect = "move";
+    }
+  }
+
   async function dropOnCurrentIndicator(event: DragEvent) {
     const targetRoutePath = dropIndicator.value?.routePath;
 
@@ -218,7 +230,7 @@ export function useBookmarkDragDrop({
     onDragEnd,
     onDragOver,
     onDrop,
-    onDropBoundaryDragOver: allowDropOnCurrentIndicator,
+    onDropBoundaryDragOver: allowDropInsideBoundary,
     onDropBoundaryDrop: dropOnCurrentIndicator,
   };
 }

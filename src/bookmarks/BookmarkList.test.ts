@@ -257,6 +257,24 @@ describe("BookmarkList", () => {
     });
   });
 
+  it("allows internal bookmark dragenter over the list before an indicator is selected", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    wrapper = mountBookmarkList();
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/one"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("ul").trigger("dragenter", { dataTransfer });
+
+    expect(dataTransfer.dropEffect).toBe("move");
+  });
+
   it("drops before the target bookmark when dragging downward", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });

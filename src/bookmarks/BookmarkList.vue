@@ -103,6 +103,7 @@ function getDropIndicatorPosition(row: BookmarkRow) {
     <ul
       ref="bookmarkList"
       class="mt-3 space-y-1"
+      @dragenter.capture="onDropBoundaryDragOver"
       @dragover.self="onDropBoundaryDragOver"
       @drop.self="onDropBoundaryDrop"
     >
