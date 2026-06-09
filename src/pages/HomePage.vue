@@ -2,6 +2,7 @@
 import { nextTick, onMounted, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 
+import BookmarkList from "@/bookmarks/BookmarkList.vue";
 import {
   referenceFromUrlInput,
   routeForReference,
@@ -81,6 +82,8 @@ onMounted(() => {
           {{ inputError }}
         </p>
       </form>
+
+      <BookmarkList />
     </section>
   </main>
 </template>

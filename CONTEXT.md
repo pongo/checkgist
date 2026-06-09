@@ -8,6 +8,10 @@ Checkgist is a client-side checklist manager for rendering Markdown task lists f
 An interactive rendering of a Loaded Source where Task Items can be checked or unchecked.
 _Avoid_: Checklist Session, rendered source, checklist run
 
+**Bookmark**:
+A user-saved reference to a Checklist for opening it again later. It does not include Checklist State.
+_Avoid_: Favorite, saved checklist, pinned checklist
+
 **Loaded Source**:
 The resolved content loaded from a Source URL, including its Source Metadata and Source Files.
 _Avoid_: Source Content, source data, source snapshot

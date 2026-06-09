@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
+import BookmarkToggleButton from "@/bookmarks/BookmarkToggleButton.vue";
 import { listenToBrowserHashState } from "@/checklist-session/browser-state";
 import ChecklistSessionView from "@/checklist-session/ChecklistSessionView.vue";
 import { loadChecklistSession } from "@/checklist-session/load";
@@ -108,6 +109,8 @@ onBeforeUnmount(() => {
         </RouterLink>
 
         <div v-if="session" class="flex flex-wrap items-center justify-end gap-3">
+          <BookmarkToggleButton :session="session" />
+
           <ChecklistSessionCopyLink
             class="min-h-8 content-center rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:hover:bg-zinc-900"
           />
