@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
 import { listenToBrowserHashState } from "@/checklist-session/browser-state";
 import { formatBrowserTitle } from "@/checklist-session/browser-title";
 import { buildChecklistSession } from "@/checklist-session/build";
 import type { ChecklistSession } from "@/checklist-session/types";
+import ChecklistSessionCopyLink from "@/components/ChecklistSessionCopyLink.vue";
 import ChecklistSessionView from "@/components/ChecklistSessionView.vue";
 import {
   referenceFromRoute,
@@ -13,7 +14,6 @@ import {
   unsupportedSourceUrlMessage,
 } from "@/source-services/registry";
 import type { SourceReference } from "@/source-services/types";
-import { copyToClipboard } from "@/shared/clipboard.ts";
 
 const route = useRoute();
 
@@ -22,27 +22,14 @@ function referenceFromRoutePath(routePath: string): SourceReference | null {
   return referenceFromRoute(path);
 }
 
-const currentChecklistSessionUrl = computed(() => {
-  // Touch route.fullPath so Vue recomputes this value after router-managed hash changes.
-  void route.fullPath;
-  return window.location.href;
-});
-
 const session = ref<ChecklistSession | null>(null);
 const checklistSessionView = ref<InstanceType<typeof ChecklistSessionView> | null>(null);
 const isLoading = ref(false);
 const loadError = ref("");
-const isCopyLinkCopied = ref(false);
 
 let activeLoadToken = 0;
 let abortController: AbortController | null = null;
 let stopHashStateListener: (() => void) | null = null;
-let copyLinkResetTimeout: ReturnType<typeof setTimeout> | undefined;
-
-function resetCopyLinkFeedback() {
-  clearTimeout(copyLinkResetTimeout);
-  isCopyLinkCopied.value = false;
-}
 
 async function loadSource(referenceToLoad: SourceReference | null) {
   activeLoadToken += 1;
@@ -51,7 +38,6 @@ async function loadSource(referenceToLoad: SourceReference | null) {
   abortController = null;
   session.value = null;
   loadError.value = "";
-  resetCopyLinkFeedback();
 
   if (referenceToLoad === null) {
     document.title = "Checkgist";
@@ -96,16 +82,6 @@ async function loadSource(referenceToLoad: SourceReference | null) {
   }
 }
 
-async function copyCurrentChecklistSessionLink() {
-  await copyToClipboard(currentChecklistSessionUrl.value);
-
-  clearTimeout(copyLinkResetTimeout);
-  isCopyLinkCopied.value = true;
-  copyLinkResetTimeout = setTimeout(() => {
-    isCopyLinkCopied.value = false;
-  }, 2000);
-}
-
 function resetCurrentChecklistSession() {
   checklistSessionView.value?.resetAllTasks();
 }
@@ -125,7 +101,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   activeLoadToken += 1;
   abortController?.abort();
-  resetCopyLinkFeedback();
   stopHashStateListener?.();
 });
 </script>
@@ -144,13 +119,9 @@ onBeforeUnmount(() => {
         </RouterLink>
 
         <div v-if="session" class="flex flex-wrap items-center justify-end gap-3">
-          <a
+          <ChecklistSessionCopyLink
             class="min-h-8 content-center rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:hover:bg-zinc-900"
-            :href="currentChecklistSessionUrl"
-            @click.prevent="copyCurrentChecklistSessionLink"
-          >
-            {{ isCopyLinkCopied ? "Copied" : "Copy link" }}
-          </a>
+          />
 
           <a
             class="min-h-8 content-center rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:hover:bg-zinc-900"
