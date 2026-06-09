@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ExternalLink, RotateCcw } from "@lucide/vue";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
@@ -99,7 +100,7 @@ onBeforeUnmount(() => {
   <main class="min-h-screen bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
     <header class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <div
-        class="mx-auto flex min-h-20 w-full max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-5"
+        class="mx-auto flex min-h-20 w-full max-w-4xl items-center justify-between gap-3 px-4 py-5"
       >
         <RouterLink
           class="rounded-sm focus:ring-2 focus:ring-blue-600/30 focus:outline-none"
@@ -108,28 +109,34 @@ onBeforeUnmount(() => {
           <h1 class="text-lg font-semibold tracking-normal">Checkgist</h1>
         </RouterLink>
 
-        <div v-if="session" class="flex flex-wrap items-center justify-end gap-3">
+        <div v-if="session" class="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
           <BookmarkToggleButton :session="session" />
 
           <ChecklistSessionCopyLink
-            class="min-h-8 content-center rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:hover:bg-zinc-900"
+            class="inline-flex h-9 w-9 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:h-8 sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
           />
 
           <a
-            class="min-h-8 content-center rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:hover:bg-zinc-900"
+            class="inline-flex h-9 w-9 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:h-8 sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
             :href="session.source.metadata.url"
+            aria-label="View source"
             rel="noopener noreferrer"
             target="_blank"
+            title="View source"
           >
-            View source
+            <ExternalLink class="size-4" aria-hidden="true" />
+            <span class="hidden sm:inline">View source</span>
           </a>
 
           <button
-            class="min-h-8 content-center rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:hover:bg-zinc-900"
+            class="inline-flex h-9 w-9 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:h-8 sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
             type="button"
+            aria-label="Reset all"
+            title="Reset all"
             @click="resetCurrentChecklistSession"
           >
-            Reset all
+            <RotateCcw class="size-4" aria-hidden="true" />
+            <span class="hidden sm:inline">Reset all</span>
           </button>
         </div>
       </div>
