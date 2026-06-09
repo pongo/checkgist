@@ -1,0 +1,342 @@
+import "fake-indexeddb/auto";
+
+import type { VueWrapper } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
+import { IDBFactory } from "fake-indexeddb";
+import { defineComponent, h } from "vue";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { closeBookmarkDatabaseForTests } from "./db";
+import BookmarkList from "./BookmarkList.vue";
+import { resetBookmarksForTests, useBookmarks } from "./useBookmarks";
+
+const RouterLinkStub = defineComponent({
+  props: {
+    to: {
+      type: String,
+      required: true,
+    },
+  },
+  setup(props, { attrs, slots }) {
+    return () =>
+      h(
+        "a",
+        {
+          href: props.to,
+          ...attrs,
+        },
+        slots.default?.(),
+      );
+  },
+});
+
+function resetIndexedDb() {
+  vi.stubGlobal("indexedDB", new IDBFactory());
+}
+
+function mountBookmarkList() {
+  return mount(BookmarkList, {
+    global: {
+      stubs: {
+        RouterLink: RouterLinkStub,
+      },
+    },
+  });
+}
+
+function getButtonByLabel(wrapper: VueWrapper, label: string) {
+  return wrapper.get(`button[aria-label='${label}']`);
+}
+
+function setElementBounds(element: Element, bounds: Partial<DOMRect>) {
+  element.getBoundingClientRect = vi.fn<() => DOMRect>(
+    () =>
+      ({
+        bottom: 24,
+        height: 24,
+        left: 0,
+        right: 100,
+        top: 0,
+        width: 100,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+        ...bounds,
+      }) as DOMRect,
+  );
+}
+
+type TestDataTransfer = Pick<DataTransfer, "dropEffect" | "effectAllowed" | "getData" | "setData">;
+
+function dispatchWindowDragEvent(type: string, dataTransfer: TestDataTransfer) {
+  const event = new Event(type, { cancelable: true });
+  Object.defineProperty(event, "dataTransfer", {
+    value: dataTransfer,
+  });
+
+  window.dispatchEvent(event);
+  return event;
+}
+
+describe("BookmarkList", () => {
+  let wrapper: VueWrapper | undefined;
+
+  beforeEach(async () => {
+    await resetBookmarksForTests();
+    await closeBookmarkDatabaseForTests();
+    resetIndexedDb();
+  });
+
+  afterEach(() => {
+    wrapper?.unmount();
+    wrapper = undefined;
+  });
+
+  it("is hidden until there are bookmarks", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.ensureLoaded();
+    wrapper = mountBookmarkList();
+
+    expect(wrapper.find("section").exists()).toBe(false);
+  });
+
+  it("renders bookmark links", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    wrapper = mountBookmarkList();
+
+    const link = wrapper.get("a[href='/pastebin.com/one']");
+    expect(link.text()).toBe("One");
+  });
+
+  it("renames a bookmark with Enter and trims whitespace", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    wrapper = mountBookmarkList();
+
+    await getButtonByLabel(wrapper, "Rename bookmark").trigger("click");
+    await wrapper.get("input").setValue("  Release checklist  ");
+    await wrapper.get("input").trigger("keydown", { key: "Enter" });
+
+    await vi.waitFor(() => {
+      expect(wrapper?.get("a[href='/pastebin.com/one']").text()).toBe("Release checklist");
+    });
+  });
+
+  it("cancels rename with Escape", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    wrapper = mountBookmarkList();
+
+    await getButtonByLabel(wrapper, "Rename bookmark").trigger("click");
+    await wrapper.get("input").setValue("Ignored");
+    await wrapper.get("input").trigger("keydown", { key: "Escape" });
+
+    await vi.waitFor(() => {
+      expect(wrapper?.get("a[href='/pastebin.com/one']").text()).toBe("One");
+    });
+  });
+
+  it("keeps the previous title when blur saves an empty title", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    wrapper = mountBookmarkList();
+
+    await getButtonByLabel(wrapper, "Rename bookmark").trigger("click");
+    await wrapper.get("input").setValue("  ");
+    await wrapper.get("input").trigger("blur");
+
+    await vi.waitFor(() => {
+      expect(wrapper?.get("a[href='/pastebin.com/one']").text()).toBe("One");
+    });
+  });
+
+  it("shows a restore placeholder after deleting a bookmark", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    wrapper = mountBookmarkList();
+
+    await getButtonByLabel(wrapper, "Delete bookmark").trigger("click");
+
+    await vi.waitFor(() => {
+      expect(wrapper?.find("a[href='/pastebin.com/one']").exists()).toBe(false);
+      expect(wrapper?.text()).toContain("One");
+      expect(wrapper?.text()).toContain("Restore");
+      expect(bookmarks.bookmarks.value).toEqual([]);
+    });
+  });
+
+  it("restores a deleted bookmark at its placeholder position", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    wrapper = mountBookmarkList();
+
+    await wrapper.get("button[aria-label='Delete bookmark']").trigger("click");
+    await vi.waitFor(() => {
+      expect(wrapper?.text()).toContain("Restore");
+    });
+    await wrapper.get("button:not([aria-label])").trigger("click");
+
+    await vi.waitFor(() => {
+      expect(bookmarks.bookmarks.value).toEqual([
+        { routePath: "/pastebin.com/one", title: "One", position: 0 },
+        { routePath: "/pastebin.com/two", title: "Two", position: 1 },
+      ]);
+    });
+  });
+
+  it("reorders bookmarks with native drag events on the title link", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    wrapper = mountBookmarkList();
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/two"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+
+    await wrapper.get("a[href='/pastebin.com/two']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragover", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("drop", { dataTransfer });
+
+    await vi.waitFor(() => {
+      expect(bookmarks.bookmarks.value).toEqual([
+        { routePath: "/pastebin.com/two", title: "Two", position: 0 },
+        { routePath: "/pastebin.com/one", title: "One", position: 1 },
+      ]);
+    });
+  });
+
+  it("shows a drop indicator while dragging over another bookmark", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    wrapper = mountBookmarkList();
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/two"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+
+    await wrapper.get("a[href='/pastebin.com/two']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragover", { dataTransfer });
+
+    expect(wrapper.get("a[href='/pastebin.com/one']").element.closest("li")?.className).toContain(
+      "before:bg-blue-600",
+    );
+  });
+
+  it("allows dropping outside the list after a drop indicator is selected", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    wrapper = mountBookmarkList();
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/two"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+
+    await wrapper.get("a[href='/pastebin.com/two']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragover", { dataTransfer });
+    const dragOverEvent = dispatchWindowDragEvent("dragover", dataTransfer);
+    dispatchWindowDragEvent("drop", dataTransfer);
+
+    await vi.waitFor(() => {
+      expect(dragOverEvent.defaultPrevented).toBe(true);
+      expect(dataTransfer.dropEffect).toBe("move");
+      expect(bookmarks.bookmarks.value).toEqual([
+        { routePath: "/pastebin.com/two", title: "Two", position: 0 },
+        { routePath: "/pastebin.com/one", title: "One", position: 1 },
+      ]);
+    });
+  });
+
+  it("allows internal bookmark dragenter over the list before an indicator is selected", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    wrapper = mountBookmarkList();
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/one"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("ul").trigger("dragenter", { dataTransfer });
+
+    expect(dataTransfer.dropEffect).toBe("move");
+  });
+
+  it("drops before the target bookmark when dragging downward", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/three", title: "Three" });
+    wrapper = mountBookmarkList();
+    const dataTransfer = {
+      dropEffect: "",
+      effectAllowed: "",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/one"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/three']").trigger("dragover", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/three']").trigger("drop", { dataTransfer });
+
+    await vi.waitFor(() => {
+      expect(bookmarks.bookmarks.value).toEqual([
+        { routePath: "/pastebin.com/two", title: "Two", position: 0 },
+        { routePath: "/pastebin.com/one", title: "One", position: 1 },
+        { routePath: "/pastebin.com/three", title: "Three", position: 2 },
+      ]);
+    });
+  });
+
+  it("keeps one visual drop indicator for the same downward insertion gap", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/three", title: "Three" });
+    wrapper = mountBookmarkList();
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/one"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+    const twoRow = wrapper.get("a[href='/pastebin.com/two']").element.closest("li");
+    const threeRow = wrapper.get("a[href='/pastebin.com/three']").element.closest("li");
+
+    if (twoRow === null || threeRow === null) {
+      throw new Error("Expected bookmark rows to exist");
+    }
+
+    setElementBounds(twoRow, { bottom: 48, top: 24 });
+    setElementBounds(threeRow, { bottom: 72, top: 48 });
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/two']").trigger("dragover", {
+      clientY: 43,
+      dataTransfer,
+    });
+
+    expect(threeRow.className).toContain("before:bg-blue-600");
+    expect(twoRow.className).not.toContain("after:bg-blue-600");
+
+    await wrapper.get("a[href='/pastebin.com/three']").trigger("dragover", {
+      clientY: 53,
+      dataTransfer,
+    });
+
+    expect(threeRow.className).toContain("before:bg-blue-600");
+    expect(twoRow.className).not.toContain("after:bg-blue-600");
+  });
+});
