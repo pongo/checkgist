@@ -77,6 +77,41 @@ export function useBookmarkDragDrop({
     return fromIndex < targetInsertIndex ? targetInsertIndex - 1 : targetInsertIndex;
   }
 
+  function getCanonicalDropIndicator(
+    routePath: string,
+    targetBookmark: Bookmark,
+    position: DropIndicatorPosition,
+  ): BookmarkDropIndicator | null {
+    const targetIndex = bookmarks.value.findIndex(
+      (bookmark) => bookmark.routePath === targetBookmark.routePath,
+    );
+
+    if (targetIndex === -1) {
+      return null;
+    }
+
+    const gapIndex = targetIndex + (position === "after" ? 1 : 0);
+    const nextBookmark = bookmarks.value[gapIndex];
+
+    if (nextBookmark !== undefined && nextBookmark.routePath !== routePath) {
+      return {
+        routePath: nextBookmark.routePath,
+        position: "before",
+      };
+    }
+
+    const previousBookmark = bookmarks.value[gapIndex - 1];
+
+    if (previousBookmark !== undefined && previousBookmark.routePath !== routePath) {
+      return {
+        routePath: previousBookmark.routePath,
+        position: "after",
+      };
+    }
+
+    return null;
+  }
+
   function onDragOver(targetBookmark: Bookmark, event: DragEvent) {
     event.preventDefault();
 
@@ -88,10 +123,7 @@ export function useBookmarkDragDrop({
 
     dropIndicator.value =
       routePath.length > 0 && routePath !== targetBookmark.routePath
-        ? {
-            routePath: targetBookmark.routePath,
-            position: getDropPosition(event),
-          }
+        ? getCanonicalDropIndicator(routePath, targetBookmark, getDropPosition(event))
         : null;
   }
 
@@ -104,10 +136,15 @@ export function useBookmarkDragDrop({
       return;
     }
 
+    const indicatorTargetBookmark =
+      dropIndicator.value === null
+        ? undefined
+        : bookmarks.value.find((bookmark) => bookmark.routePath === dropIndicator.value?.routePath);
+    const targetDropPosition = dropIndicator.value?.position ?? getDropPosition(event);
     const targetIndex = getDropIndex(
       routePath,
-      targetBookmark,
-      dropIndicator.value?.position ?? getDropPosition(event),
+      indicatorTargetBookmark ?? targetBookmark,
+      targetDropPosition,
     );
 
     if (targetIndex !== -1) {

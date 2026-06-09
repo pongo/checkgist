@@ -48,6 +48,24 @@ function getButtonByLabel(wrapper: VueWrapper, label: string) {
   return wrapper.get(`button[aria-label='${label}']`);
 }
 
+function setElementBounds(element: Element, bounds: Partial<DOMRect>) {
+  element.getBoundingClientRect = vi.fn<() => DOMRect>(
+    () =>
+      ({
+        bottom: 24,
+        height: 24,
+        left: 0,
+        right: 100,
+        top: 0,
+        width: 100,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+        ...bounds,
+      }) as DOMRect,
+  );
+}
+
 type TestDataTransfer = Pick<DataTransfer, "dropEffect" | "effectAllowed" | "getData" | "setData">;
 
 function dispatchWindowDragEvent(type: string, dataTransfer: TestDataTransfer) {
@@ -263,5 +281,44 @@ describe("BookmarkList", () => {
         { routePath: "/pastebin.com/three", title: "Three", position: 2 },
       ]);
     });
+  });
+
+  it("keeps one visual drop indicator for the same downward insertion gap", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/three", title: "Three" });
+    wrapper = mountBookmarkList();
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/one"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+    const twoRow = wrapper.get("a[href='/pastebin.com/two']").element.closest("li");
+    const threeRow = wrapper.get("a[href='/pastebin.com/three']").element.closest("li");
+
+    if (twoRow === null || threeRow === null) {
+      throw new Error("Expected bookmark rows to exist");
+    }
+
+    setElementBounds(twoRow, { bottom: 48, top: 24 });
+    setElementBounds(threeRow, { bottom: 72, top: 48 });
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/two']").trigger("dragover", {
+      clientY: 43,
+      dataTransfer,
+    });
+
+    expect(threeRow.className).toContain("before:bg-blue-600");
+    expect(twoRow.className).not.toContain("after:bg-blue-600");
+
+    await wrapper.get("a[href='/pastebin.com/three']").trigger("dragover", {
+      clientY: 53,
+      dataTransfer,
+    });
+
+    expect(threeRow.className).toContain("before:bg-blue-600");
+    expect(twoRow.className).not.toContain("after:bg-blue-600");
   });
 });
