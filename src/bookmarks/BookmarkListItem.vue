@@ -61,6 +61,22 @@ function saveRename() {
 
   emit("rename", props.row.bookmark, editingTitle.value);
 }
+
+function onRowDragOver(event: DragEvent) {
+  if (props.row.type !== "bookmark" || props.isEditing) {
+    return;
+  }
+
+  emit("dragOver", props.row.bookmark, event);
+}
+
+function onRowDrop(event: DragEvent) {
+  if (props.row.type !== "bookmark" || props.isEditing) {
+    return;
+  }
+
+  emit("drop", props.row.bookmark, event);
+}
 </script>
 
 <template>
@@ -75,6 +91,8 @@ function saveRename() {
         ? 'after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5 after:rounded-full after:bg-blue-600 dark:after:bg-blue-400'
         : '',
     ]"
+    @dragover="onRowDragOver"
+    @drop="onRowDrop"
   >
     <span class="size-1.5 shrink-0 rounded-full bg-zinc-950 dark:bg-zinc-50" aria-hidden="true" />
     <div class="flex min-w-0 flex-1 items-center gap-2">
@@ -86,8 +104,6 @@ function saveRename() {
           draggable="true"
           @dragstart="emit('dragStart', row.bookmark, $event)"
           @dragend="emit('dragEnd')"
-          @dragover="emit('dragOver', row.bookmark, $event)"
-          @drop="emit('drop', row.bookmark, $event)"
         >
           {{ row.bookmark.title }}
         </RouterLink>

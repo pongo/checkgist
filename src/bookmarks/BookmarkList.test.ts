@@ -48,6 +48,18 @@ function getButtonByLabel(wrapper: VueWrapper, label: string) {
   return wrapper.get(`button[aria-label='${label}']`);
 }
 
+type TestDataTransfer = Pick<DataTransfer, "dropEffect" | "effectAllowed" | "getData" | "setData">;
+
+function dispatchWindowDragEvent(type: string, dataTransfer: TestDataTransfer) {
+  const event = new Event(type, { cancelable: true });
+  Object.defineProperty(event, "dataTransfer", {
+    value: dataTransfer,
+  });
+
+  window.dispatchEvent(event);
+  return event;
+}
+
 describe("BookmarkList", () => {
   let wrapper: VueWrapper | undefined;
 
@@ -161,9 +173,9 @@ describe("BookmarkList", () => {
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
     wrapper = mountBookmarkList();
-    const dataTransfer = {
-      dropEffect: "",
-      effectAllowed: "",
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
       getData: vi.fn<(format: string) => string>(() => "/pastebin.com/two"),
       setData: vi.fn<(format: string, data: string) => void>(),
     };
@@ -185,9 +197,9 @@ describe("BookmarkList", () => {
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
     wrapper = mountBookmarkList();
-    const dataTransfer = {
-      dropEffect: "",
-      effectAllowed: "",
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
       getData: vi.fn<(format: string) => string>(() => "/pastebin.com/two"),
       setData: vi.fn<(format: string, data: string) => void>(),
     };
@@ -198,6 +210,33 @@ describe("BookmarkList", () => {
     expect(wrapper.get("a[href='/pastebin.com/one']").element.closest("li")?.className).toContain(
       "before:bg-blue-600",
     );
+  });
+
+  it("allows dropping outside the list after a drop indicator is selected", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    wrapper = mountBookmarkList();
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/two"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+
+    await wrapper.get("a[href='/pastebin.com/two']").trigger("dragstart", { dataTransfer });
+    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragover", { dataTransfer });
+    const dragOverEvent = dispatchWindowDragEvent("dragover", dataTransfer);
+    dispatchWindowDragEvent("drop", dataTransfer);
+
+    await vi.waitFor(() => {
+      expect(dragOverEvent.defaultPrevented).toBe(true);
+      expect(dataTransfer.dropEffect).toBe("move");
+      expect(bookmarks.bookmarks.value).toEqual([
+        { routePath: "/pastebin.com/two", title: "Two", position: 0 },
+        { routePath: "/pastebin.com/one", title: "One", position: 1 },
+      ]);
+    });
   });
 
   it("drops before the target bookmark when dragging downward", async () => {
