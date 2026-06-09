@@ -4,6 +4,7 @@ import { computed, nextTick, ref, useTemplateRef } from "vue";
 import { RouterLink } from "vue-router";
 
 import type { Bookmark } from "./db";
+import { useBookmarkDragDrop } from "./useBookmarkDragDrop";
 import { useBookmarks } from "./useBookmarks";
 
 type BookmarkRow =
@@ -16,16 +17,17 @@ type BookmarkRow =
       bookmark: Bookmark;
       position: number;
     };
-type DropIndicatorPosition = "before" | "after";
 
 const { bookmarks, isReady, removeBookmark, renameBookmark, reorderBookmark, restoreBookmark } =
   useBookmarks();
 const editingRoutePath = ref<string | null>(null);
 const editingTitle = ref("");
-const draggedRoutePath = ref<string | null>(null);
-const dropIndicator = ref<{ routePath: string; position: DropIndicatorPosition } | null>(null);
 const recentlyRemoved = ref<Array<{ bookmark: Bookmark; position: number }>>([]);
 const editInput = useTemplateRef("editInput");
+const { dropIndicator, onDragStart, onDragEnd, onDragOver, onDrop } = useBookmarkDragDrop({
+  bookmarks,
+  reorderBookmark,
+});
 
 const rows = computed<BookmarkRow[]>(() => {
   const nextRows: BookmarkRow[] = bookmarks.value.map((bookmark) => ({
@@ -83,98 +85,6 @@ async function restoreRemovedBookmark(row: Extract<BookmarkRow, { type: "removed
   recentlyRemoved.value = recentlyRemoved.value.filter(
     (placeholder) => placeholder.bookmark.routePath !== row.bookmark.routePath,
   );
-}
-
-function onDragStart(bookmark: Bookmark, event: DragEvent) {
-  draggedRoutePath.value = bookmark.routePath;
-  event.dataTransfer?.setData("text/plain", bookmark.routePath);
-
-  if (event.dataTransfer !== null) {
-    event.dataTransfer.effectAllowed = "move";
-  }
-}
-
-function onDragEnd() {
-  draggedRoutePath.value = null;
-  dropIndicator.value = null;
-}
-
-function getDraggedRoutePath(event: DragEvent): string {
-  return draggedRoutePath.value ?? event.dataTransfer?.getData("text/plain") ?? "";
-}
-
-function getDropPosition(event: DragEvent): DropIndicatorPosition {
-  if (!(event.currentTarget instanceof HTMLElement)) {
-    return "before";
-  }
-
-  const bounds = event.currentTarget.getBoundingClientRect();
-
-  if (bounds.height === 0) {
-    return "before";
-  }
-
-  return event.clientY > bounds.top + bounds.height / 2 ? "after" : "before";
-}
-
-function getDropIndex(
-  routePath: string,
-  targetBookmark: Bookmark,
-  position: DropIndicatorPosition,
-) {
-  const fromIndex = bookmarks.value.findIndex((bookmark) => bookmark.routePath === routePath);
-  const targetIndex = bookmarks.value.findIndex(
-    (bookmark) => bookmark.routePath === targetBookmark.routePath,
-  );
-
-  if (fromIndex === -1 || targetIndex === -1) {
-    return -1;
-  }
-
-  const targetInsertIndex = targetIndex + (position === "after" ? 1 : 0);
-  return fromIndex < targetInsertIndex ? targetInsertIndex - 1 : targetInsertIndex;
-}
-
-function onDragOver(targetBookmark: Bookmark, event: DragEvent) {
-  event.preventDefault();
-
-  if (event.dataTransfer !== null) {
-    event.dataTransfer.dropEffect = "move";
-  }
-
-  const routePath = getDraggedRoutePath(event);
-
-  dropIndicator.value =
-    routePath.length > 0 && routePath !== targetBookmark.routePath
-      ? {
-          routePath: targetBookmark.routePath,
-          position: getDropPosition(event),
-        }
-      : null;
-}
-
-async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
-  event.preventDefault();
-  const routePath = getDraggedRoutePath(event);
-
-  if (routePath.length === 0 || routePath === targetBookmark.routePath) {
-    draggedRoutePath.value = null;
-    dropIndicator.value = null;
-    return;
-  }
-
-  const targetIndex = getDropIndex(
-    routePath,
-    targetBookmark,
-    dropIndicator.value?.position ?? getDropPosition(event),
-  );
-
-  if (targetIndex !== -1) {
-    await reorderBookmark(routePath, targetIndex);
-  }
-
-  draggedRoutePath.value = null;
-  dropIndicator.value = null;
 }
 </script>
 
