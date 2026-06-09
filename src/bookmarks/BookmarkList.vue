@@ -140,11 +140,11 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
           class="size-1.5 shrink-0 rounded-full bg-zinc-950 dark:bg-zinc-50"
           aria-hidden="true"
         />
-        <div class="inline-flex max-w-full min-w-0 items-center gap-1.5">
+        <div class="flex min-w-0 flex-1 items-center gap-2">
           <template v-if="row.type === 'bookmark'">
             <RouterLink
               v-if="editingRoutePath !== row.bookmark.routePath"
-              class="min-w-0 truncate rounded-sm text-base text-zinc-800 hover:text-[#0969da] focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-200 dark:hover:text-[#4493f8]"
+              class="min-w-0 flex-1 truncate rounded-sm text-base text-zinc-800 group-hover:text-[#0969da] focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-200 dark:group-hover:text-[#4493f8]"
               :to="row.bookmark.routePath"
               draggable="true"
               @dragstart="onDragStart(row.bookmark, $event)"
@@ -168,7 +168,7 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
 
             <div
               v-if="editingRoutePath !== row.bookmark.routePath"
-              class="flex shrink-0 items-center gap-0.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+              class="ml-auto flex shrink-0 items-center gap-0.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
             >
               <button
                 class="inline-flex size-7 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
@@ -190,11 +190,11 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
           </template>
 
           <template v-else>
-            <span class="min-w-0 truncate text-base text-zinc-700 dark:text-zinc-300">
+            <span class="min-w-0 flex-1 truncate text-base text-zinc-700 dark:text-zinc-300">
               {{ row.bookmark.title }}
             </span>
             <button
-              class="inline-flex min-h-8 shrink-0 items-center gap-2 rounded-md border border-zinc-300 bg-white px-2 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+              class="ml-auto inline-flex min-h-8 shrink-0 items-center gap-2 rounded-md border border-zinc-300 bg-white px-2 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-900"
               type="button"
               @click="restoreRemovedBookmark(row)"
             >
