@@ -133,7 +133,7 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
       <li
         v-for="(row, rowIndex) in rows"
         :key="`${row.type}:${row.bookmark.routePath}`"
-        class="group flex items-center gap-3"
+        class="group flex min-h-8 items-center gap-3"
         :class="row.type === 'removed' ? 'opacity-60' : ''"
       >
         <span
