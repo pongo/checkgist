@@ -139,7 +139,7 @@ async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
         <template v-if="row.type === 'bookmark'">
           <RouterLink
             v-if="editingRoutePath !== row.bookmark.routePath"
-            class="min-w-0 flex-1 cursor-grab truncate rounded-sm text-sm text-zinc-800 hover:text-[#0969da] focus:ring-2 focus:ring-blue-600/30 focus:outline-none active:cursor-grabbing dark:text-zinc-200 dark:hover:text-[#4493f8]"
+            class="min-w-0 flex-1 truncate rounded-sm text-sm text-zinc-800 hover:text-[#0969da] focus:ring-2 focus:ring-blue-600/30 focus:outline-none active:cursor-grabbing dark:text-zinc-200 dark:hover:text-[#4493f8]"
             :to="row.bookmark.routePath"
             draggable="true"
             @dragstart="onDragStart(row.bookmark, $event)"

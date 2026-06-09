@@ -95,7 +95,7 @@ describe("BookmarkToggleButton", () => {
     await wrapper.get("button").trigger("click");
 
     await vi.waitFor(() => {
-      expect(wrapper?.get("button").text()).toBe("Add bookmark");
+      expect(wrapper?.get("button").text()).toBe("Bookmark");
       expect(bookmarks.bookmarks.value).toEqual([]);
     });
   });

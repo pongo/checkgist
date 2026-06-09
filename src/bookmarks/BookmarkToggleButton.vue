@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Bookmark as BookmarkIcon, BookmarkCheck } from "@lucide/vue";
+import { Bookmark as BookmarkIcon } from "@lucide/vue";
 import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
 
@@ -20,7 +20,7 @@ const currentBookmark = computed(() =>
   bookmarks.value.find((bookmark) => bookmark.routePath === routePath.value),
 );
 const isBookmarked = computed(() => currentBookmark.value !== undefined);
-const buttonText = computed(() => (isBookmarked.value ? "Bookmarked" : "Add bookmark"));
+const buttonText = computed(() => (isBookmarked.value ? "Bookmarked" : "Bookmark"));
 const defaultTitle = computed(() => {
   const title = props.session.source.metadata.title.trim();
   return title.length > 0 ? title : routePath.value;
@@ -57,7 +57,7 @@ async function toggleBookmark() {
     :disabled="isBusy"
     @click="toggleBookmark"
   >
-    <BookmarkCheck v-if="isBookmarked" class="size-4" aria-hidden="true" />
+    <BookmarkIcon v-if="isBookmarked" class="size-4" aria-hidden="true" fill="currentColor" />
     <BookmarkIcon v-else class="size-4" aria-hidden="true" />
     <span>{{ buttonText }}</span>
   </button>
