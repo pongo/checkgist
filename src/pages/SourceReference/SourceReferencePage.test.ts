@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SourceContent, SourceReference } from "@/source-services/types";
 
-import SourceReferenceView from "./SourceReferenceView.vue";
+import SourceReferencePage from "./SourceReferencePage.vue";
 
 const route = reactive({
   path: "/pastebin.com/HdpnureE",
@@ -146,8 +146,8 @@ function setRouteLocation(fullPath: string) {
   window.history.replaceState(null, "", route.fullPath);
 }
 
-function mountSourceReferenceView(options: { errorHandler?: (error: unknown) => void } = {}) {
-  return mount(SourceReferenceView, {
+function mountSourceReferencePage(options: { errorHandler?: (error: unknown) => void } = {}) {
+  return mount(SourceReferencePage, {
     global: {
       config:
         options.errorHandler === undefined
@@ -187,7 +187,7 @@ function renderComarkNode(node: ComarkNode): ReturnType<typeof h> | string | nul
 
 async function mountLoadedSource(source: SourceContent) {
   loadSource.mockResolvedValueOnce(source);
-  const wrapper = mountSourceReferenceView();
+  const wrapper = mountSourceReferencePage();
 
   await flushPromises();
   return wrapper;
@@ -215,7 +215,7 @@ function getChecklistSessionLink(wrapper: VueWrapper) {
   return link;
 }
 
-describe("SourceReferenceView", () => {
+describe("SourceReferencePage", () => {
   beforeEach(() => {
     setRouteLocation("/pastebin.com/HdpnureE");
     loadSource.mockReset();
@@ -436,7 +436,7 @@ describe("SourceReferenceView", () => {
 
   it("shows a source-level load error", async () => {
     loadSource.mockRejectedValueOnce(new Error("Failed to load Pastebin source."));
-    const wrapper = mount(SourceReferenceView);
+    const wrapper = mount(SourceReferencePage);
 
     await flushPromises();
 
@@ -470,7 +470,7 @@ describe("SourceReferenceView", () => {
   it("does not show a visible error when copying the Checklist Session URL fails", async () => {
     writeClipboardText.mockRejectedValueOnce(new Error("denied"));
     loadSource.mockResolvedValueOnce(createSource());
-    const wrapper = mountSourceReferenceView({
+    const wrapper = mountSourceReferencePage({
       errorHandler: (error) => {
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toBe("denied");
@@ -494,7 +494,7 @@ describe("SourceReferenceView", () => {
         ? firstLoad.promise
         : secondLoad.promise,
     );
-    const wrapper = mountSourceReferenceView();
+    const wrapper = mountSourceReferencePage();
     await nextTick();
 
     const firstSignal = loadSource.mock.calls[0]?.[1].signal;
@@ -532,7 +532,7 @@ describe("SourceReferenceView", () => {
         ? firstLoad.promise
         : secondLoad.promise,
     );
-    const wrapper = mountSourceReferenceView();
+    const wrapper = mountSourceReferencePage();
     await nextTick();
 
     setRouteLocation("/pastebin.com/current");

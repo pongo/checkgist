@@ -3,12 +3,13 @@ import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
 import { listenToBrowserHashState } from "@/checklist-session/browser-state";
+import ChecklistSessionView from "@/checklist-session/ChecklistSessionView.vue";
 import { loadChecklistSession } from "@/checklist-session/load";
 import type { ChecklistSession } from "@/checklist-session/types";
-import ChecklistSessionCopyLink from "@/components/ChecklistSessionCopyLink.vue";
-import ChecklistSessionView from "@/components/ChecklistSessionView.vue";
 import { referenceFromRoute } from "@/source-services/registry";
 import type { SourceReference } from "@/source-services/types";
+
+import ChecklistSessionCopyLink from "./ChecklistSessionCopyLink.vue";
 
 const route = useRoute();
 

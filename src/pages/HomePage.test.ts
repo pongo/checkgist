@@ -5,10 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { unsupportedSourceUrlMessage } from "@/source-services/registry";
 
-import HomeView from "./HomeView.vue";
+import HomePage from "./HomePage.vue";
 
 const push = vi.hoisted(() => vi.fn<(path: string) => Promise<void>>());
-const homeViewMountOptions = {
+const homePageMountOptions = {
   global: {
     stubs: {
       RouterLink: true,
@@ -20,7 +20,7 @@ vi.mock("vue-router", () => ({
   useRouter: () => ({ push }),
 }));
 
-describe("HomeView", () => {
+describe("HomePage", () => {
   let wrapper: VueWrapper | undefined;
 
   beforeEach(() => {
@@ -33,7 +33,7 @@ describe("HomeView", () => {
   });
 
   it("focuses the source input when mounted", async () => {
-    wrapper = mount(HomeView, { ...homeViewMountOptions, attachTo: document.body });
+    wrapper = mount(HomePage, { ...homePageMountOptions, attachTo: document.body });
 
     await nextTick();
 
@@ -42,7 +42,7 @@ describe("HomeView", () => {
 
   it("opens a normalized route from the Open button", async () => {
     push.mockResolvedValueOnce(undefined);
-    wrapper = mount(HomeView, homeViewMountOptions);
+    wrapper = mount(HomePage, homePageMountOptions);
 
     await wrapper.get("input").setValue("gist.github.com/octocat/abc123/");
     await wrapper.get("form").trigger("submit");
@@ -53,7 +53,7 @@ describe("HomeView", () => {
 
   it("opens a normalized route from Enter submit", async () => {
     push.mockResolvedValueOnce(undefined);
-    wrapper = mount(HomeView, homeViewMountOptions);
+    wrapper = mount(HomePage, homePageMountOptions);
 
     await wrapper.get("input").setValue("https://pastebin.com/raw/HdpnureE");
     await wrapper.get("input").trigger("keydown.enter");
@@ -63,7 +63,7 @@ describe("HomeView", () => {
   });
 
   it("shows an inline error for unsupported input", async () => {
-    wrapper = mount(HomeView, homeViewMountOptions);
+    wrapper = mount(HomePage, homePageMountOptions);
 
     await wrapper.get("input").setValue("HdpnureE");
     await wrapper.get("form").trigger("submit");
