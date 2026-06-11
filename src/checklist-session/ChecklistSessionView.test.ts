@@ -4,8 +4,10 @@ import { defineComponent, h } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ChecklistSession } from "@/checklist-session/types";
+import { copyToClipboard } from "@/shared/clipboard.ts";
 
 import ChecklistSessionView from "./ChecklistSessionView.vue";
+import { taskItemLabelClassName } from "./task-item-tree";
 
 const route = vi.hoisted(() => ({
   path: "/pastebin.com/source-1",
@@ -20,6 +22,10 @@ const routerReplace = vi.hoisted(() =>
 vi.mock("vue-router", () => ({
   useRoute: () => route,
   useRouter: () => ({ replace: routerReplace }),
+}));
+
+vi.mock("@/shared/clipboard.ts", () => ({
+  copyToClipboard: vi.fn<(text: string) => Promise<void>>(() => Promise.resolve()),
 }));
 
 function createTree(taskCount: number): ComarkTree {
@@ -104,7 +110,11 @@ const ComarkRendererStub = defineComponent({
             return null;
           }
 
-          return h("input", node[1]);
+          const taskIndex = node[1]["data-checkgist-task-index"];
+          return h("label", { class: taskItemLabelClassName }, [
+            h("input", node[1]),
+            h("code", `command-${taskIndex}`),
+          ]);
         }),
       );
   },
@@ -124,6 +134,7 @@ function mountSession(session: ChecklistSession) {
 describe("ChecklistSessionView", () => {
   beforeEach(() => {
     routerReplace.mockReset();
+    vi.mocked(copyToClipboard).mockClear();
   });
 
   it("renders per-file Reset controls for ready files and error files without reset controls", () => {
@@ -178,5 +189,20 @@ describe("ChecklistSessionView", () => {
       query: { debug: "1" },
       hash: "#0001",
     });
+  });
+
+  it("copies code text without toggling the task checkbox", async () => {
+    const session = createSession();
+    const wrapper = mountSession(session);
+
+    await wrapper.find("code").trigger("click");
+
+    expect(copyToClipboard).toHaveBeenCalledWith("command-0");
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [true, false],
+    });
+    expect(wrapper.find<HTMLInputElement>("input").element.checked).toBe(false);
+    expect(routerReplace).not.toHaveBeenCalled();
   });
 });

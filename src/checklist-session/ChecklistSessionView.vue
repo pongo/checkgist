@@ -10,6 +10,7 @@ import {
   taskItemIndexFromCheckboxElement,
 } from "@/checklist-session/task-item-dom";
 import type { ChecklistReadyFile, ChecklistSession } from "@/checklist-session/types";
+import { copyToClipboard } from "@/shared/clipboard.ts";
 
 const props = defineProps<{
   session: ChecklistSession;
@@ -50,6 +51,13 @@ function onTaskLabelClick(file: ChecklistReadyFile, event: MouseEvent) {
   }
 
   if (target.closest("a") !== null) {
+    return;
+  }
+
+  const code = target.closest("code");
+  if (code !== null) {
+    event.preventDefault();
+    void copyToClipboard(code.textContent ?? "");
     return;
   }
 
