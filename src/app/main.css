@@ -32,16 +32,10 @@
 .checkgist-markdown code {
   cursor: pointer;
   transition: background-color 120ms ease;
-  /* box-shadow 120ms ease; */
-}
-
-.checkgist-markdown code:hover {
-  /* box-shadow: 0 0 0 1px rgb(59 130 246 / 25%); */
 }
 
 .checkgist-markdown code:active {
   background-color: rgb(219 234 254);
-  /* box-shadow: 0 0 0 2px rgb(37 99 235 / 35%); */
 }
 
 .dark .checkgist-markdown code:active {
