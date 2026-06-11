@@ -97,6 +97,32 @@ describe("buildChecklistSession", () => {
     expect(treeJson.match(/checkgist-task-label/g)).toHaveLength(4);
   });
 
+  it("unwraps plain parent list item paragraphs before nested Task Items", async () => {
+    const session = await buildChecklistSession(
+      createSource([
+        {
+          status: "ready",
+          id: "nested.md",
+          name: "nested.md",
+          content:
+            "- попросить:\n  - `не забудь таймкоды`\n  - [ ] для эпизодов нужны время и заголовки\n- после публикации:\n  - [ ] закрепить",
+        },
+      ]),
+    );
+
+    const file = session.files[0];
+    expect(file?.status).toBe("ready");
+    if (file?.status !== "ready") {
+      return;
+    }
+
+    const treeJson = JSON.stringify(file.tree.nodes);
+    expect(treeJson).toContain('["li",{},"попросить:",["ul",{"class":"contains-task-list"}');
+    expect(treeJson).toContain('["li",{},"после публикации:",["ul",{"class":"contains-task-list"}');
+    expect(treeJson).not.toContain('["li",{},["p",{},"попросить:"],["ul"');
+    expect(treeJson).not.toContain('["li",{},["p",{},"после публикации:"],["ul"');
+  });
+
   it("applies initial Task Item State after a source is built", async () => {
     const session = await buildChecklistSession(
       createSource([

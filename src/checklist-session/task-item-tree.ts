@@ -47,6 +47,7 @@ export function prepareExplicitTaskItems(tree: ComarkTree): number {
       }
     }
   });
+  normalizeListItemParagraphs(tree);
 
   return taskItemIndex;
 }
@@ -77,6 +78,7 @@ export function promoteOrdinaryListItems(tree: ComarkTree): number {
     unwrapLeadingTaskItemParagraph(node, taskContent.container);
     taskItemIndex += 1;
   });
+  normalizeListItemParagraphs(tree);
 
   return taskItemIndex;
 }
@@ -138,6 +140,34 @@ function unwrapLeadingTaskItemParagraph(taskItem: ComarkElement, container: Coma
   }
 
   taskItem.splice(2, 1, ...elementChildren(container));
+}
+
+function normalizeListItemParagraphs(tree: ComarkTree): void {
+  visitNodes(tree.nodes, (node) => {
+    if (!isElement(node) || node[0] !== "li") {
+      return;
+    }
+
+    unwrapLeadingNestedListParagraph(node);
+  });
+}
+
+function unwrapLeadingNestedListParagraph(listItem: ComarkElement): void {
+  const firstContentNode = listItem[2] as ComarkNode | undefined;
+  const secondContentNode = listItem[3] as ComarkNode | undefined;
+
+  if (
+    firstContentNode === undefined ||
+    !isElement(firstContentNode) ||
+    firstContentNode[0] !== "p" ||
+    secondContentNode === undefined ||
+    !isElement(secondContentNode) ||
+    !isListElement(secondContentNode)
+  ) {
+    return;
+  }
+
+  listItem.splice(2, 1, ...elementChildren(firstContentNode));
 }
 
 function findTaskItemContent(node: ComarkElement): {
@@ -306,6 +336,10 @@ function isTaskListItem(node: ComarkNode): node is ComarkElement {
 
 function isOrdinaryListItem(node: ComarkNode): node is ComarkElement {
   return isElement(node) && node[0] === "li" && !isTaskListItem(node);
+}
+
+function isListElement(node: ComarkElement): boolean {
+  return node[0] === "ul" || node[0] === "ol";
 }
 
 function visitNodes(nodes: ComarkNode[], visit: (node: ComarkNode) => void): void {
