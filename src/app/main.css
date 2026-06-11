@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "github-markdown-css/github-markdown.css";
 
+:root {
+  color-scheme: light dark;
+}
+
 .checkgist-markdown {
   box-sizing: border-box;
   min-width: 0;
@@ -35,9 +39,5 @@
 }
 
 .checkgist-markdown code:active {
-  background-color: rgb(219 234 254);
-}
-
-.dark .checkgist-markdown code:active {
-  background-color: rgb(30 64 175 / 35%);
+  background-color: light-dark(rgb(219 234 254), rgb(96 165 250 / 45%));
 }
