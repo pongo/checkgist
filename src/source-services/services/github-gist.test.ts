@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { githubGistService } from "./github-gist";
-import type { SourceFetcher } from "./types";
-import { SourceLoadError } from "./types";
+import { githubGistService } from "./github-gist.ts";
+import type { SourceFetcher } from "../types.ts";
+import { SourceLoadError } from "../types.ts";
 
 describe("githubGistService.load", () => {
   const fetcherMock =

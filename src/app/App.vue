@@ -2,7 +2,7 @@
 import { onMounted } from "vue";
 import { RouterView } from "vue-router";
 
-import { useBookmarks } from "@/bookmarks/useBookmarks";
+import { useBookmarks } from "@/bookmarks";
 
 const bookmarks = useBookmarks();
 

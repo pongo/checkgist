@@ -1,14 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ChecklistSession } from "./types";
-import {
-  applySessionState,
-  encodeSessionState,
-  parseStateBits,
-  resetAll,
-  resetFile,
-  setTaskChecked,
-} from "./state";
+import { resetAll, resetFile, setTaskChecked } from "./state";
 
 function createSession(): ChecklistSession {
   return {
@@ -66,60 +59,6 @@ function readyChecked(session: ChecklistSession): boolean[][] {
 }
 
 describe("Checklist Session state", () => {
-  it.each([undefined, null, "", "#", "10a01", "#10a01"])(
-    "treats missing, empty, or invalid state as all unchecked: %s",
-    (stateBits) => {
-      const session = createSession();
-
-      applySessionState(session, stateBits);
-
-      expect(readyChecked(session)).toEqual([
-        [false, false, false],
-        [false, false],
-      ]);
-    },
-  );
-
-  it("decodes valid bits in ready file order and skips error files", () => {
-    const session = createSession();
-
-    applySessionState(session, "#10101");
-
-    expect(readyChecked(session)).toEqual([
-      [true, false, true],
-      [false, true],
-    ]);
-  });
-
-  it("treats missing valid positions as unchecked and ignores extra positions", () => {
-    const session = createSession();
-
-    applySessionState(session, "1");
-
-    expect(readyChecked(session)).toEqual([
-      [true, false, false],
-      [false, false],
-    ]);
-
-    applySessionState(session, "010111111");
-
-    expect(readyChecked(session)).toEqual([
-      [false, true, false],
-      [true, true],
-    ]);
-  });
-
-  it("encodes ready files in order, ignores error files, and trims only global trailing zeroes", () => {
-    const session = createSession();
-    applySessionState(session, "10100");
-
-    expect(encodeSessionState(session)).toBe("101");
-
-    applySessionState(session, "10010");
-
-    expect(encodeSessionState(session)).toBe("1001");
-  });
-
   it("updates file-local Task Item State without global task ranges", () => {
     const session = createSession();
 
@@ -134,7 +73,11 @@ describe("Checklist Session state", () => {
 
   it("resets one file or all ready files without consuming error files", () => {
     const session = createSession();
-    applySessionState(session, "11111");
+    setTaskChecked(session, "one.md", 0, true);
+    setTaskChecked(session, "one.md", 1, true);
+    setTaskChecked(session, "one.md", 2, true);
+    setTaskChecked(session, "two.md", 0, true);
+    setTaskChecked(session, "two.md", 1, true);
 
     expect(resetFile(session, "one.md")).toBe(true);
     expect(resetFile(session, "broken.md")).toBe(false);
@@ -149,12 +92,5 @@ describe("Checklist Session state", () => {
       [false, false, false],
       [false, false],
     ]);
-    expect(encodeSessionState(session)).toBe("");
-  });
-
-  it("normalizes hash-form state bits", () => {
-    expect(parseStateBits("#101")).toBe("101");
-    expect(parseStateBits("101")).toBe("101");
-    expect(parseStateBits("#10x")).toBe("");
   });
 });

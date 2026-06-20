@@ -4,9 +4,14 @@ import { defineComarkPlugin } from "comark";
 import security from "comark/plugins/security";
 import taskList from "comark/plugins/task-list";
 
-import type { LoadedSource, SourceFile, SourceTextFile } from "@/source-services/types";
+import {
+  referenceFromUrlInput,
+  routeForReference,
+  type LoadedSource,
+  type SourceFile,
+  type SourceTextFile,
+} from "@/source-services";
 
-import { applySessionState } from "./state";
 import { prepareExplicitTaskItems, promoteOrdinaryListItems } from "./task-item-tree";
 import type { ChecklistErrorFile, ChecklistReadyFile, ChecklistSession } from "./types";
 
@@ -14,7 +19,6 @@ type ParseMarkdown = (markdown: string, options?: ParseOptions) => Promise<Comar
 
 export type BuildChecklistSessionOptions = {
   parseMarkdown?: ParseMarkdown;
-  initialStateBits?: string | null;
 };
 
 const unsafeTags = ["script", "iframe", "object", "embed", "link", "style", "base", "meta"];
@@ -31,6 +35,7 @@ export const checklistMarkdownPlugins = [
     post(state) {
       visitNodes(state.tree.nodes, (node) => {
         if (isElement(node) && node[0] === "a" && typeof node[1].href === "string") {
+          node[1].href = rewriteSupportedSourceLink(node[1].href);
           node[1].target = "_blank";
           node[1].rel = "noopener noreferrer";
         }
@@ -60,14 +65,11 @@ export async function buildChecklistSession(
     }
   }
 
-  const session = {
+  return {
     source,
     files,
     hasTaskItems: files.some((file) => file.status === "ready" && file.checked.length > 0),
   };
-
-  applySessionState(session, options.initialStateBits);
-  return session;
 }
 
 async function buildChecklistFile(
@@ -108,6 +110,29 @@ function createChecklistFileError(sourceFile: SourceTextFile, message: string): 
     sourceFile,
     error: { message },
   };
+}
+
+function rewriteSupportedSourceLink(href: string): string {
+  if (!isAbsoluteHttpUrl(href)) {
+    return href;
+  }
+
+  const reference = referenceFromUrlInput(href);
+  return reference === null ? href : hrefForAppRoute(routeForReference(reference));
+}
+
+function isAbsoluteHttpUrl(href: string): boolean {
+  try {
+    const url = new URL(href);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function hrefForAppRoute(route: string): string {
+  const baseUrl = import.meta.env.BASE_URL;
+  return baseUrl === "/" ? route : `${baseUrl.replace(/\/$/, "")}${route}`;
 }
 
 function visitNodes(nodes: ComarkNode[], visit: (node: ComarkNode) => void): void {

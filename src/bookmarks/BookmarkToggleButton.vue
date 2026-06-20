@@ -3,9 +3,8 @@ import { Bookmark as BookmarkIcon } from "@lucide/vue";
 import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
 
-import type { ChecklistSession } from "@/checklist-session/types";
+import type { ChecklistSession } from "@/checklist-session";
 
-import { bookmarkRoutePathFromRoute } from "./routes";
 import { useBookmarks } from "./useBookmarks";
 
 const props = defineProps<{
@@ -15,7 +14,7 @@ const props = defineProps<{
 const route = useRoute();
 const { addBookmark, bookmarks, isReady, removeBookmark } = useBookmarks();
 const isBusy = ref(false);
-const routePath = computed(() => bookmarkRoutePathFromRoute(route));
+const routePath = computed(() => route.path);
 const currentBookmark = computed(() =>
   bookmarks.value.find((bookmark) => bookmark.routePath === routePath.value),
 );

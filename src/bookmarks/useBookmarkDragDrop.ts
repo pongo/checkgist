@@ -1,35 +1,18 @@
-import { onMounted, onUnmounted, ref, type Ref } from "vue";
+import { onMounted, onUnmounted, type Ref } from "vue";
 
+import type { createBookmarkListModel, DropIndicatorPosition } from "./bookmarkListModel";
 import type { Bookmark } from "./db";
 
-type DropIndicatorPosition = "before" | "after";
+type BookmarkListModel = ReturnType<typeof createBookmarkListModel>;
 
 type UseBookmarkDragDropOptions = {
-  bookmarks: Readonly<Ref<readonly Bookmark[]>>;
-  reorderBookmark: (routePath: string, toIndex: number) => Promise<void>;
+  listModel: BookmarkListModel;
   dropBoundary: Readonly<Ref<HTMLElement | null>>;
 };
 
-export type BookmarkDropIndicator = {
-  routePath: string;
-  position: DropIndicatorPosition;
-};
-
-export function useBookmarkDragDrop({
-  bookmarks,
-  reorderBookmark,
-  dropBoundary,
-}: UseBookmarkDragDropOptions) {
-  const draggedRoutePath = ref<string | null>(null);
-  const dropIndicator = ref<BookmarkDropIndicator | null>(null);
-
-  function clearDragState() {
-    draggedRoutePath.value = null;
-    dropIndicator.value = null;
-  }
-
+export function useBookmarkDragDrop({ listModel, dropBoundary }: UseBookmarkDragDropOptions) {
   function onDragStart(bookmark: Bookmark, event: DragEvent) {
-    draggedRoutePath.value = bookmark.routePath;
+    listModel.beginDrag(bookmark);
     event.dataTransfer?.setData("text/plain", bookmark.routePath);
 
     if (event.dataTransfer !== null) {
@@ -38,11 +21,11 @@ export function useBookmarkDragDrop({
   }
 
   function onDragEnd() {
-    clearDragState();
+    listModel.clearDragState();
   }
 
   function getDraggedRoutePath(event: DragEvent): string {
-    return draggedRoutePath.value ?? event.dataTransfer?.getData("text/plain") ?? "";
+    return listModel.getDraggedRoutePath(event.dataTransfer?.getData("text/plain") ?? "");
   }
 
   function getDropPosition(event: DragEvent): DropIndicatorPosition {
@@ -59,59 +42,6 @@ export function useBookmarkDragDrop({
     return event.clientY > bounds.top + bounds.height / 2 ? "after" : "before";
   }
 
-  function getDropIndex(
-    routePath: string,
-    targetBookmark: Bookmark,
-    position: DropIndicatorPosition,
-  ) {
-    const fromIndex = bookmarks.value.findIndex((bookmark) => bookmark.routePath === routePath);
-    const targetIndex = bookmarks.value.findIndex(
-      (bookmark) => bookmark.routePath === targetBookmark.routePath,
-    );
-
-    if (fromIndex === -1 || targetIndex === -1) {
-      return -1;
-    }
-
-    const targetInsertIndex = targetIndex + (position === "after" ? 1 : 0);
-    return fromIndex < targetInsertIndex ? targetInsertIndex - 1 : targetInsertIndex;
-  }
-
-  function getCanonicalDropIndicator(
-    routePath: string,
-    targetBookmark: Bookmark,
-    position: DropIndicatorPosition,
-  ): BookmarkDropIndicator | null {
-    const targetIndex = bookmarks.value.findIndex(
-      (bookmark) => bookmark.routePath === targetBookmark.routePath,
-    );
-
-    if (targetIndex === -1) {
-      return null;
-    }
-
-    const gapIndex = targetIndex + (position === "after" ? 1 : 0);
-    const nextBookmark = bookmarks.value[gapIndex];
-
-    if (nextBookmark !== undefined && nextBookmark.routePath !== routePath) {
-      return {
-        routePath: nextBookmark.routePath,
-        position: "before",
-      };
-    }
-
-    const previousBookmark = bookmarks.value[gapIndex - 1];
-
-    if (previousBookmark !== undefined && previousBookmark.routePath !== routePath) {
-      return {
-        routePath: previousBookmark.routePath,
-        position: "after",
-      };
-    }
-
-    return null;
-  }
-
   function onDragOver(targetBookmark: Bookmark, event: DragEvent) {
     event.preventDefault();
 
@@ -119,39 +49,16 @@ export function useBookmarkDragDrop({
       event.dataTransfer.dropEffect = "move";
     }
 
-    const routePath = getDraggedRoutePath(event);
-
-    dropIndicator.value =
-      routePath.length > 0 && routePath !== targetBookmark.routePath
-        ? getCanonicalDropIndicator(routePath, targetBookmark, getDropPosition(event))
-        : null;
+    listModel.previewDrop(targetBookmark, getDropPosition(event), getDraggedRoutePath(event));
   }
 
   async function onDrop(targetBookmark: Bookmark, event: DragEvent) {
     event.preventDefault();
-    const routePath = getDraggedRoutePath(event);
-
-    if (routePath.length === 0 || routePath === targetBookmark.routePath) {
-      clearDragState();
-      return;
-    }
-
-    const indicatorTargetBookmark =
-      dropIndicator.value === null
-        ? undefined
-        : bookmarks.value.find((bookmark) => bookmark.routePath === dropIndicator.value?.routePath);
-    const targetDropPosition = dropIndicator.value?.position ?? getDropPosition(event);
-    const targetIndex = getDropIndex(
-      routePath,
-      indicatorTargetBookmark ?? targetBookmark,
-      targetDropPosition,
+    await listModel.dropOnBookmark(
+      targetBookmark,
+      getDropPosition(event),
+      getDraggedRoutePath(event),
     );
-
-    if (targetIndex !== -1) {
-      await reorderBookmark(routePath, targetIndex);
-    }
-
-    clearDragState();
   }
 
   function isInsideDropBoundary(event: DragEvent) {
@@ -159,7 +66,7 @@ export function useBookmarkDragDrop({
   }
 
   function allowDropOnCurrentIndicator(event: DragEvent) {
-    if (dropIndicator.value === null) {
+    if (listModel.dropIndicator.value === null) {
       return;
     }
 
@@ -171,7 +78,7 @@ export function useBookmarkDragDrop({
   }
 
   function allowDropInsideBoundary(event: DragEvent) {
-    if (draggedRoutePath.value === null && dropIndicator.value === null) {
+    if (!listModel.allowDropInsideBoundary()) {
       return;
     }
 
@@ -182,28 +89,17 @@ export function useBookmarkDragDrop({
     }
   }
 
-  async function dropOnCurrentIndicator(event: DragEvent) {
-    const targetRoutePath = dropIndicator.value?.routePath;
-
-    if (targetRoutePath === undefined) {
-      return;
-    }
-
-    const targetBookmark = bookmarks.value.find(
-      (bookmark) => bookmark.routePath === targetRoutePath,
-    );
-
-    if (targetBookmark !== undefined) {
-      await onDrop(targetBookmark, event);
-    }
-  }
-
   function allowDocumentDrop(event: DragEvent) {
     if (isInsideDropBoundary(event)) {
       return;
     }
 
     allowDropOnCurrentIndicator(event);
+  }
+
+  async function dropOnCurrentIndicator(event: DragEvent) {
+    event.preventDefault();
+    await listModel.dropOnCurrentIndicator(getDraggedRoutePath(event));
   }
 
   async function dropOnDocument(event: DragEvent) {
@@ -225,7 +121,6 @@ export function useBookmarkDragDrop({
   });
 
   return {
-    dropIndicator,
     onDragStart,
     onDragEnd,
     onDragOver,

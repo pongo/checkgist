@@ -1,17 +1,18 @@
 import {
   sourceRegistry,
   unsupportedSourceUrlMessage,
+  type SourceReference,
   type SourceRegistry,
-} from "@/source-services/registry";
-import type { SourceReference } from "@/source-services/types";
+} from "@/source-services";
 
 import { formatBrowserTitle } from "./browser-title";
 import { buildChecklistSession } from "./build";
+import { applyChecklistStateHash } from "./state-operations";
 import type { ChecklistSession } from "./types";
 
 export type LoadChecklistSessionOptions = {
   registry?: SourceRegistry;
-  stateBits?: string | null;
+  stateHash?: string | null;
   signal?: AbortSignal;
 };
 
@@ -50,9 +51,11 @@ export async function loadChecklistSession(
   }
 
   const source = await service.load(reference, { signal: options.signal });
-  const session = await buildChecklistSession(source, {
-    initialStateBits: options.stateBits,
-  });
+  const session = await buildChecklistSession(source);
+
+  if (options.stateHash !== undefined && options.stateHash !== null) {
+    applyChecklistStateHash(session, options.stateHash);
+  }
 
   return {
     status: "loaded",

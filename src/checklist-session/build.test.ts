@@ -1,5 +1,5 @@
 import type { ComarkTree } from "comark";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { LoadedSource } from "@/source-services/types";
 
@@ -17,6 +17,10 @@ function createSource(files: LoadedSource["files"]): LoadedSource {
 }
 
 describe("buildChecklistSession", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("parses ready Source Files and stores unchecked local Task Item State", async () => {
     const session = await buildChecklistSession(
       createSource([
@@ -121,25 +125,6 @@ describe("buildChecklistSession", () => {
     expect(treeJson).toContain('["li",{},"после публикации:",["ul",{"class":"contains-task-list"}');
     expect(treeJson).not.toContain('["li",{},["p",{},"попросить:"],["ul"');
     expect(treeJson).not.toContain('["li",{},["p",{},"после публикации:"],["ul"');
-  });
-
-  it("applies initial Task Item State after a source is built", async () => {
-    const session = await buildChecklistSession(
-      createSource([
-        {
-          status: "ready",
-          id: "one.md",
-          name: "one.md",
-          content: "- [ ] One\n- [ ] Two",
-        },
-      ]),
-      { initialStateBits: "#10" },
-    );
-
-    expect(session.files[0]).toMatchObject({
-      status: "ready",
-      checked: [true, false],
-    });
   });
 
   it("renders Markdown content that has no Task Items", async () => {
@@ -357,5 +342,41 @@ describe("buildChecklistSession", () => {
     expect(treeJson).not.toContain("data:image/png");
     expect(treeJson).not.toContain("script");
     expect(treeJson).not.toContain("alert(1)");
+  });
+
+  it("rewrites supported Source URLs in Markdown links to Checkgist routes", async () => {
+    vi.stubEnv("BASE_URL", "/checkgist/");
+
+    const session = await buildChecklistSession(
+      createSource([
+        {
+          status: "ready",
+          id: "links.md",
+          name: "links.md",
+          content: [
+            "[paste](https://pastebin.com/raw/abc)",
+            "[gist](https://gist.github.com/user/def)",
+            "[external](https://example.com)",
+            "[relative](/pastebin.com/raw/abc)",
+            "[anchor](#setup)",
+          ].join("\n\n"),
+        },
+      ]),
+    );
+
+    const file = session.files[0];
+    expect(file?.status).toBe("ready");
+    if (file?.status !== "ready") {
+      return;
+    }
+
+    const treeJson = JSON.stringify(file.tree.nodes);
+    expect(treeJson).toContain('"href":"/checkgist/pastebin.com/abc"');
+    expect(treeJson).toContain('"href":"/checkgist/gist.github.com/def"');
+    expect(treeJson).toContain('"href":"https://example.com"');
+    expect(treeJson).toContain('"href":"/pastebin.com/raw/abc"');
+    expect(treeJson).toContain('"href":"#setup"');
+    expect(treeJson.match(/"target":"_blank"/g)).toHaveLength(5);
+    expect(treeJson.match(/"rel":"noopener noreferrer"/g)).toHaveLength(5);
   });
 });

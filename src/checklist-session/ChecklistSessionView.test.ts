@@ -7,7 +7,9 @@ import type { ChecklistSession } from "@/checklist-session/types";
 import { copyToClipboard } from "@/shared/clipboard.ts";
 
 import ChecklistSessionView from "./ChecklistSessionView.vue";
-import { taskItemLabelClassName } from "./task-item-tree";
+
+// Public DOM contract: the rendered label class is part of the markdown output.
+const RENDERED_TASK_LABEL_CLASS = "checkgist-task-label";
 
 const route = vi.hoisted(() => ({
   path: "/pastebin.com/source-1",
@@ -111,7 +113,7 @@ const ComarkRendererStub = defineComponent({
           }
 
           const taskIndex = node[1]["data-checkgist-task-index"];
-          return h("label", { class: taskItemLabelClassName }, [
+          return h("label", { class: RENDERED_TASK_LABEL_CLASS }, [
             h("input", node[1]),
             h("code", `command-${taskIndex}`),
           ]);

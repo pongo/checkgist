@@ -3,20 +3,8 @@ import { Pencil, RotateCcw, Trash2 } from "@lucide/vue";
 import { nextTick, ref, useTemplateRef, watch } from "vue";
 import { RouterLink } from "vue-router";
 
+import type { BookmarkRow, DropIndicatorPosition } from "./bookmarkListModel";
 import type { Bookmark } from "./db";
-
-type BookmarkRow =
-  | {
-      type: "bookmark";
-      bookmark: Bookmark;
-    }
-  | {
-      type: "removed";
-      bookmark: Bookmark;
-      position: number;
-    };
-
-type DropIndicatorPosition = "before" | "after";
 
 const props = defineProps<{
   row: BookmarkRow;

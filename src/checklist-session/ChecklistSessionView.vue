@@ -3,12 +3,16 @@ import { ComarkRenderer } from "@comark/vue";
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { encodeBrowserHashState } from "@/checklist-session/browser-state";
-import { resetAll, resetFile, setTaskChecked } from "@/checklist-session/state";
+import {
+  resetChecklist,
+  resetChecklistFile,
+  setChecklistTaskChecked,
+  type ChecklistStateOperationResult,
+} from "@/checklist-session/state-operations";
 import {
   findTaskItemLabelElement,
   taskItemIndexFromCheckboxElement,
-} from "@/checklist-session/task-item-dom";
+} from "@/checklist-session/task-item-tree";
 import type { ChecklistReadyFile, ChecklistSession } from "@/checklist-session/types";
 import { copyToClipboard } from "@/shared/clipboard.ts";
 
@@ -20,11 +24,19 @@ const route = useRoute();
 const router = useRouter();
 const markdownRenderVersion = ref(0);
 
-function replaceChecklistRouteHash() {
+function applyChecklistStateOperationResult(result: ChecklistStateOperationResult) {
+  if (!result.changed) {
+    return;
+  }
+
+  if (result.invalidateRender) {
+    markdownRenderVersion.value += 1;
+  }
+
   void router.replace({
     path: route.path,
     query: route.query,
-    hash: encodeBrowserHashState(props.session),
+    hash: result.hash,
   });
 }
 
@@ -39,9 +51,9 @@ function onTaskChange(file: ChecklistReadyFile, event: Event) {
     return;
   }
 
-  if (setTaskChecked(props.session, file.id, taskIndex, target.checked)) {
-    replaceChecklistRouteHash();
-  }
+  applyChecklistStateOperationResult(
+    setChecklistTaskChecked(props.session, file.id, taskIndex, target.checked),
+  );
 }
 
 function onTaskLabelClick(file: ChecklistReadyFile, event: MouseEvent) {
@@ -80,22 +92,17 @@ function onTaskLabelClick(file: ChecklistReadyFile, event: MouseEvent) {
   event.preventDefault();
   checkbox.checked = nextChecked;
 
-  if (setTaskChecked(props.session, file.id, taskIndex, nextChecked)) {
-    replaceChecklistRouteHash();
-  }
+  applyChecklistStateOperationResult(
+    setChecklistTaskChecked(props.session, file.id, taskIndex, nextChecked),
+  );
 }
 
 function onResetFile(fileId: string) {
-  if (resetFile(props.session, fileId)) {
-    markdownRenderVersion.value += 1;
-    replaceChecklistRouteHash();
-  }
+  applyChecklistStateOperationResult(resetChecklistFile(props.session, fileId));
 }
 
 function resetAllTasks() {
-  resetAll(props.session);
-  markdownRenderVersion.value += 1;
-  replaceChecklistRouteHash();
+  applyChecklistStateOperationResult(resetChecklist(props.session));
 }
 
 defineExpose({

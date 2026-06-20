@@ -58,7 +58,7 @@ describe("loadChecklistSession", () => {
       { type: "pastebin", pasteId: "HdpnureE" },
       {
         registry,
-        stateBits: "#1",
+        stateHash: "#1",
         signal,
       },
     );

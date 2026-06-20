@@ -1,7 +1,22 @@
 import type { ComarkElement, ComarkNode, ComarkTree } from "comark";
 
-export const taskItemIndexAttribute = "data-checkgist-task-index";
-export const taskItemLabelClassName = "checkgist-task-label";
+const taskItemIndexAttribute = "data-checkgist-task-index";
+const taskItemLabelClassName = "checkgist-task-label";
+
+export function taskItemIndexFromCheckboxElement(element: HTMLInputElement): number | null {
+  const taskIndexValue = element.getAttribute(taskItemIndexAttribute);
+  if (taskIndexValue === null) {
+    return null;
+  }
+
+  const taskIndex = Number(taskIndexValue);
+  return Number.isInteger(taskIndex) ? taskIndex : null;
+}
+
+export function findTaskItemLabelElement(target: HTMLElement): HTMLLabelElement | null {
+  const label = target.closest(`.${taskItemLabelClassName}`);
+  return label instanceof HTMLLabelElement ? label : null;
+}
 
 const blockTags = new Set([
   "address",
