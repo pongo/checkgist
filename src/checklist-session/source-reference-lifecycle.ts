@@ -1,6 +1,6 @@
 import { shallowRef, type ShallowRef } from "vue";
 
-import type { SourceReference } from "@/source-services/types";
+import type { SourceReference } from "@/source-services";
 
 import {
   loadChecklistSession,

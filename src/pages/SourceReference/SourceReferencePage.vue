@@ -3,11 +3,9 @@ import { ExternalLink, RotateCcw } from "@lucide/vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
-import BookmarkToggleButton from "@/bookmarks/BookmarkToggleButton.vue";
-import ChecklistSessionView from "@/checklist-session/ChecklistSessionView.vue";
-import { useChecklistSourceReferenceLifecycle } from "@/checklist-session/source-reference-lifecycle";
-import { referenceFromRoute } from "@/source-services/registry";
-import type { SourceReference } from "@/source-services/types";
+import { BookmarkToggleButton } from "@/bookmarks";
+import { ChecklistSessionView, useChecklistSourceReferenceLifecycle } from "@/checklist-session";
+import { referenceFromRoute, type SourceReference } from "@/source-services";
 
 import ChecklistSessionCopyLink from "./ChecklistSessionCopyLink.vue";
 

@@ -2,13 +2,13 @@
 import { nextTick, onMounted, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 
-import BookmarkList from "@/bookmarks/BookmarkList.vue";
+import { BookmarkList } from "@/bookmarks";
 import HomePageGitHubCorner from "./HomePageGitHubCorner.vue";
 import {
   referenceFromUrlInput,
   routeForReference,
   unsupportedSourceUrlMessage,
-} from "@/source-services/registry";
+} from "@/source-services";
 
 const router = useRouter();
 const sourceUrl = ref("");

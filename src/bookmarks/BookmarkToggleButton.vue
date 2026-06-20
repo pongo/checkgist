@@ -3,7 +3,7 @@ import { Bookmark as BookmarkIcon } from "@lucide/vue";
 import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
 
-import type { ChecklistSession } from "@/checklist-session/types";
+import type { ChecklistSession } from "@/checklist-session";
 
 import { useBookmarks } from "./useBookmarks";
 

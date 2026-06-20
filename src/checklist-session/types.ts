@@ -6,7 +6,7 @@ import type {
   SourceFile,
   SourceFileId,
   SourceTextFile,
-} from "@/source-services/types";
+} from "@/source-services";
 
 export type ChecklistFileError = LoadError;
 

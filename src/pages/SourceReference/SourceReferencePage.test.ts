@@ -4,7 +4,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h, nextTick, reactive } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { LoadedSource, SourceReference } from "@/source-services/types";
+import type { LoadedSource, SourceReference } from "@/source-services";
 
 import SourceReferencePage from "./SourceReferencePage.vue";
 
@@ -36,8 +36,8 @@ vi.mock("vue-router", () => ({
   }),
 }));
 
-vi.mock("@/source-services/registry", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/source-services/registry")>();
+vi.mock("@/source-services", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/source-services")>();
 
   return {
     ...actual,

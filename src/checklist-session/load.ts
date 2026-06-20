@@ -1,9 +1,9 @@
 import {
   sourceRegistry,
   unsupportedSourceUrlMessage,
+  type SourceReference,
   type SourceRegistry,
-} from "@/source-services/registry";
-import type { SourceReference } from "@/source-services/types";
+} from "@/source-services";
 
 import { formatBrowserTitle } from "./browser-title";
 import { buildChecklistSession } from "./build";

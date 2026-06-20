@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { unsupportedSourceUrlMessage } from "@/source-services/registry";
+import { unsupportedSourceUrlMessage } from "@/source-services";
 
 import HomePage from "./HomePage.vue";
 

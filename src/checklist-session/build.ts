@@ -4,8 +4,13 @@ import { defineComarkPlugin } from "comark";
 import security from "comark/plugins/security";
 import taskList from "comark/plugins/task-list";
 
-import { referenceFromUrlInput, routeForReference } from "@/source-services/registry";
-import type { LoadedSource, SourceFile, SourceTextFile } from "@/source-services/types";
+import {
+  referenceFromUrlInput,
+  routeForReference,
+  type LoadedSource,
+  type SourceFile,
+  type SourceTextFile,
+} from "@/source-services";
 
 import { prepareExplicitTaskItems, promoteOrdinaryListItems } from "./task-item-tree";
 import type { ChecklistErrorFile, ChecklistReadyFile, ChecklistSession } from "./types";
