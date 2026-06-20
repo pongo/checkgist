@@ -1,99 +1,28 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from "vue";
+import { computed, useTemplateRef } from "vue";
 
-import type { Bookmark } from "./db";
 import BookmarkListItem from "./BookmarkListItem.vue";
+import { createBookmarkListModel } from "./bookmarkListModel";
 import { useBookmarkDragDrop } from "./useBookmarkDragDrop";
 import { useBookmarks } from "./useBookmarks";
 
-type BookmarkRow =
-  | {
-      type: "bookmark";
-      bookmark: Bookmark;
-    }
-  | {
-      type: "removed";
-      bookmark: Bookmark;
-      position: number;
-    };
-
 const { bookmarks, isReady, removeBookmark, renameBookmark, reorderBookmark, restoreBookmark } =
   useBookmarks();
-const editingRoutePath = ref<string | null>(null);
-const recentlyRemoved = ref<Array<{ bookmark: Bookmark; position: number }>>([]);
-const bookmarkList = useTemplateRef("bookmarkList");
-const {
-  dropIndicator,
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  onDrop,
-  onDropBoundaryDragOver,
-  onDropBoundaryDrop,
-} = useBookmarkDragDrop({
+const listModel = createBookmarkListModel({
   bookmarks,
+  removeBookmark,
+  renameBookmark,
   reorderBookmark,
-  dropBoundary: bookmarkList,
+  restoreBookmark,
 });
+const bookmarkList = useTemplateRef("bookmarkList");
+const { onDragStart, onDragEnd, onDragOver, onDrop, onDropBoundaryDragOver, onDropBoundaryDrop } =
+  useBookmarkDragDrop({
+    listModel,
+    dropBoundary: bookmarkList,
+  });
 
-const rows = computed<BookmarkRow[]>(() => {
-  const nextRows: BookmarkRow[] = bookmarks.value.map((bookmark) => ({
-    type: "bookmark",
-    bookmark,
-  }));
-
-  for (const placeholder of [...recentlyRemoved.value].sort(
-    (first, second) => first.position - second.position,
-  )) {
-    nextRows.splice(Math.max(0, Math.min(placeholder.position, nextRows.length)), 0, {
-      type: "removed",
-      bookmark: placeholder.bookmark,
-      position: placeholder.position,
-    });
-  }
-
-  return nextRows;
-});
-const shouldRender = computed(() => isReady.value && rows.value.length > 0);
-
-function startRename(bookmark: Bookmark) {
-  editingRoutePath.value = bookmark.routePath;
-}
-
-function cancelRename() {
-  editingRoutePath.value = null;
-}
-
-async function saveRename(bookmark: Bookmark, title: string) {
-  const nextTitle = title.trim();
-
-  if (nextTitle.length > 0 && nextTitle !== bookmark.title) {
-    await renameBookmark(bookmark.routePath, nextTitle);
-  }
-
-  cancelRename();
-}
-
-async function deleteBookmark(bookmark: Bookmark, rowIndex: number) {
-  const removed = await removeBookmark(bookmark.routePath);
-
-  if (removed !== null) {
-    recentlyRemoved.value.push({ bookmark: removed, position: rowIndex });
-  }
-}
-
-async function restoreRemovedBookmark(bookmark: Bookmark, position: number) {
-  await restoreBookmark(bookmark, position);
-  recentlyRemoved.value = recentlyRemoved.value.filter(
-    (placeholder) => placeholder.bookmark.routePath !== bookmark.routePath,
-  );
-}
-
-function getDropIndicatorPosition(row: BookmarkRow) {
-  return dropIndicator.value?.routePath === row.bookmark.routePath
-    ? dropIndicator.value.position
-    : null;
-}
+const shouldRender = computed(() => isReady.value && listModel.rows.value.length > 0);
 </script>
 
 <template>
@@ -108,17 +37,17 @@ function getDropIndicatorPosition(row: BookmarkRow) {
       @drop.self="onDropBoundaryDrop"
     >
       <BookmarkListItem
-        v-for="(row, rowIndex) in rows"
+        v-for="(row, rowIndex) in listModel.rows.value"
         :key="`${row.type}:${row.bookmark.routePath}`"
         :row="row"
         :row-index="rowIndex"
-        :is-editing="editingRoutePath === row.bookmark.routePath"
-        :drop-indicator-position="getDropIndicatorPosition(row)"
-        @start-rename="startRename"
-        @rename="saveRename"
-        @cancel-rename="cancelRename"
-        @delete="deleteBookmark"
-        @restore="restoreRemovedBookmark"
+        :is-editing="listModel.editingRoutePath.value === row.bookmark.routePath"
+        :drop-indicator-position="listModel.getDropIndicatorPosition(row)"
+        @start-rename="listModel.startRename"
+        @rename="listModel.saveRename"
+        @cancel-rename="listModel.cancelRename"
+        @delete="listModel.deleteBookmark"
+        @restore="listModel.restoreRemovedBookmark"
         @drag-start="onDragStart"
         @drag-end="onDragEnd"
         @drag-over="onDragOver"
