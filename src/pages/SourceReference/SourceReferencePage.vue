@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { ExternalLink, RotateCcw } from "@lucide/vue";
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
 import BookmarkToggleButton from "@/bookmarks/BookmarkToggleButton.vue";
 import ChecklistSessionView from "@/checklist-session/ChecklistSessionView.vue";
-import { loadChecklistSession } from "@/checklist-session/load";
-import { listenToHash } from "@/checklist-session/state-codec";
-import type { ChecklistSession } from "@/checklist-session/types";
+import { useChecklistSourceReferenceLifecycle } from "@/checklist-session/source-reference-lifecycle";
 import { referenceFromRoute } from "@/source-services/registry";
 import type { SourceReference } from "@/source-services/types";
 
@@ -20,58 +18,18 @@ function referenceFromRoutePath(routePath: string): SourceReference | null {
   return referenceFromRoute(path);
 }
 
-const session = ref<ChecklistSession | null>(null);
 const checklistSessionView = ref<InstanceType<typeof ChecklistSessionView> | null>(null);
-const isLoading = ref(false);
-const loadError = ref("");
-
-let activeLoadToken = 0;
-let abortController: AbortController | null = null;
-let stopHashStateListener: (() => void) | null = null;
-
-async function loadSource(referenceToLoad: SourceReference | null) {
-  activeLoadToken += 1;
-  const loadToken = activeLoadToken;
-  abortController?.abort();
-  abortController = null;
-  session.value = null;
-  loadError.value = "";
-
-  const controller = new AbortController();
-  abortController = controller;
-  isLoading.value = true;
-
-  try {
-    const result = await loadChecklistSession(referenceToLoad, {
-      stateHash: window.location.hash,
-      signal: controller.signal,
-    });
-
-    if (loadToken !== activeLoadToken) {
-      return;
-    }
-
-    if (result.status === "unsupported") {
-      document.title = "Checkgist";
-      loadError.value = result.message;
-      return;
-    }
-
-    session.value = result.session;
-    document.title = result.browserTitle;
-  } catch (error) {
-    if (loadToken !== activeLoadToken) {
-      return;
-    }
-
-    document.title = "Checkgist";
-    loadError.value = error instanceof Error ? error.message : "Failed to load source.";
-  } finally {
-    if (loadToken === activeLoadToken) {
-      isLoading.value = false;
-    }
-  }
-}
+const lifecycle = useChecklistSourceReferenceLifecycle();
+const lifecycleState = lifecycle.state;
+const session = computed(() =>
+  lifecycleState.value.status === "ready" ? lifecycleState.value.session : null,
+);
+const isLoading = computed(() => lifecycleState.value.status === "loading");
+const loadError = computed(() =>
+  lifecycleState.value.status === "error" || lifecycleState.value.status === "unsupported"
+    ? lifecycleState.value.message
+    : "",
+);
 
 function resetCurrentChecklistSession() {
   checklistSessionView.value?.resetAllTasks();
@@ -79,20 +37,14 @@ function resetCurrentChecklistSession() {
 
 watch(
   () => route.path,
-  (nextPath) => void loadSource(referenceFromRoutePath(nextPath)),
+  (nextPath) => void lifecycle.open(referenceFromRoutePath(nextPath)),
   {
     immediate: true,
   },
 );
 
-onMounted(() => {
-  stopHashStateListener = listenToHash(() => session.value);
-});
-
 onBeforeUnmount(() => {
-  activeLoadToken += 1;
-  abortController?.abort();
-  stopHashStateListener?.();
+  lifecycle.dispose();
 });
 </script>
 

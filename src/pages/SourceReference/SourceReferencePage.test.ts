@@ -24,12 +24,6 @@ const loadSource = vi.hoisted(() =>
 );
 const writeClipboardText = vi.fn<(data: string) => Promise<void>>();
 
-type Deferred<T> = {
-  promise: Promise<T>;
-  resolve: (value: T) => void;
-  reject: (reason: unknown) => void;
-};
-
 vi.mock("vue-router", () => ({
   RouterLink: {
     props: ["to"],
@@ -118,21 +112,6 @@ function createGitHubGistSource(gistId: string): LoadedSource {
       },
     ],
   });
-}
-
-function createDeferred<T>(): Deferred<T> {
-  let resolve: Deferred<T>["resolve"] | undefined;
-  let reject: Deferred<T>["reject"] | undefined;
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise;
-    reject = rejectPromise;
-  });
-
-  if (resolve === undefined || reject === undefined) {
-    throw new Error("Deferred promise was not initialized.");
-  }
-
-  return { promise, resolve, reject };
 }
 
 function setRouteLocation(fullPath: string) {
@@ -482,70 +461,5 @@ describe("SourceReferencePage", () => {
     expect(wrapper.find("[role='alert']").exists()).toBe(false);
     expect(wrapper.text()).not.toContain("Could not copy link.");
     expect(getChecklistSessionLink(wrapper).text()).toBe("Copy link");
-  });
-
-  it("aborts the previous source load and ignores its stale resolved result", async () => {
-    const firstLoad = createDeferred<LoadedSource>();
-    const secondLoad = createDeferred<LoadedSource>();
-    loadSource.mockImplementation((reference) =>
-      reference.type === "pastebin" && reference.pasteId === "HdpnureE"
-        ? firstLoad.promise
-        : secondLoad.promise,
-    );
-    const wrapper = mountSourceReferencePage();
-    await nextTick();
-
-    const firstSignal = loadSource.mock.calls[0]?.[1].signal;
-    expect(firstSignal?.aborted).toBe(false);
-
-    setRouteLocation("/pastebin.com/newer");
-    await nextTick();
-
-    expect(firstSignal?.aborted).toBe(true);
-    expect(loadSource).toHaveBeenLastCalledWith(
-      { type: "pastebin", pasteId: "newer" } satisfies SourceReference,
-      { signal: expect.any(AbortSignal) },
-    );
-
-    secondLoad.resolve(createPastebinSource("newer", "Newer Markdown."));
-    await flushPromises();
-
-    expect(wrapper.text()).toContain("newer");
-    expect(wrapper.text()).toContain("Newer Markdown.");
-    expect(document.title).toBe("newer - Checkgist");
-
-    firstLoad.resolve(createPastebinSource("HdpnureE", "Stale Markdown."));
-    await flushPromises();
-
-    expect(wrapper.text()).toContain("Newer Markdown.");
-    expect(wrapper.text()).not.toContain("Stale Markdown.");
-    expect(document.title).toBe("newer - Checkgist");
-  });
-
-  it("ignores stale rejected source load errors while the current load renders normally", async () => {
-    const firstLoad = createDeferred<LoadedSource>();
-    const secondLoad = createDeferred<LoadedSource>();
-    loadSource.mockImplementation((reference) =>
-      reference.type === "pastebin" && reference.pasteId === "HdpnureE"
-        ? firstLoad.promise
-        : secondLoad.promise,
-    );
-    const wrapper = mountSourceReferencePage();
-    await nextTick();
-
-    setRouteLocation("/pastebin.com/current");
-    await nextTick();
-
-    firstLoad.reject(new Error("Stale load failed."));
-    await flushPromises();
-
-    expect(wrapper.text()).not.toContain("Stale load failed.");
-
-    secondLoad.resolve(createPastebinSource("current", "Current Markdown."));
-    await flushPromises();
-
-    expect(wrapper.text()).toContain("Current Markdown.");
-    expect(wrapper.text()).not.toContain("Stale load failed.");
-    expect(document.title).toBe("current - Checkgist");
   });
 });
