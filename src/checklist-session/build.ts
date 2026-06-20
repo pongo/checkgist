@@ -7,7 +7,6 @@ import taskList from "comark/plugins/task-list";
 import { referenceFromUrlInput, routeForReference } from "@/source-services/registry";
 import type { LoadedSource, SourceFile, SourceTextFile } from "@/source-services/types";
 
-import { applySessionState } from "./state";
 import { prepareExplicitTaskItems, promoteOrdinaryListItems } from "./task-item-tree";
 import type { ChecklistErrorFile, ChecklistReadyFile, ChecklistSession } from "./types";
 
@@ -15,7 +14,6 @@ type ParseMarkdown = (markdown: string, options?: ParseOptions) => Promise<Comar
 
 export type BuildChecklistSessionOptions = {
   parseMarkdown?: ParseMarkdown;
-  initialStateBits?: string | null;
 };
 
 const unsafeTags = ["script", "iframe", "object", "embed", "link", "style", "base", "meta"];
@@ -62,14 +60,11 @@ export async function buildChecklistSession(
     }
   }
 
-  const session = {
+  return {
     source,
     files,
     hasTaskItems: files.some((file) => file.status === "ready" && file.checked.length > 0),
   };
-
-  applySessionState(session, options.initialStateBits);
-  return session;
 }
 
 async function buildChecklistFile(

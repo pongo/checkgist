@@ -4,9 +4,9 @@ import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
 import BookmarkToggleButton from "@/bookmarks/BookmarkToggleButton.vue";
-import { listenToBrowserHashState } from "@/checklist-session/browser-state";
 import ChecklistSessionView from "@/checklist-session/ChecklistSessionView.vue";
 import { loadChecklistSession } from "@/checklist-session/load";
+import { listenToHash } from "@/checklist-session/state-codec";
 import type { ChecklistSession } from "@/checklist-session/types";
 import { referenceFromRoute } from "@/source-services/registry";
 import type { SourceReference } from "@/source-services/types";
@@ -43,7 +43,7 @@ async function loadSource(referenceToLoad: SourceReference | null) {
 
   try {
     const result = await loadChecklistSession(referenceToLoad, {
-      stateBits: window.location.hash,
+      stateHash: window.location.hash,
       signal: controller.signal,
     });
 
@@ -86,7 +86,7 @@ watch(
 );
 
 onMounted(() => {
-  stopHashStateListener = listenToBrowserHashState(() => session.value);
+  stopHashStateListener = listenToHash(() => session.value);
 });
 
 onBeforeUnmount(() => {

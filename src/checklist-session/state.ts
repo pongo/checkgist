@@ -1,39 +1,6 @@
 import { syncTaskItemState } from "./task-item-tree";
 import type { ChecklistReadyFile, ChecklistSession } from "./types";
 
-export function applySessionState(
-  session: ChecklistSession,
-  stateBits?: string | null,
-): ChecklistSession {
-  const bits = parseStateBits(stateBits);
-  let bitIndex = 0;
-
-  for (const file of session.files) {
-    if (file.status !== "ready") {
-      continue;
-    }
-
-    file.checked = file.checked.map(() => {
-      const bit = bits[bitIndex];
-      bitIndex += 1;
-      return bit === "1";
-    });
-  }
-
-  syncSessionTaskCheckboxes(session);
-  return session;
-}
-
-export function encodeSessionState(session: ChecklistSession): string {
-  const encoded = session.files
-    .flatMap((file) =>
-      file.status === "ready" ? file.checked.map((checked) => (checked ? "1" : "0")) : [],
-    )
-    .join("");
-
-  return encoded.replace(/0+$/, "");
-}
-
 export function setTaskChecked(
   session: ChecklistSession,
   fileId: string,
@@ -81,16 +48,6 @@ export function resetAll(session: ChecklistSession): ChecklistSession {
 
   return session;
 }
-
-export function parseStateBits(stateBits?: string | null): string {
-  if (stateBits === undefined || stateBits === null) {
-    return "";
-  }
-
-  const normalized = stateBits.startsWith("#") ? stateBits.slice(1) : stateBits;
-  return /^[01]*$/.test(normalized) ? normalized : "";
-}
-
 export function syncSessionTaskCheckboxes(session: ChecklistSession): void {
   for (const file of session.files) {
     if (file.status === "ready") {

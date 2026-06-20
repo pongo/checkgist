@@ -3,7 +3,7 @@ import { ComarkRenderer } from "@comark/vue";
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { encodeBrowserHashState } from "@/checklist-session/browser-state";
+import { bitsFromSession, bitsToHash } from "@/checklist-session/state-codec";
 import { resetAll, resetFile, setTaskChecked } from "@/checklist-session/state";
 import {
   findTaskItemLabelElement,
@@ -24,7 +24,7 @@ function replaceChecklistRouteHash() {
   void router.replace({
     path: route.path,
     query: route.query,
-    hash: encodeBrowserHashState(props.session),
+    hash: bitsToHash(bitsFromSession(props.session)),
   });
 }
 
