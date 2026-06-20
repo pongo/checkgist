@@ -1,6 +1,10 @@
 - никогда не запускай dev сервер. никогда не делай deploy. никогда не делай git commit
-- проверка кода: `npm run typecheck && npm run agent:lint && npm run agent:test`
 - В проекте используются vue 3.5, vue-router 5, tailwind 4, ofetch
+
+- для проверки типов: npm run typecheck
+- для тестов: npm run agent:test
+- для линтера: npm run agent:lint
+- финальная проверка: `npm run typecheck && npm run agent:lint && npm run agent:test`
 
 ## Code comments
 
