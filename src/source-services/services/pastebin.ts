@@ -1,6 +1,11 @@
-import { corsProxySourceFetcher } from "./fetcher";
-import type { PastebinReference, LoadedSource, SourceLoadOptions, SourceService } from "./types";
-import { SourceLoadError } from "./types";
+import { corsProxySourceFetcher } from "../fetcher.ts";
+import type {
+  PastebinReference,
+  LoadedSource,
+  SourceLoadOptions,
+  SourceService,
+} from "../types.ts";
+import { SourceLoadError } from "../types.ts";
 
 const PASTEBIN_HOST = "pastebin.com";
 

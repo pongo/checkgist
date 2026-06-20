@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { githubGistService } from "@/source-services/github-gist";
+import { githubGistService } from "@/source-services/services/github-gist.ts";
 
 describe("githubGistService live contract", () => {
   it("loads a known public one-file gist", async () => {

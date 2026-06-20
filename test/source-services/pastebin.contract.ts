@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { directSourceFetcher } from "@/source-services/fetcher";
-import { pastebinService } from "@/source-services/pastebin";
+import { pastebinService } from "@/source-services/services/pastebin.ts";
 
 describe("pastebinService live contract", () => {
   it("loads a known public paste through direct server-side fetching", async () => {

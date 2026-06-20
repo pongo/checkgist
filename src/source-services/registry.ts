@@ -1,5 +1,5 @@
-import { githubGistService } from "./github-gist";
-import { pastebinService } from "./pastebin";
+import { githubGistService } from "./services/github-gist.ts";
+import { pastebinService } from "./services/pastebin.ts";
 import type { SourceReference, SourceService } from "./types";
 
 export type SourceRegistry = {

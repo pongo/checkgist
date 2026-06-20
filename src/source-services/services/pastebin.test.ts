@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { pastebinService } from "./pastebin";
-import type { SourceFetcher } from "./types";
-import { SourceLoadError } from "./types";
+import { pastebinService } from "./pastebin.ts";
+import type { SourceFetcher } from "../types.ts";
+import { SourceLoadError } from "../types.ts";
 
 describe("pastebinService.load", () => {
   const fetcherMock =

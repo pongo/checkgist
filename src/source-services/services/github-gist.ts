@@ -1,12 +1,12 @@
-import { directSourceFetcher } from "./fetcher";
+import { directSourceFetcher } from "../fetcher.ts";
 import type {
   GitHubGistReference,
   SourceFile,
   LoadedSource,
   SourceLoadOptions,
   SourceService,
-} from "./types";
-import { SourceLoadError } from "./types";
+} from "../types.ts";
+import { SourceLoadError } from "../types.ts";
 
 const GIST_HOST = "gist.github.com";
 
