@@ -24,7 +24,7 @@ Vue markup остается в page/view modules. Source Service adapters ост
 5. Перенести управление browser title через существующий `browser-title.ts` внутрь lifecycle module или через маленький adapter, если title должен остаться внешним эффектом.
 6. Оставить в `SourceReferencePage.vue` только route watch, вызов lifecycle module и отображение lifecycle state.
 7. Разделить тесты: lifecycle behavior тестировать через новый module, page tests оставить для рендера и связки с router.
-8. Verify: `npm run typecheck`, `npm run agent:lint`, `npm run agent:test`.
+8. Verify: `npm run typecheck && npm run agent:lint && npm run agent:test`.
 
 ## Риски
 

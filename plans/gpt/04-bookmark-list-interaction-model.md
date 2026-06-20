@@ -24,7 +24,7 @@ View modules должны отображать rows и отправлять inte
 5. Сузить `useBookmarkDragDrop.ts` до adapter: DOM event + geometry -> reorder intent/drop target.
 6. Оставить `useBookmarks.ts` и `db.ts` persistence modules без изменения interface, кроме минимальной связки с model operations.
 7. Переписать хрупкие DOM geometry tests на model-level tests там, где проверяется list behavior, а не browser drag events.
-8. Verify: `npm run typecheck`, `npm run agent:lint`, `npm run agent:test`.
+8. Verify: `npm run typecheck && npm run agent:lint && npm run agent:test`.
 
 ## Риски
 

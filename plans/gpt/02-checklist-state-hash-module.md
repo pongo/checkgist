@@ -24,7 +24,7 @@ Deep Checklist State module принимает доменный intent: toggle T
 5. Оставить low-level mutation helpers private или internal, если callers больше не должны знать порядок вызовов.
 6. Перенести тесты с Vue/router mocks на module-level tests для state operations.
 7. Оставить view tests только для проверки, что clicks/resets вызывают правильный intent и отображают результат.
-8. Verify: `npm run typecheck`, `npm run agent:lint`, `npm run agent:test`.
+8. Verify: `npm run typecheck && npm run agent:lint && npm run agent:test`.
 
 ## Риски
 
