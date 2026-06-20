@@ -4,8 +4,6 @@ import { syncSessionTaskCheckboxes } from "./state";
 export type ChecklistStateBits = string;
 export type ChecklistStateHash = string;
 
-type HashChangeTarget = Pick<Window, "addEventListener" | "removeEventListener">;
-
 export function parseBits(bits?: string | null): ChecklistStateBits {
   if (bits === undefined || bits === null) {
     return "";
@@ -59,23 +57,4 @@ export function bitsFromSession(session: ChecklistSession): ChecklistStateBits {
     .join("");
 
   return encoded.replace(/0+$/, "");
-}
-
-export function listenToHash(
-  getSession: () => ChecklistSession | null | undefined,
-  target: HashChangeTarget = window,
-  location: Pick<Location, "hash"> = window.location,
-): () => void {
-  const onHashChange = () => {
-    const session = getSession();
-    if (session !== null && session !== undefined) {
-      applyBitsToSession(session, bitsFromHash(location.hash));
-    }
-  };
-
-  target.addEventListener("hashchange", onHashChange);
-
-  return () => {
-    target.removeEventListener("hashchange", onHashChange);
-  };
 }

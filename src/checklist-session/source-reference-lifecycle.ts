@@ -7,7 +7,7 @@ import {
   type LoadChecklistSessionOptions,
   type LoadChecklistSessionResult,
 } from "./load";
-import { listenToHash } from "./state-codec";
+import { listenToChecklistStateHash } from "./state-operations";
 import type { ChecklistSession } from "./types";
 
 export type ChecklistSourceReferenceLifecycleState =
@@ -133,7 +133,7 @@ export function useChecklistSourceReferenceLifecycle(
 function createChecklistSourceReferenceBrowser(): ChecklistSourceReferenceBrowser {
   return {
     getStateHash: () => window.location.hash,
-    listenToHash,
+    listenToHash: listenToChecklistStateHash,
     resetTitle: () => {
       document.title = "Checkgist";
     },

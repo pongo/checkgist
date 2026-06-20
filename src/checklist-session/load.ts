@@ -7,7 +7,7 @@ import type { SourceReference } from "@/source-services/types";
 
 import { formatBrowserTitle } from "./browser-title";
 import { buildChecklistSession } from "./build";
-import { applyBitsToSession, bitsFromHash } from "./state-codec";
+import { applyChecklistStateHash } from "./state-operations";
 import type { ChecklistSession } from "./types";
 
 export type LoadChecklistSessionOptions = {
@@ -54,7 +54,7 @@ export async function loadChecklistSession(
   const session = await buildChecklistSession(source);
 
   if (options.stateHash !== undefined && options.stateHash !== null) {
-    applyBitsToSession(session, bitsFromHash(options.stateHash));
+    applyChecklistStateHash(session, options.stateHash);
   }
 
   return {

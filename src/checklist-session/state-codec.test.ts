@@ -1,11 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
   applyBitsToSession,
   bitsFromHash,
   bitsFromSession,
   bitsToHash,
-  listenToHash,
   parseBits,
 } from "./state-codec";
 import type { ChecklistSession } from "./types";
@@ -130,37 +129,5 @@ describe("Checklist State codec", () => {
     expect(bitsToHash("101")).toBe("#101");
     expect(bitsToHash("")).toBe("");
     expect(bitsToHash("#101")).toBe("");
-  });
-
-  it("re-applies Checklist State on browser hash changes", () => {
-    const session = createSession();
-    const listeners = new Map<string, EventListener>();
-    const target = {
-      addEventListener: vi.fn<(eventName: string, listener: EventListener) => void>(
-        (eventName, listener) => {
-          listeners.set(eventName, listener);
-        },
-      ),
-      removeEventListener: vi.fn<(eventName: string, listener: EventListener) => void>(
-        (eventName, listener) => {
-          if (listeners.get(eventName) === listener) {
-            listeners.delete(eventName);
-          }
-        },
-      ),
-    };
-    const location = { hash: "#010" };
-
-    const stop = listenToHash(() => session, target, location);
-    listeners.get("hashchange")?.(new Event("hashchange"));
-
-    expect(readyChecked(session)).toEqual([
-      [false, true, false],
-      [false, false],
-    ]);
-
-    stop();
-
-    expect(listeners.has("hashchange")).toBe(false);
   });
 });
