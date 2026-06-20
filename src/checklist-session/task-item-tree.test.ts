@@ -2,12 +2,16 @@ import type { ComarkElement, ComarkTree } from "comark";
 import { describe, expect, it } from "vitest";
 
 import {
+  findTaskItemLabelElement,
   prepareExplicitTaskItems,
   promoteOrdinaryListItems,
   syncTaskItemState,
-  taskItemIndexAttribute,
-  taskItemLabelClassName,
+  taskItemIndexFromCheckboxElement,
 } from "./task-item-tree";
+
+// Public DOM contract: rendered checkbox attribute and label class.
+const taskItemIndexAttribute = "data-checkgist-task-index";
+const taskItemLabelClassName = "checkgist-task-label";
 
 function createTree(nodes: ComarkTree["nodes"]): ComarkTree {
   return {
@@ -72,5 +76,31 @@ describe("Task Item Tree", () => {
 
     syncTaskItemState(tree, [false]);
     expect(checkbox[1].checked).toBeUndefined();
+  });
+
+  describe("DOM queries", () => {
+    it("reads the file-local Task Item index from a rendered checkbox", () => {
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.setAttribute(taskItemIndexAttribute, "3");
+
+      expect(taskItemIndexFromCheckboxElement(checkbox)).toBe(3);
+
+      checkbox.setAttribute(taskItemIndexAttribute, "not-an-index");
+      expect(taskItemIndexFromCheckboxElement(checkbox)).toBeNull();
+
+      checkbox.removeAttribute(taskItemIndexAttribute);
+      expect(taskItemIndexFromCheckboxElement(checkbox)).toBeNull();
+    });
+
+    it("finds the rendered Task Item label for clicked label content", () => {
+      const label = document.createElement("label");
+      label.className = taskItemLabelClassName;
+      const text = document.createElement("span");
+      label.append(text);
+
+      expect(findTaskItemLabelElement(text)).toBe(label);
+      expect(findTaskItemLabelElement(document.createElement("span"))).toBeNull();
+    });
   });
 });

@@ -8,7 +8,7 @@ import { resetAll, resetFile, setTaskChecked } from "@/checklist-session/state";
 import {
   findTaskItemLabelElement,
   taskItemIndexFromCheckboxElement,
-} from "@/checklist-session/task-item-dom";
+} from "@/checklist-session/task-item-tree";
 import type { ChecklistReadyFile, ChecklistSession } from "@/checklist-session/types";
 import { copyToClipboard } from "@/shared/clipboard.ts";
 
