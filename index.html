@@ -9,29 +9,41 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/app/main.ts"></script>
-    <!-- analytics -->
-    <script
-      data-goatcounter="https://pongo.goatcounter.com/count"
-      async
-      src="//gc.zgo.at/count.js"
-    ></script>
-    <!-- Cloudflare Web Analytics -->
-    <script
-      defer
-      src="https://static.cloudflareinsights.com/beacon.min.js"
-      data-cf-beacon='{"token": "9e299b35fba54689b8dfbfb8cb095310"}'
-    ></script>
-    <!-- End Cloudflare Web Analytics -->
-    <script
-      async
-      defer
-      src="https://beampipe.io/js/tracker.js"
-      data-beampipe-domain="pongo.github.io"
-    ></script>
-    <script
-      defer
-      src="https://cloud.umami.is/script.js"
-      data-website-id="bf99a578-2f6d-4a31-86a5-72b7d0846129"
-    ></script>
+    <script>
+      if (isNotLocalhost()) {
+        fetchWithTimeout("https://api.counterapi.dev/v2/pongo-github-io/checkgist/up");
+        fetchWithTimeout("https://abacus.jasoncameron.dev/hit/pongo.github.io/checkgist");
+      }
+
+      function isNotLocalhost() {
+        const hostname = window.location.hostname;
+
+        const localhostPatterns = [
+          "localhost",
+          "127.0.0.1",
+          "[::1]", // IPv6 localhost
+          "0.0.0.0",
+        ];
+
+        return !localhostPatterns.includes(hostname);
+      }
+
+      async function fetchWithTimeout(url, timeout = 5000) {
+        try {
+          const response = await fetch(url, {
+            signal: AbortSignal.timeout(timeout),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          return response.json();
+        } catch (error) {
+          console.error("Fetch error:", error);
+          return null;
+        }
+      }
+    </script>
   </body>
 </html>
