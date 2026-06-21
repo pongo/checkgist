@@ -21,6 +21,12 @@ function pastebinRawUrl(pasteId: string): string {
   return `https://pastebin.com/raw/${pasteId}`;
 }
 
+function getPasteId(segments: string[]) {
+  if (segments.length === 1 && segments[0] !== "raw") return segments[0];
+  if (segments.length === 2 && segments[0] === "raw") return segments[1];
+  return undefined;
+}
+
 export const pastebinService: SourceService<PastebinReference> = {
   type: "pastebin",
 
@@ -30,12 +36,7 @@ export const pastebinService: SourceService<PastebinReference> = {
     }
 
     const segments = url.pathname.split("/").filter(Boolean);
-    const pasteId =
-      segments.length === 1 && segments[0] !== "raw"
-        ? segments[0]
-        : segments.length === 2 && segments[0] === "raw"
-          ? segments[1]
-          : undefined;
+    const pasteId = getPasteId(segments);
 
     if (!isNonEmptySegment(pasteId)) {
       return null;

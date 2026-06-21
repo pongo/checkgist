@@ -5,7 +5,7 @@ export type ChecklistStateBits = string;
 export type ChecklistStateHash = string;
 
 export function parseBits(bits?: string | null): ChecklistStateBits {
-  if (bits === undefined || bits === null) {
+  if (bits == null) {
     return "";
   }
 
@@ -13,7 +13,7 @@ export function parseBits(bits?: string | null): ChecklistStateBits {
 }
 
 export function bitsFromHash(hash?: string | null): ChecklistStateBits {
-  if (hash === undefined || hash === null || hash === "") {
+  if (hash == null || hash === "") {
     return "";
   }
 
