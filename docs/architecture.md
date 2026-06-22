@@ -2,31 +2,17 @@
 
 Checkgist is a client-side Vue application that loads Markdown-like content from supported external source services and renders task lists as interactive checklists.
 
-This document is a navigation map. It should explain where to make a change, not record every implementation detail.
-
-## Runtime Shape
-
-- `src/app/main.ts` mounts the Vue application.
-- `src/app/App.vue` owns the application shell.
-- `src/app/router.ts` defines public routes and maps supported source references to pages.
-- `src/pages/` contains route-level views.
-- Feature folders under `src/` own their local UI, state, model helpers, and tests.
-
-The app has no server-side runtime in this repository. Source content is loaded in the browser through source-service adapters, and user-owned state is persisted locally.
-
 ## Source Areas
+
+When a source area has an `index.ts`, treat it as that area's public interface. Import from the folder-level barrel when crossing feature boundaries, and keep internal helpers imported by direct file path only inside the owning area.
 
 ### `src/app/`
 
 Application bootstrap and global UI wiring.
 
-- `main.ts` creates the Vue app.
-- `router.ts` defines the route table.
-- `main.css` contains global styles and theme behavior.
-
 ### `src/pages/`
 
-Route-level pages. Pages compose feature modules but should avoid owning reusable domain logic.
+Route-level pages.
 
 - `Home/` contains the landing/input page for opening supported Source URLs.
 - `SourceReference/` contains the page for a resolved source reference route, such as GitHub Gist or Pastebin.
@@ -35,12 +21,10 @@ Route-level pages. Pages compose feature modules but should avoid owning reusabl
 
 External source-service integration boundary.
 
-- `types.ts` defines source references, loaded source data, metadata, files, and load errors.
 - `registry.ts` turns URL input and routes into supported source references.
-- `fetcher.ts` contains shared fetching behavior.
 - `services/` contains one adapter per supported Source Service.
 
-Add a new Source Service here first, then wire it into the registry and router.
+Add a new Source Service here first, then wire it into the registry and router (`src/app/router.ts`).
 
 ### `src/checklist-session/`
 
@@ -56,6 +40,8 @@ Bookmark UI and local persistence.
 
 Bookmarks are saved references to Checklists. They do not own Checklist State. Use this folder for bookmark list behavior, bookmark toggling, ordering, and IndexedDB persistence for bookmarks.
 
+For working with IndexedDB see `docs/vendor/IndexedDB/idb.md` and `docs/vendor/IndexedDB/fake-indexeddb.md`.
+
 ### `src/shared/`
 
 Small cross-feature utilities.
@@ -67,18 +53,6 @@ Keep this folder narrow. Prefer feature-local helpers unless the same behavior i
 Most unit and component tests live next to the code they cover under `src/`.
 
 Contract-style source-service tests live under `test/source-services/`. Use these when checking whether an adapter still understands a real external service shape.
-
-Agent verification commands:
-
-- `npm run typecheck`
-- `npm run agent:lint`
-- `npm run agent:test`
-
-Final verification command:
-
-```sh
-npm run typecheck && npm run agent:lint && npm run agent:test
-```
 
 ## Change Guide
 
