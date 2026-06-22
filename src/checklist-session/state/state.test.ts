@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { ChecklistSession } from "./types";
+import type { ChecklistSession } from "../types";
 import { resetAll, resetFile, setTaskChecked } from "./state";
 
 function createSession(): ChecklistSession {

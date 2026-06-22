@@ -6,7 +6,7 @@ import {
   type ChecklistStateHash,
 } from "./state-codec";
 import { resetAll, resetFile, setTaskChecked } from "./state";
-import type { ChecklistSession } from "./types";
+import type { ChecklistSession } from "../types";
 
 type HashChangeTarget = Pick<Window, "addEventListener" | "removeEventListener">;
 

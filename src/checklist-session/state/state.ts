@@ -1,5 +1,5 @@
-import { syncTaskItemState } from "./task-item-tree";
-import type { ChecklistReadyFile, ChecklistSession } from "./types";
+import { syncTaskItemState } from "../task-items/task-item-tree";
+import type { ChecklistReadyFile, ChecklistSession } from "../types";
 
 export function setTaskChecked(
   session: ChecklistSession,

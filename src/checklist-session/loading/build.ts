@@ -12,8 +12,8 @@ import {
   type SourceTextFile,
 } from "@/source-services";
 
-import { prepareExplicitTaskItems, promoteOrdinaryListItems } from "./task-item-tree";
-import type { ChecklistErrorFile, ChecklistReadyFile, ChecklistSession } from "./types";
+import { prepareExplicitTaskItems, promoteOrdinaryListItems } from "../task-items/task-item-tree";
+import type { ChecklistErrorFile, ChecklistReadyFile, ChecklistSession } from "../types";
 
 type ParseMarkdown = (markdown: string, options?: ParseOptions) => Promise<ComarkTree>;
 

@@ -7,8 +7,8 @@ import {
   type LoadChecklistSessionOptions,
   type LoadChecklistSessionResult,
 } from "./load";
-import { listenToChecklistStateHash } from "./state-operations";
-import type { ChecklistSession } from "./types";
+import { listenToChecklistStateHash } from "../state/state-operations";
+import type { ChecklistSession } from "../types";
 
 export type ChecklistSourceReferenceLifecycleState =
   | { status: "idle"; session: null; message: "" }

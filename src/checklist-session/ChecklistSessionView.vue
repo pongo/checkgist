@@ -8,12 +8,12 @@ import {
   resetChecklistFile,
   setChecklistTaskChecked,
   type ChecklistStateOperationResult,
-} from "@/checklist-session/state-operations";
+} from "@/checklist-session/state/state-operations";
 import {
   findTaskItemLabelElement,
   taskItemIndexFromCheckboxElement,
-} from "@/checklist-session/task-item-tree";
-import type { ChecklistReadyFile, ChecklistSession } from "@/checklist-session/types";
+} from "@/checklist-session/task-items/task-item-tree";
+import type { ChecklistReadyFile, ChecklistSession } from "./types";
 import { copyToClipboard } from "@/shared/clipboard.ts";
 
 const props = defineProps<{

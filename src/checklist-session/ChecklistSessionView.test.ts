@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import { defineComponent, h } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ChecklistSession } from "@/checklist-session/types";
+import type { ChecklistSession } from "@/checklist-session";
 import { copyToClipboard } from "@/shared/clipboard.ts";
 
 import ChecklistSessionView from "./ChecklistSessionView.vue";

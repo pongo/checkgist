@@ -1,7 +1,7 @@
 import type { ComarkNode, ComarkTree } from "comark";
 import { describe, expect, it, vi } from "vitest";
 
-import type { ChecklistSession } from "./types";
+import type { ChecklistSession } from "../types";
 import {
   applyChecklistStateHash,
   listenToChecklistStateHash,

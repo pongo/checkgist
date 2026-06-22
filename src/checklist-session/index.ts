@@ -6,7 +6,7 @@ export {
   type ChecklistSourceReferenceLifecycleOptions,
   type ChecklistSourceReferenceLifecycleState,
   type LoadChecklistSourceReference,
-} from "./source-reference-lifecycle";
+} from "./loading/source-reference-lifecycle";
 export {
   type ChecklistErrorFile,
   type ChecklistFile,

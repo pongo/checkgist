@@ -1,4 +1,4 @@
-import type { ChecklistSession } from "./types";
+import type { ChecklistSession } from "../types";
 import { syncSessionTaskCheckboxes } from "./state";
 
 export type ChecklistStateBits = string;

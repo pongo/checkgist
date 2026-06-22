@@ -7,7 +7,7 @@ import {
   bitsToHash,
   parseBits,
 } from "./state-codec";
-import type { ChecklistSession } from "./types";
+import type { ChecklistSession } from "../types";
 
 function createSession(): ChecklistSession {
   return {

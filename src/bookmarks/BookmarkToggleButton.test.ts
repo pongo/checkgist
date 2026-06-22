@@ -6,7 +6,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { reactive } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ChecklistSession } from "@/checklist-session/types";
+import type { ChecklistSession } from "@/checklist-session";
 
 import { closeBookmarkDatabaseForTests } from "./db";
 import BookmarkToggleButton from "./BookmarkToggleButton.vue";

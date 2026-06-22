@@ -7,8 +7,8 @@ import {
 
 import { formatBrowserTitle } from "./browser-title";
 import { buildChecklistSession } from "./build";
-import { applyChecklistStateHash } from "./state-operations";
-import type { ChecklistSession } from "./types";
+import { applyChecklistStateHash } from "../state/state-operations";
+import type { ChecklistSession } from "../types";
 
 export type LoadChecklistSessionOptions = {
   registry?: SourceRegistry;

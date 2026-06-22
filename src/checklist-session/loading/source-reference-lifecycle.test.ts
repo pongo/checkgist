@@ -7,7 +7,7 @@ import {
   type ChecklistSourceReferenceBrowser,
   type LoadChecklistSourceReference,
 } from "./source-reference-lifecycle";
-import type { ChecklistSession } from "./types";
+import type { ChecklistSession } from "../types";
 
 type Deferred<T> = {
   promise: Promise<T>;
