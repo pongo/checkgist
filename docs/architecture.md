@@ -28,11 +28,15 @@ Add a new Source Service here first, then wire it into the registry and router (
 
 ### `src/checklist-session/`
 
-Checklist loading, rendering model, and shareable checklist state.
+Checklist loading, rendering model, and shareable Checklist State.
 
 This area owns the transition from a `SourceReference` and `LoadedSource` into a user-facing Checklist. It also owns encoding, applying, and mutating Checklist State.
 
-Use this folder for changes to task item extraction, checklist state operations, browser title behavior, and source-reference lifecycle behavior.
+- `loading/` owns source-reference lifecycle, Loaded Source loading, Checklist building, and browser title formatting.
+- `state/` owns Checklist State mutation, hash encoding/decoding, and state operation results consumed by UI and lifecycle code.
+- `task-items/` owns Task Item preparation and synchronization inside the rendered Markdown tree.
+
+Keep cross-feature imports on the folder-level `index.ts`. Treat the subfolders as internal modules unless a caller has a specific reason to depend on their lower-level interface.
 
 ### `src/bookmarks/`
 
@@ -56,6 +60,8 @@ Contract-style source-service tests live under `test/source-services/`. Use thes
 
 ## Change Guide
 
+Keep this guide for changes where the sequence matters or where multiple source areas must move together. Do not duplicate the source-area map with file-by-file instructions.
+
 ### Add a Source Service
 
 1. Add service-specific reference and loading behavior under `src/source-services/services/`.
@@ -63,30 +69,6 @@ Contract-style source-service tests live under `test/source-services/`. Use thes
 3. Register URL parsing, route conversion, and service lookup in `src/source-services/registry.ts`.
 4. Add a route in `src/app/router.ts`.
 5. Add focused tests next to the source-service code and contract tests under `test/source-services/` when useful.
-
-### Change Checklist Behavior
-
-Start in `src/checklist-session/`.
-
-- State shape and persistence format: `state.ts`, `state-codec.ts`, and state operation tests.
-- Task item hierarchy: `task-item-tree.ts`.
-- Loading flow: `load.ts`, `build.ts`, and `source-reference-lifecycle.ts`.
-- Rendered checklist UI: `ChecklistSessionView.vue`.
-
-### Change Bookmark Behavior
-
-Start in `src/bookmarks/`.
-
-- Persistence: `db.ts`.
-- Vue composable state: `useBookmarks.ts`.
-- List presentation and ordering: `BookmarkList.vue`, `BookmarkListItem.vue`, and `useBookmarkDragDrop.ts`.
-- Bookmark toggle behavior: `BookmarkToggleButton.vue`.
-
-### Change Routes or Pages
-
-Start in `src/app/router.ts` for route shape, then update the corresponding folder under `src/pages/`.
-
-Route pages should compose feature modules and keep business behavior inside the feature folder that owns it.
 
 ## Boundaries
 
