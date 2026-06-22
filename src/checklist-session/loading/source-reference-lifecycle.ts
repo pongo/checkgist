@@ -10,7 +10,7 @@ import {
 import { listenToChecklistStateHash } from "../state/state-operations";
 import type { ChecklistSession } from "../types";
 
-export type ChecklistSourceReferenceLifecycleState =
+type ChecklistSourceReferenceLifecycleState =
   | { status: "idle"; session: null; message: "" }
   | { status: "loading"; session: null; message: "" }
   | { status: "ready"; session: ChecklistSession; message: "" }

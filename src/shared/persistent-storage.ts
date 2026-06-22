@@ -20,7 +20,3 @@ export function requestPersistentStorageOnce(): void {
   persistentStorageRequestStarted = true;
   void requestPersistentStorage();
 }
-
-export function resetPersistentStorageRequestForTests(): void {
-  persistentStorageRequestStarted = false;
-}

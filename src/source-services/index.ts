@@ -1,5 +1,4 @@
 export {
-  createSourceRegistry,
   referenceFromRoute,
   referenceFromUrlInput,
   routeForReference,
@@ -8,19 +7,10 @@ export {
   type SourceRegistry,
 } from "./registry";
 export {
-  SourceLoadError,
-  type GitHubGistReference,
   type LoadedSource,
   type LoadError,
-  type MarkdownContent,
-  type PastebinReference,
-  type SourceFetcher,
   type SourceFile,
-  type SourceFileError,
   type SourceFileId,
-  type SourceLoadOptions,
-  type SourceMetadata,
   type SourceReference,
-  type SourceService,
   type SourceTextFile,
 } from "./types";

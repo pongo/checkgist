@@ -20,7 +20,7 @@ export function createSourceRegistry(
 
 export const sourceRegistry = createSourceRegistry([githubGistService, pastebinService]);
 
-export function normalizeSourceUrlInput(input: string): URL | null {
+function normalizeSourceUrlInput(input: string): URL | null {
   const trimmedInput = input.trim();
   if (trimmedInput.length === 0) {
     return null;

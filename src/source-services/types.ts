@@ -10,14 +10,14 @@ export type PastebinReference = {
 
 export type SourceReference = GitHubGistReference | PastebinReference;
 
-export type SourceMetadata = {
+type SourceMetadata = {
   title: string;
   description?: string;
   url: string;
 };
 
 export type SourceFileId = string;
-export type MarkdownContent = string;
+type MarkdownContent = string;
 
 export type LoadError = {
   message: string;
@@ -37,7 +37,7 @@ export type SourceTextFile = {
   content: MarkdownContent;
 };
 
-export type SourceFileError = {
+type SourceFileError = {
   status: "error";
   id: SourceFileId;
   name: string;

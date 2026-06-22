@@ -16,13 +16,13 @@ export type LoadChecklistSessionOptions = {
   signal?: AbortSignal;
 };
 
-export type LoadedChecklistSession = {
+type LoadedChecklistSession = {
   status: "loaded";
   session: ChecklistSession;
   browserTitle: string;
 };
 
-export type UnsupportedChecklistSessionSource = {
+type UnsupportedChecklistSessionSource = {
   status: "unsupported";
   message: string;
 };

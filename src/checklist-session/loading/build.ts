@@ -23,7 +23,7 @@ export type BuildChecklistSessionOptions = {
 
 const unsafeTags = ["script", "iframe", "object", "embed", "link", "style", "base", "meta"];
 
-export const checklistMarkdownPlugins = [
+const checklistMarkdownPlugins = [
   taskList({ enabled: true }),
   security({
     blockedTags: unsafeTags,

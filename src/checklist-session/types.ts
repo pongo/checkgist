@@ -8,7 +8,7 @@ import type {
   SourceTextFile,
 } from "@/source-services";
 
-export type ChecklistFileError = LoadError;
+type ChecklistFileError = LoadError;
 
 export type ChecklistReadyFile = {
   status: "ready";
@@ -25,7 +25,7 @@ export type ChecklistErrorFile = {
   error: ChecklistFileError;
 };
 
-export type ChecklistFile = ChecklistReadyFile | ChecklistErrorFile;
+type ChecklistFile = ChecklistReadyFile | ChecklistErrorFile;
 
 export type ChecklistSession = {
   source: LoadedSource;
