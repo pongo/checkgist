@@ -1,0 +1,39 @@
+{
+  "$schema": "https://docs.fallow.tools/schema.json",
+  "boundaries": {
+    "zones": [
+      { "name": "app", "patterns": ["src/app/**"] },
+      { "name": "pages", "patterns": ["src/pages/**"] },
+      { "name": "bookmarks", "patterns": ["src/bookmarks/**"] },
+      { "name": "checklist", "patterns": ["src/checklist/**"] },
+      { "name": "source-services", "patterns": ["src/source-services/**"] },
+      { "name": "shared", "patterns": ["src/shared/**"] }
+    ],
+    "rules": [
+      {
+        "from": "app",
+        "allow": ["pages", "bookmarks", "checklist", "source-services", "shared"]
+      },
+      {
+        "from": "pages",
+        "allow": ["bookmarks", "checklist", "source-services", "shared"]
+      },
+      {
+        "from": "bookmarks",
+        "allow": ["checklist", "shared"]
+      },
+      {
+        "from": "checklist",
+        "allow": ["source-services", "shared"]
+      },
+      {
+        "from": "source-services",
+        "allow": []
+      },
+      {
+        "from": "shared",
+        "allow": []
+      }
+    ]
+  }
+}
