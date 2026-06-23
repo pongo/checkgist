@@ -15,6 +15,7 @@
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint src test --fix",
     "lint:eslint": "eslint src test --fix --cache",
+    "fallow:boundaries": "npx fallow list --boundaries",
     "format": "oxfmt src/ test/",
     "agent:lint": "oxlint -f unix src && eslint --no-color src --cache",
     "agent:test": "vitest run --no-color --reporter=agent",

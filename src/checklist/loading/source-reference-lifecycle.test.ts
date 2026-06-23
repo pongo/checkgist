@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { LoadedSource, SourceReference } from "@/source-services/types";
+import type { LoadedSource, SourceReference } from "@/source-services";
 
 import {
   useChecklistSourceLifecycle,

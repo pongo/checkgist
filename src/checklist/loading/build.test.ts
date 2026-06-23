@@ -1,7 +1,7 @@
 import type { ComarkTree } from "comark";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { LoadedSource } from "@/source-services/types";
+import type { LoadedSource } from "@/source-services";
 
 import { buildChecklist } from "./build";
 
