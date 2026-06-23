@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { LoadedSource } from "@/source-services/types";
 
-import { buildChecklistSession } from "./build";
+import { buildChecklist } from "./build";
 
 function createSource(files: LoadedSource["files"]): LoadedSource {
   return {
@@ -16,13 +16,13 @@ function createSource(files: LoadedSource["files"]): LoadedSource {
   };
 }
 
-describe("buildChecklistSession", () => {
+describe("buildChecklist", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
   it("parses ready Source Files and stores unchecked local Task Item State", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",
@@ -49,7 +49,7 @@ describe("buildChecklistSession", () => {
   });
 
   it("wraps Task Item checkboxes and inline text in labels", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",
@@ -73,7 +73,7 @@ describe("buildChecklistSession", () => {
   });
 
   it("wraps parent Task Item text in nested lists", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",
@@ -102,7 +102,7 @@ describe("buildChecklistSession", () => {
   });
 
   it("unwraps plain parent list item paragraphs before nested Task Items", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",
@@ -128,7 +128,7 @@ describe("buildChecklistSession", () => {
   });
 
   it("renders Markdown content that has no Task Items", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",
@@ -147,7 +147,7 @@ describe("buildChecklistSession", () => {
   });
 
   it("converts ordinary list items to Task Items when Source Content has no explicit Task Items", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",
@@ -183,7 +183,7 @@ describe("buildChecklistSession", () => {
   });
 
   it("keeps ordinary list items unchanged when Source Content has explicit Task Items", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",
@@ -215,7 +215,7 @@ describe("buildChecklistSession", () => {
   });
 
   it("skips ordinary list items that only group nested list items", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",
@@ -237,7 +237,7 @@ describe("buildChecklistSession", () => {
   });
 
   it("converts Source File errors to Checklist File errors", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "error",
@@ -265,7 +265,7 @@ describe("buildChecklistSession", () => {
   });
 
   it("converts parse failures for one file without hiding other files", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",
@@ -317,7 +317,7 @@ describe("buildChecklistSession", () => {
   });
 
   it("sanitizes unsafe HTML, preserves allowed images, and updates external links", async () => {
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",
@@ -347,7 +347,7 @@ describe("buildChecklistSession", () => {
   it("rewrites supported Source URLs in Markdown links to Checkgist routes", async () => {
     vi.stubEnv("BASE_URL", "/checkgist/");
 
-    const session = await buildChecklistSession(
+    const session = await buildChecklist(
       createSource([
         {
           status: "ready",

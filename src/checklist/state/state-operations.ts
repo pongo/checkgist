@@ -6,7 +6,7 @@ import {
   type ChecklistStateHash,
 } from "./state-codec";
 import { resetAll, resetFile, setTaskChecked } from "./state";
-import type { ChecklistSession } from "../types";
+import type { Checklist } from "../types";
 
 type HashChangeTarget = Pick<Window, "addEventListener" | "removeEventListener">;
 
@@ -17,7 +17,7 @@ export type ChecklistStateOperationResult = {
 };
 
 export function setChecklistTaskChecked(
-  session: ChecklistSession,
+  session: Checklist,
   fileId: string,
   localTaskIndex: number,
   checked: boolean,
@@ -28,7 +28,7 @@ export function setChecklistTaskChecked(
 }
 
 export function resetChecklistFile(
-  session: ChecklistSession,
+  session: Checklist,
   fileId: string,
 ): ChecklistStateOperationResult {
   return createOperationResult(session, resetFile(session, fileId), {
@@ -36,7 +36,7 @@ export function resetChecklistFile(
   });
 }
 
-export function resetChecklist(session: ChecklistSession): ChecklistStateOperationResult {
+export function resetChecklist(session: Checklist): ChecklistStateOperationResult {
   resetAll(session);
 
   return createOperationResult(session, true, {
@@ -45,7 +45,7 @@ export function resetChecklist(session: ChecklistSession): ChecklistStateOperati
 }
 
 export function applyChecklistStateHash(
-  session: ChecklistSession,
+  session: Checklist,
   hash: string | null | undefined,
 ): ChecklistStateOperationResult {
   applyBitsToSession(session, bitsFromHash(hash));
@@ -56,7 +56,7 @@ export function applyChecklistStateHash(
 }
 
 export function listenToChecklistStateHash(
-  getSession: () => ChecklistSession | null | undefined,
+  getSession: () => Checklist | null | undefined,
   target: HashChangeTarget = window,
   location: Pick<Location, "hash"> = window.location,
 ): () => void {
@@ -75,7 +75,7 @@ export function listenToChecklistStateHash(
 }
 
 function createOperationResult(
-  session: ChecklistSession,
+  session: Checklist,
   changed: boolean,
   options: Pick<ChecklistStateOperationResult, "invalidateRender">,
 ): ChecklistStateOperationResult {

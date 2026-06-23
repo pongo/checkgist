@@ -27,7 +27,7 @@ export type ChecklistErrorFile = {
 
 type ChecklistFile = ChecklistReadyFile | ChecklistErrorFile;
 
-export type ChecklistSession = {
+export type Checklist = {
   source: LoadedSource;
   files: ChecklistFile[];
   hasTaskItems: boolean;

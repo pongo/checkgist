@@ -2,62 +2,58 @@ import { shallowRef, type ShallowRef } from "vue";
 
 import type { SourceReference } from "@/source-services";
 
-import {
-  loadChecklistSession,
-  type LoadChecklistSessionOptions,
-  type LoadChecklistSessionResult,
-} from "./load";
+import { loadChecklist, type LoadChecklistOptions, type LoadChecklistResult } from "./load";
 import { listenToChecklistStateHash } from "../state/state-operations";
-import type { ChecklistSession } from "../types";
+import type { Checklist } from "../types";
 
-type ChecklistSourceReferenceLifecycleState =
+type ChecklistSourceLifecycleState =
   | { status: "idle"; session: null; message: "" }
   | { status: "loading"; session: null; message: "" }
-  | { status: "ready"; session: ChecklistSession; message: "" }
+  | { status: "ready"; session: Checklist; message: "" }
   | { status: "unsupported"; session: null; message: string }
   | { status: "error"; session: null; message: string };
 
-export type ChecklistSourceReferenceBrowser = {
+export type ChecklistSourceBrowser = {
   getStateHash: () => string;
-  listenToHash: (getSession: () => ChecklistSession | null) => () => void;
+  listenToHash: (getSession: () => Checklist | null) => () => void;
   resetTitle: () => void;
   setTitle: (title: string) => void;
 };
 
-export type LoadChecklistSourceReference = (
+export type LoadChecklistSource = (
   reference: SourceReference | null,
-  options: Pick<LoadChecklistSessionOptions, "signal" | "stateHash">,
-) => Promise<LoadChecklistSessionResult>;
+  options: Pick<LoadChecklistOptions, "signal" | "stateHash">,
+) => Promise<LoadChecklistResult>;
 
-export type ChecklistSourceReferenceLifecycle = {
-  state: Readonly<ShallowRef<ChecklistSourceReferenceLifecycleState>>;
+export type ChecklistSourceLifecycle = {
+  state: Readonly<ShallowRef<ChecklistSourceLifecycleState>>;
   dispose: () => void;
   open: (reference: SourceReference | null) => Promise<void>;
 };
 
-export type ChecklistSourceReferenceLifecycleOptions = {
-  browser?: ChecklistSourceReferenceBrowser;
-  load?: LoadChecklistSourceReference;
+export type ChecklistSourceLifecycleOptions = {
+  browser?: ChecklistSourceBrowser;
+  load?: LoadChecklistSource;
 };
 
-const idleState: ChecklistSourceReferenceLifecycleState = {
+const idleState: ChecklistSourceLifecycleState = {
   status: "idle",
   session: null,
   message: "",
 };
 
-const loadingState: ChecklistSourceReferenceLifecycleState = {
+const loadingState: ChecklistSourceLifecycleState = {
   status: "loading",
   session: null,
   message: "",
 };
 
-export function useChecklistSourceReferenceLifecycle(
-  options: ChecklistSourceReferenceLifecycleOptions = {},
-): ChecklistSourceReferenceLifecycle {
-  const browser = options.browser ?? createChecklistSourceReferenceBrowser();
-  const load = options.load ?? loadChecklistSession;
-  const state = shallowRef<ChecklistSourceReferenceLifecycleState>(idleState);
+export function useChecklistSourceLifecycle(
+  options: ChecklistSourceLifecycleOptions = {},
+): ChecklistSourceLifecycle {
+  const browser = options.browser ?? createChecklistSourceBrowser();
+  const load = options.load ?? loadChecklist;
+  const state = shallowRef<ChecklistSourceLifecycleState>(idleState);
 
   let activeLoadToken = 0;
   let abortController: AbortController | null = null;
@@ -130,7 +126,7 @@ export function useChecklistSourceReferenceLifecycle(
   };
 }
 
-function createChecklistSourceReferenceBrowser(): ChecklistSourceReferenceBrowser {
+function createChecklistSourceBrowser(): ChecklistSourceBrowser {
   return {
     getStateHash: () => window.location.hash,
     listenToHash: listenToChecklistStateHash,

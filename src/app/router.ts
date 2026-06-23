@@ -6,17 +6,17 @@ const router = createRouter({
     {
       path: "/",
       name: "home",
-      component: () => import("@/pages/Home/HomePage.vue"),
+      component: () => import("@/pages/home/HomePage.vue"),
     },
     {
       path: "/gist.github.com/:gistId",
       name: "github-gist-source",
-      component: () => import("@/pages/SourceReference/SourceReferencePage.vue"),
+      component: () => import("@/pages/checklist/ChecklistPage.vue"),
     },
     {
       path: "/pastebin.com/:pasteId",
       name: "pastebin-source",
-      component: () => import("@/pages/SourceReference/SourceReferencePage.vue"),
+      component: () => import("@/pages/checklist/ChecklistPage.vue"),
     },
   ],
 });

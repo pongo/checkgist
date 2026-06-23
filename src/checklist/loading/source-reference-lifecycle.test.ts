@@ -3,11 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { LoadedSource, SourceReference } from "@/source-services/types";
 
 import {
-  useChecklistSourceReferenceLifecycle,
-  type ChecklistSourceReferenceBrowser,
-  type LoadChecklistSourceReference,
+  useChecklistSourceLifecycle,
+  type ChecklistSourceBrowser,
+  type LoadChecklistSource,
 } from "./source-reference-lifecycle";
-import type { ChecklistSession } from "../types";
+import type { Checklist } from "../types";
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -48,7 +48,7 @@ function createSource(title = "HdpnureE"): LoadedSource {
   };
 }
 
-function createSession(title = "HdpnureE"): ChecklistSession {
+function createSession(title = "HdpnureE"): Checklist {
   return {
     source: createSource(title),
     files: [],
@@ -56,11 +56,11 @@ function createSession(title = "HdpnureE"): ChecklistSession {
   };
 }
 
-function createBrowser(overrides: Partial<ChecklistSourceReferenceBrowser> = {}) {
+function createBrowser(overrides: Partial<ChecklistSourceBrowser> = {}) {
   const stopHashListener = vi.fn<() => void>();
-  const browser: ChecklistSourceReferenceBrowser = {
+  const browser: ChecklistSourceBrowser = {
     getStateHash: vi.fn<() => string>(() => "#10"),
-    listenToHash: vi.fn<ChecklistSourceReferenceBrowser["listenToHash"]>(() => stopHashListener),
+    listenToHash: vi.fn<ChecklistSourceBrowser["listenToHash"]>(() => stopHashListener),
     resetTitle: vi.fn<() => void>(),
     setTitle: vi.fn<(title: string) => void>(),
     ...overrides,
@@ -69,15 +69,15 @@ function createBrowser(overrides: Partial<ChecklistSourceReferenceBrowser> = {})
   return { browser, stopHashListener };
 }
 
-describe("useChecklistSourceReferenceLifecycle", () => {
+describe("useChecklistSourceLifecycle", () => {
   it("opens a Source Reference as a ready Checklist lifecycle state", async () => {
     const { browser } = createBrowser();
-    const load = vi.fn<LoadChecklistSourceReference>().mockResolvedValue({
+    const load = vi.fn<LoadChecklistSource>().mockResolvedValue({
       status: "loaded",
       session: createSession("Loaded source"),
       browserTitle: "Loaded source - Checkgist",
     });
-    const lifecycle = useChecklistSourceReferenceLifecycle({ browser, load });
+    const lifecycle = useChecklistSourceLifecycle({ browser, load });
     const reference = { type: "pastebin", pasteId: "HdpnureE" } satisfies SourceReference;
 
     await lifecycle.open(reference);
@@ -94,11 +94,11 @@ describe("useChecklistSourceReferenceLifecycle", () => {
 
   it("returns unsupported state and resets the browser title for invalid Source References", async () => {
     const { browser } = createBrowser();
-    const load = vi.fn<LoadChecklistSourceReference>().mockResolvedValue({
+    const load = vi.fn<LoadChecklistSource>().mockResolvedValue({
       status: "unsupported",
       message: "Unsupported source URL.",
     });
-    const lifecycle = useChecklistSourceReferenceLifecycle({ browser, load });
+    const lifecycle = useChecklistSourceLifecycle({ browser, load });
 
     await lifecycle.open(null);
 
@@ -114,9 +114,9 @@ describe("useChecklistSourceReferenceLifecycle", () => {
   it("returns error state and resets the browser title for load failures", async () => {
     const { browser } = createBrowser();
     const load = vi
-      .fn<LoadChecklistSourceReference>()
+      .fn<LoadChecklistSource>()
       .mockRejectedValue(new Error("Failed to load Pastebin source."));
-    const lifecycle = useChecklistSourceReferenceLifecycle({ browser, load });
+    const lifecycle = useChecklistSourceLifecycle({ browser, load });
 
     await lifecycle.open({ type: "pastebin", pasteId: "HdpnureE" });
 
@@ -130,11 +130,11 @@ describe("useChecklistSourceReferenceLifecycle", () => {
 
   it("aborts the previous source load and ignores its stale resolved result", async () => {
     const { browser } = createBrowser();
-    const firstLoad = createDeferred<Awaited<ReturnType<LoadChecklistSourceReference>>>();
-    const secondLoad = createDeferred<Awaited<ReturnType<LoadChecklistSourceReference>>>();
-    const load = vi.fn<LoadChecklistSourceReference>();
+    const firstLoad = createDeferred<Awaited<ReturnType<LoadChecklistSource>>>();
+    const secondLoad = createDeferred<Awaited<ReturnType<LoadChecklistSource>>>();
+    const load = vi.fn<LoadChecklistSource>();
     load.mockReturnValueOnce(firstLoad.promise).mockReturnValueOnce(secondLoad.promise);
-    const lifecycle = useChecklistSourceReferenceLifecycle({ browser, load });
+    const lifecycle = useChecklistSourceLifecycle({ browser, load });
 
     const firstOpen = lifecycle.open({ type: "pastebin", pasteId: "first" });
     const firstSignal = load.mock.calls[0]?.[1].signal;
@@ -167,11 +167,11 @@ describe("useChecklistSourceReferenceLifecycle", () => {
 
   it("ignores stale rejected source load errors", async () => {
     const { browser } = createBrowser();
-    const firstLoad = createDeferred<Awaited<ReturnType<LoadChecklistSourceReference>>>();
-    const secondLoad = createDeferred<Awaited<ReturnType<LoadChecklistSourceReference>>>();
-    const load = vi.fn<LoadChecklistSourceReference>();
+    const firstLoad = createDeferred<Awaited<ReturnType<LoadChecklistSource>>>();
+    const secondLoad = createDeferred<Awaited<ReturnType<LoadChecklistSource>>>();
+    const load = vi.fn<LoadChecklistSource>();
     load.mockReturnValueOnce(firstLoad.promise).mockReturnValueOnce(secondLoad.promise);
-    const lifecycle = useChecklistSourceReferenceLifecycle({ browser, load });
+    const lifecycle = useChecklistSourceLifecycle({ browser, load });
 
     const firstOpen = lifecycle.open({ type: "pastebin", pasteId: "first" });
     const secondOpen = lifecycle.open({ type: "pastebin", pasteId: "second" });
@@ -196,14 +196,14 @@ describe("useChecklistSourceReferenceLifecycle", () => {
   it("stops the current hash listener when opening another Source Reference", async () => {
     const firstStopHashListener = vi.fn<() => void>();
     const secondStopHashListener = vi.fn<() => void>();
-    const listenToHash = vi.fn<ChecklistSourceReferenceBrowser["listenToHash"]>();
+    const listenToHash = vi.fn<ChecklistSourceBrowser["listenToHash"]>();
     listenToHash
       .mockReturnValueOnce(firstStopHashListener)
       .mockReturnValueOnce(secondStopHashListener);
     const { browser } = createBrowser({
       listenToHash,
     });
-    const load = vi.fn<LoadChecklistSourceReference>();
+    const load = vi.fn<LoadChecklistSource>();
     load
       .mockResolvedValueOnce({
         status: "loaded",
@@ -215,7 +215,7 @@ describe("useChecklistSourceReferenceLifecycle", () => {
         session: createSession("second"),
         browserTitle: "second - Checkgist",
       });
-    const lifecycle = useChecklistSourceReferenceLifecycle({ browser, load });
+    const lifecycle = useChecklistSourceLifecycle({ browser, load });
 
     await lifecycle.open({ type: "pastebin", pasteId: "first" });
     await lifecycle.open({ type: "pastebin", pasteId: "second" });
@@ -226,12 +226,12 @@ describe("useChecklistSourceReferenceLifecycle", () => {
 
   it("aborts the active load and stops listening to hash changes on dispose", async () => {
     const { browser, stopHashListener } = createBrowser();
-    const load = vi.fn<LoadChecklistSourceReference>().mockResolvedValue({
+    const load = vi.fn<LoadChecklistSource>().mockResolvedValue({
       status: "loaded",
       session: createSession("Loaded source"),
       browserTitle: "Loaded source - Checkgist",
     });
-    const lifecycle = useChecklistSourceReferenceLifecycle({ browser, load });
+    const lifecycle = useChecklistSourceLifecycle({ browser, load });
 
     await lifecycle.open({ type: "pastebin", pasteId: "HdpnureE" });
     const signal = load.mock.calls[0]?.[1].signal;

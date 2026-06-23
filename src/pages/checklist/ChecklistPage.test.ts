@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { LoadedSource, SourceReference } from "@/source-services";
 
-import SourceReferencePage from "./SourceReferencePage.vue";
+import ChecklistPage from "./ChecklistPage.vue";
 
 const route = reactive({
   path: "/pastebin.com/HdpnureE",
@@ -123,8 +123,8 @@ function setRouteLocation(fullPath: string) {
   window.history.replaceState(null, "", route.fullPath);
 }
 
-function mountSourceReferencePage(options: { errorHandler?: (error: unknown) => void } = {}) {
-  return mount(SourceReferencePage, {
+function mountChecklistPage(options: { errorHandler?: (error: unknown) => void } = {}) {
+  return mount(ChecklistPage, {
     global: {
       config:
         options.errorHandler === undefined
@@ -164,7 +164,7 @@ function renderComarkNode(node: ComarkNode): ReturnType<typeof h> | string | nul
 
 async function mountLoadedSource(source: LoadedSource) {
   loadSource.mockResolvedValueOnce(source);
-  const wrapper = mountSourceReferencePage();
+  const wrapper = mountChecklistPage();
 
   await flushPromises();
   return wrapper;
@@ -180,19 +180,19 @@ function getButtonByText(wrapper: VueWrapper, text: string) {
   return button;
 }
 
-function getChecklistSessionLink(wrapper: VueWrapper) {
+function getChecklistLink(wrapper: VueWrapper) {
   const link = wrapper
     .findAll("a")
     .find((candidate) => candidate.attributes("href")?.startsWith(window.location.origin));
 
   if (link === undefined) {
-    throw new Error("Checklist Session link not found.");
+    throw new Error("Checklist link not found.");
   }
 
   return link;
 }
 
-describe("SourceReferencePage", () => {
+describe("ChecklistPage", () => {
   beforeEach(() => {
     setRouteLocation("/pastebin.com/HdpnureE");
     loadSource.mockReset();
@@ -238,7 +238,7 @@ describe("SourceReferencePage", () => {
     expect(sourceLink.attributes("target")).toBe("_blank");
     expect(sourceLink.attributes("rel")).toBe("noopener noreferrer");
     expect(wrapper.text()).toContain("Reset all");
-    const copyLink = getChecklistSessionLink(wrapper);
+    const copyLink = getChecklistLink(wrapper);
     expect(copyLink.text()).toBe("Copy link");
     expect(copyLink.attributes("href")).toMatch(/\/pastebin\.com\/HdpnureE$/);
 
@@ -264,9 +264,7 @@ describe("SourceReferencePage", () => {
     await wrapper.get("input[type='checkbox']").setValue(true);
 
     expect(window.location.hash).toBe("#1");
-    expect(getChecklistSessionLink(wrapper).attributes("href")).toMatch(
-      /\/pastebin\.com\/HdpnureE#1$/,
-    );
+    expect(getChecklistLink(wrapper).attributes("href")).toMatch(/\/pastebin\.com\/HdpnureE#1$/);
     expect(loadSource).toHaveBeenCalledTimes(1);
   });
 
@@ -413,7 +411,7 @@ describe("SourceReferencePage", () => {
 
   it("shows a source-level load error", async () => {
     loadSource.mockRejectedValueOnce(new Error("Failed to load Pastebin source."));
-    const wrapper = mount(SourceReferencePage);
+    const wrapper = mount(ChecklistPage);
 
     await flushPromises();
 
@@ -422,12 +420,12 @@ describe("SourceReferencePage", () => {
     expect(document.title).toBe("Checkgist");
   });
 
-  it("copies the current Checklist Session URL including route and Task Item State hash", async () => {
+  it("copies the current Checklist URL including route and Task Item State hash", async () => {
     vi.useFakeTimers();
     setRouteLocation("/pastebin.com/HdpnureE#10");
     const wrapper = await mountLoadedSource(createSource());
 
-    const copyLink = getChecklistSessionLink(wrapper);
+    const copyLink = getChecklistLink(wrapper);
     await copyLink.trigger("click");
     await flushPromises();
 
@@ -444,10 +442,10 @@ describe("SourceReferencePage", () => {
     expect(copyLink.text()).toBe("Copy link");
   });
 
-  it("does not show a visible error when copying the Checklist Session URL fails", async () => {
+  it("does not show a visible error when copying the Checklist URL fails", async () => {
     writeClipboardText.mockRejectedValueOnce(new Error("denied"));
     loadSource.mockResolvedValueOnce(createSource());
-    const wrapper = mountSourceReferencePage({
+    const wrapper = mountChecklistPage({
       errorHandler: (error) => {
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toBe("denied");
@@ -455,11 +453,11 @@ describe("SourceReferencePage", () => {
     });
 
     await flushPromises();
-    await getChecklistSessionLink(wrapper).trigger("click");
+    await getChecklistLink(wrapper).trigger("click");
     await flushPromises();
 
     expect(wrapper.find("[role='alert']").exists()).toBe(false);
     expect(wrapper.text()).not.toContain("Could not copy link.");
-    expect(getChecklistSessionLink(wrapper).text()).toBe("Copy link");
+    expect(getChecklistLink(wrapper).text()).toBe("Copy link");
   });
 });

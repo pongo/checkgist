@@ -7,7 +7,7 @@ import { copyToClipboard } from "@/shared/clipboard.ts";
 
 const route = useRoute();
 
-const currentChecklistSessionUrl = computed(() => {
+const currentChecklistUrl = computed(() => {
   // Touch route.fullPath so Vue recomputes this value after router-managed hash changes.
   void route.fullPath;
   return window.location.href;
@@ -22,8 +22,8 @@ function resetCopyLinkFeedback() {
   isCopied.value = false;
 }
 
-async function copyCurrentChecklistSessionLink() {
-  await copyToClipboard(currentChecklistSessionUrl.value);
+async function copyCurrentChecklistLink() {
+  await copyToClipboard(currentChecklistUrl.value);
 
   clearTimeout(resetTimeout);
   isCopied.value = true;
@@ -39,10 +39,10 @@ onBeforeUnmount(resetCopyLinkFeedback);
 
 <template>
   <a
-    :href="currentChecklistSessionUrl"
+    :href="currentChecklistUrl"
     aria-label="Copy link"
     title="Copy link"
-    @click.prevent="copyCurrentChecklistSessionLink"
+    @click.prevent="copyCurrentChecklistLink"
   >
     <Check v-if="isCopied" class="size-4" aria-hidden="true" />
     <Copy v-else class="size-4" aria-hidden="true" />

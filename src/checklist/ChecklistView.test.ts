@@ -3,10 +3,10 @@ import { mount } from "@vue/test-utils";
 import { defineComponent, h } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ChecklistSession } from "@/checklist-session";
+import type { Checklist } from "@/checklist";
 import { copyToClipboard } from "@/shared/clipboard.ts";
 
-import ChecklistSessionView from "./ChecklistSessionView.vue";
+import ChecklistView from "./ChecklistView.vue";
 
 // Public DOM contract: the rendered label class is part of the markdown output.
 const RENDERED_TASK_LABEL_CLASS = "checkgist-task-label";
@@ -45,7 +45,7 @@ function createTree(taskCount: number): ComarkTree {
   };
 }
 
-function createSession(): ChecklistSession {
+function createSession(): Checklist {
   return {
     source: {
       reference: { type: "pastebin", pasteId: "source-1" },
@@ -122,8 +122,8 @@ const ComarkRendererStub = defineComponent({
   },
 });
 
-function mountSession(session: ChecklistSession) {
-  return mount(ChecklistSessionView, {
+function mountSession(session: Checklist) {
+  return mount(ChecklistView, {
     props: { session },
     global: {
       stubs: {
@@ -133,7 +133,7 @@ function mountSession(session: ChecklistSession) {
   });
 }
 
-describe("ChecklistSessionView", () => {
+describe("ChecklistView", () => {
   beforeEach(() => {
     routerReplace.mockReset();
     vi.mocked(copyToClipboard).mockClear();

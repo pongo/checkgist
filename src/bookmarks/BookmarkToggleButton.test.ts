@@ -6,7 +6,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { reactive } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ChecklistSession } from "@/checklist-session";
+import type { Checklist } from "@/checklist";
 
 import { closeBookmarkDatabaseForTests } from "./db";
 import BookmarkToggleButton from "./BookmarkToggleButton.vue";
@@ -24,7 +24,7 @@ function resetIndexedDb() {
   vi.stubGlobal("indexedDB", new IDBFactory());
 }
 
-function createSession(title = "HdpnureE"): ChecklistSession {
+function createSession(title = "HdpnureE"): Checklist {
   return {
     source: {
       reference: { type: "pastebin", pasteId: "HdpnureE" },

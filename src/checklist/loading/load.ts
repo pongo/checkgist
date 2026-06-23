@@ -6,33 +6,33 @@ import {
 } from "@/source-services";
 
 import { formatBrowserTitle } from "./browser-title";
-import { buildChecklistSession } from "./build";
+import { buildChecklist } from "./build";
 import { applyChecklistStateHash } from "../state/state-operations";
-import type { ChecklistSession } from "../types";
+import type { Checklist } from "../types";
 
-export type LoadChecklistSessionOptions = {
+export type LoadChecklistOptions = {
   registry?: SourceRegistry;
   stateHash?: string | null;
   signal?: AbortSignal;
 };
 
-type LoadedChecklistSession = {
+type LoadedChecklist = {
   status: "loaded";
-  session: ChecklistSession;
+  session: Checklist;
   browserTitle: string;
 };
 
-type UnsupportedChecklistSessionSource = {
+type UnsupportedChecklistSource = {
   status: "unsupported";
   message: string;
 };
 
-export type LoadChecklistSessionResult = LoadedChecklistSession | UnsupportedChecklistSessionSource;
+export type LoadChecklistResult = LoadedChecklist | UnsupportedChecklistSource;
 
-export async function loadChecklistSession(
+export async function loadChecklist(
   reference: SourceReference | null,
-  options: LoadChecklistSessionOptions = {},
-): Promise<LoadChecklistSessionResult> {
+  options: LoadChecklistOptions = {},
+): Promise<LoadChecklistResult> {
   if (reference === null) {
     return {
       status: "unsupported",
@@ -51,7 +51,7 @@ export async function loadChecklistSession(
   }
 
   const source = await service.load(reference, { signal: options.signal });
-  const session = await buildChecklistSession(source);
+  const session = await buildChecklist(source);
 
   if (options.stateHash !== undefined && options.stateHash !== null) {
     applyChecklistStateHash(session, options.stateHash);

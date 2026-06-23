@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createSourceRegistry, unsupportedSourceUrlMessage } from "@/source-services/registry";
 import type { LoadedSource, SourceReference, SourceService } from "@/source-services/types";
 
-import { loadChecklistSession } from "./load";
+import { loadChecklist } from "./load";
 
 type PastebinReference = { type: "pastebin"; pasteId: string };
 type LoadPastebinSource = SourceService<PastebinReference>["load"];
@@ -41,8 +41,8 @@ function createLoadSourceMock() {
   return vi.fn<LoadPastebinSource>();
 }
 
-describe("loadChecklistSession", () => {
-  it("loads Source Content, builds a Checklist Session, and returns browser metadata", async () => {
+describe("loadChecklist", () => {
+  it("loads Source Content, builds a Checklist, and returns browser metadata", async () => {
     const signal = new AbortController().signal;
     const load = createLoadSourceMock().mockResolvedValue(
       createSource({
@@ -54,7 +54,7 @@ describe("loadChecklistSession", () => {
     );
     const registry = createSourceRegistry([createPastebinService(load)]);
 
-    const result = await loadChecklistSession(
+    const result = await loadChecklist(
       { type: "pastebin", pasteId: "HdpnureE" },
       {
         registry,
@@ -82,7 +82,7 @@ describe("loadChecklistSession", () => {
   it("returns an unsupported result for a missing Source Reference", async () => {
     const registry = createSourceRegistry([createPastebinService(createLoadSourceMock())]);
 
-    await expect(loadChecklistSession(null, { registry })).resolves.toEqual({
+    await expect(loadChecklist(null, { registry })).resolves.toEqual({
       status: "unsupported",
       message: unsupportedSourceUrlMessage,
     });
@@ -92,7 +92,7 @@ describe("loadChecklistSession", () => {
     const registry = createSourceRegistry([]);
 
     await expect(
-      loadChecklistSession({ type: "pastebin", pasteId: "HdpnureE" }, { registry }),
+      loadChecklist({ type: "pastebin", pasteId: "HdpnureE" }, { registry }),
     ).resolves.toEqual({
       status: "unsupported",
       message: unsupportedSourceUrlMessage,
@@ -106,7 +106,7 @@ describe("loadChecklistSession", () => {
     ]);
 
     await expect(
-      loadChecklistSession({ type: "pastebin", pasteId: "HdpnureE" }, { registry }),
+      loadChecklist({ type: "pastebin", pasteId: "HdpnureE" }, { registry }),
     ).rejects.toBe(error);
   });
 
@@ -114,7 +114,7 @@ describe("loadChecklistSession", () => {
     const registry = createSourceRegistry([createPastebinService(createLoadSourceMock())]);
 
     await expect(
-      loadChecklistSession({ type: "unknown" } as unknown as SourceReference, { registry }),
+      loadChecklist({ type: "unknown" } as unknown as SourceReference, { registry }),
     ).resolves.toEqual({
       status: "unsupported",
       message: unsupportedSourceUrlMessage,

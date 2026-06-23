@@ -1,8 +1,8 @@
 import { syncTaskItemState } from "../task-items/task-item-tree";
-import type { ChecklistReadyFile, ChecklistSession } from "../types";
+import type { ChecklistReadyFile, Checklist } from "../types";
 
 export function setTaskChecked(
-  session: ChecklistSession,
+  session: Checklist,
   fileId: string,
   localTaskIndex: number,
   checked: boolean,
@@ -24,7 +24,7 @@ export function setTaskChecked(
   return true;
 }
 
-export function resetFile(session: ChecklistSession, fileId: string): boolean {
+export function resetFile(session: Checklist, fileId: string): boolean {
   const file = session.files.find(
     (candidate) => candidate.status === "ready" && candidate.id === fileId,
   );
@@ -38,7 +38,7 @@ export function resetFile(session: ChecklistSession, fileId: string): boolean {
   return true;
 }
 
-export function resetAll(session: ChecklistSession): ChecklistSession {
+export function resetAll(session: Checklist): Checklist {
   for (const file of session.files) {
     if (file.status === "ready") {
       file.checked = file.checked.map(() => false);
@@ -48,7 +48,7 @@ export function resetAll(session: ChecklistSession): ChecklistSession {
 
   return session;
 }
-export function syncSessionTaskCheckboxes(session: ChecklistSession): void {
+export function syncSessionTaskCheckboxes(session: Checklist): void {
   for (const file of session.files) {
     if (file.status === "ready") {
       syncReadyFileTaskItemState(file);

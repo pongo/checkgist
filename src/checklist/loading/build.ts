@@ -13,11 +13,11 @@ import {
 } from "@/source-services";
 
 import { prepareExplicitTaskItems, promoteOrdinaryListItems } from "../task-items/task-item-tree";
-import type { ChecklistErrorFile, ChecklistReadyFile, ChecklistSession } from "../types";
+import type { ChecklistErrorFile, ChecklistReadyFile, Checklist } from "../types";
 
 type ParseMarkdown = (markdown: string, options?: ParseOptions) => Promise<ComarkTree>;
 
-export type BuildChecklistSessionOptions = {
+export type BuildChecklistOptions = {
   parseMarkdown?: ParseMarkdown;
 };
 
@@ -44,10 +44,10 @@ const checklistMarkdownPlugins = [
   }))(),
 ] as const;
 
-export async function buildChecklistSession(
+export async function buildChecklist(
   source: LoadedSource,
-  options: BuildChecklistSessionOptions = {},
-): Promise<ChecklistSession> {
+  options: BuildChecklistOptions = {},
+): Promise<Checklist> {
   const parseMarkdown = options.parseMarkdown ?? parse;
   const files = await Promise.all(
     source.files.map((sourceFile) => buildChecklistFile(sourceFile, parseMarkdown)),

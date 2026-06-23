@@ -1,4 +1,4 @@
-import type { ChecklistSession } from "../types";
+import type { Checklist } from "../types";
 import { syncSessionTaskCheckboxes } from "./state";
 
 export type ChecklistStateBits = string;
@@ -26,10 +26,7 @@ export function bitsToHash(bits: ChecklistStateBits): ChecklistStateHash {
   return parsedBits.length > 0 ? `#${parsedBits}` : "";
 }
 
-export function applyBitsToSession(
-  session: ChecklistSession,
-  bits: ChecklistStateBits,
-): ChecklistSession {
+export function applyBitsToSession(session: Checklist, bits: ChecklistStateBits): Checklist {
   const parsedBits = parseBits(bits);
   let bitIndex = 0;
 
@@ -49,7 +46,7 @@ export function applyBitsToSession(
   return session;
 }
 
-export function bitsFromSession(session: ChecklistSession): ChecklistStateBits {
+export function bitsFromSession(session: Checklist): ChecklistStateBits {
   const encoded = session.files
     .flatMap((file) =>
       file.status === "ready" ? file.checked.map((checked) => (checked ? "1" : "0")) : [],

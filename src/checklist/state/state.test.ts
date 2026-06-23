@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { ChecklistSession } from "../types";
+import type { Checklist } from "../types";
 import { resetAll, resetFile, setTaskChecked } from "./state";
 
-function createSession(): ChecklistSession {
+function createSession(): Checklist {
   return {
     source: {
       reference: { type: "pastebin", pasteId: "source-1" },
@@ -54,11 +54,11 @@ function createSession(): ChecklistSession {
   };
 }
 
-function readyChecked(session: ChecklistSession): boolean[][] {
+function readyChecked(session: Checklist): boolean[][] {
   return session.files.flatMap((file) => (file.status === "ready" ? [file.checked] : []));
 }
 
-describe("Checklist Session state", () => {
+describe("Checklist state", () => {
   it("updates file-local Task Item State without global task ranges", () => {
     const session = createSession();
 

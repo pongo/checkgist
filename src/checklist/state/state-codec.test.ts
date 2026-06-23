@@ -7,9 +7,9 @@ import {
   bitsToHash,
   parseBits,
 } from "./state-codec";
-import type { ChecklistSession } from "../types";
+import type { Checklist } from "../types";
 
-function createSession(): ChecklistSession {
+function createSession(): Checklist {
   return {
     source: {
       reference: { type: "pastebin", pasteId: "source-1" },
@@ -60,7 +60,7 @@ function createSession(): ChecklistSession {
   };
 }
 
-function readyChecked(session: ChecklistSession): boolean[][] {
+function readyChecked(session: Checklist): boolean[][] {
   return session.files.flatMap((file) => (file.status === "ready" ? [file.checked] : []));
 }
 

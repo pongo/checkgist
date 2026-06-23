@@ -4,10 +4,10 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
 import { BookmarkToggleButton } from "@/bookmarks";
-import { ChecklistSessionView, useChecklistSourceReferenceLifecycle } from "@/checklist-session";
+import { ChecklistView, useChecklistSourceLifecycle } from "@/checklist";
 import { referenceFromRoute, type SourceReference } from "@/source-services";
 
-import ChecklistSessionCopyLink from "./ChecklistSessionCopyLink.vue";
+import ChecklistCopyLink from "./ChecklistCopyLink.vue";
 
 const route = useRoute();
 
@@ -16,8 +16,8 @@ function referenceFromRoutePath(routePath: string): SourceReference | null {
   return referenceFromRoute(path);
 }
 
-const checklistSessionView = ref<InstanceType<typeof ChecklistSessionView> | null>(null);
-const lifecycle = useChecklistSourceReferenceLifecycle();
+const checklistView = ref<InstanceType<typeof ChecklistView> | null>(null);
+const lifecycle = useChecklistSourceLifecycle();
 const lifecycleState = lifecycle.state;
 const session = computed(() =>
   lifecycleState.value.status === "ready" ? lifecycleState.value.session : null,
@@ -29,8 +29,8 @@ const loadError = computed(() =>
     : "",
 );
 
-function resetCurrentChecklistSession() {
-  checklistSessionView.value?.resetAllTasks();
+function resetCurrentChecklist() {
+  checklistView.value?.resetAllTasks();
 }
 
 watch(
@@ -62,7 +62,7 @@ onBeforeUnmount(() => {
         <div v-if="session" class="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
           <BookmarkToggleButton :session="session" />
 
-          <ChecklistSessionCopyLink
+          <ChecklistCopyLink
             class="inline-flex h-9 w-9 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:h-8 sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
           />
 
@@ -83,7 +83,7 @@ onBeforeUnmount(() => {
             type="button"
             aria-label="Reset all"
             title="Reset all"
-            @click="resetCurrentChecklistSession"
+            @click="resetCurrentChecklist"
           >
             <RotateCcw class="size-4" aria-hidden="true" />
             <span class="hidden sm:inline">Reset all</span>
@@ -111,7 +111,7 @@ onBeforeUnmount(() => {
           {{ session.source.metadata.description }}
         </p>
 
-        <ChecklistSessionView ref="checklistSessionView" :session="session" />
+        <ChecklistView ref="checklistView" :session="session" />
       </template>
     </section>
   </main>

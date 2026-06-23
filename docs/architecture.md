@@ -14,8 +14,8 @@ Application bootstrap and global UI wiring.
 
 Route-level pages.
 
-- `Home/` contains the landing/input page for opening supported Source URLs.
-- `SourceReference/` contains the page for a resolved source reference route, such as GitHub Gist or Pastebin.
+- `home/` contains the landing/input page for opening supported Source URLs.
+- `checklist/` contains the page for opening a Checklist from supported Source routes such as GitHub Gist or Pastebin.
 
 ### `src/source-services/`
 
@@ -26,11 +26,11 @@ External source-service integration boundary.
 
 Add a new Source Service here first, then wire it into the registry and router (`src/app/router.ts`).
 
-### `src/checklist-session/`
+### `src/checklist/`
 
 Checklist loading, rendering model, and shareable Checklist State.
 
-This area owns the transition from a `SourceReference` and `LoadedSource` into a user-facing Checklist. It also owns encoding, applying, and mutating Checklist State.
+This area owns the transition from a `SourceReference` and `LoadedSource` into a user-facing Checklist. It also owns rendering support plus encoding, applying, and mutating Checklist State.
 
 - `loading/` owns source-reference lifecycle, Loaded Source loading, Checklist building, and browser title formatting.
 - `state/` owns Checklist State mutation, hash encoding/decoding, and state operation results consumed by UI and lifecycle code.
@@ -73,7 +73,7 @@ Keep this guide for changes where the sequence matters or where multiple source 
 ## Boundaries
 
 - `source-services` knows how to identify and load external sources; it should not know how checklists are rendered.
-- `checklist-session` knows how a loaded source becomes an interactive checklist; it should not own bookmarks.
+- `checklist` knows how a Loaded Source becomes an interactive Checklist; it should not own bookmarks.
 - `bookmarks` stores saved source references; it should not store Checklist State.
 - `pages` coordinate route-level flows; they should not become the long-term home for reusable feature logic.
 - `CONTEXT.md` is a glossary only. Put implementation navigation here, and put durable trade-off decisions in `docs/adr/` when an ADR is justified.
