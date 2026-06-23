@@ -42,6 +42,13 @@ function normalizeSourceUrlInput(input: string): URL | null {
   }
 }
 
+/**
+ * Parses user-entered text into a Source Reference when a registered Source
+ * Service recognizes it.
+ *
+ * Inputs without a protocol are treated as HTTPS URLs. Unsupported protocols,
+ * malformed URLs, and unknown services return null.
+ */
 export function referenceFromUrlInput(
   input: string,
   registry: SourceRegistry = sourceRegistry,
@@ -61,6 +68,10 @@ export function referenceFromUrlInput(
   return null;
 }
 
+/**
+ * Parses decoded app route segments into a Source Reference when a registered
+ * Source Service recognizes them.
+ */
 export function referenceFromRoute(
   path: string[],
   registry: SourceRegistry = sourceRegistry,
@@ -75,6 +86,12 @@ export function referenceFromRoute(
   return null;
 }
 
+/**
+ * Builds the canonical app route for a Source Reference.
+ *
+ * Throws when the registry has no Source Service for the reference type, because
+ * that indicates an internal mismatch between references and registered services.
+ */
 export function routeForReference(
   reference: SourceReference,
   registry: SourceRegistry = sourceRegistry,

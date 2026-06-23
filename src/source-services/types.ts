@@ -8,6 +8,12 @@ export type PastebinReference = {
   pasteId: string;
 };
 
+/**
+ * Stable application reference to content on a supported Source Service.
+ *
+ * A Source Reference is safe to store in routes and use later to load the same
+ * Source URL through the matching Source Service.
+ */
 export type SourceReference = GitHubGistReference | PastebinReference;
 
 type SourceMetadata = {
@@ -46,6 +52,12 @@ type SourceFileError = {
 
 export type SourceFile = SourceTextFile | SourceFileError;
 
+/**
+ * Resolved content loaded from a Source URL.
+ *
+ * A Loaded Source can contain multiple Source Files. Individual files may fail
+ * while the Source itself still loads successfully.
+ */
 export type LoadedSource = {
   reference: SourceReference;
   metadata: SourceMetadata;
@@ -62,6 +74,12 @@ export type SourceLoadOptions = {
   fetcher?: SourceFetcher;
 };
 
+/**
+ * Adapter contract for a supported external Source Service.
+ *
+ * Implementations own parsing Source URLs, mapping references to app routes,
+ * and loading the referenced content into a Loaded Source.
+ */
 export type SourceService<TReference extends SourceReference> = {
   type: TReference["type"];
   fromUrl(url: URL): TReference | null;

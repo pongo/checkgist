@@ -122,6 +122,12 @@ async function restoreBookmark(bookmark: Bookmark, toIndex: number): Promise<voi
   bookmarks.value = await restoreBookmarkInDatabase(bookmark, toIndex);
 }
 
+/**
+ * Returns the shared Bookmark state and commands.
+ *
+ * Bookmark state is loaded lazily and shared across all callers; this composable
+ * is not a factory for independent Bookmark collections.
+ */
 export function useBookmarks() {
   return {
     bookmarks: readonly(bookmarks),
