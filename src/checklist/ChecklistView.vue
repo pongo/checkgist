@@ -8,11 +8,11 @@ import {
   resetChecklistFile,
   setChecklistTaskChecked,
   type ChecklistStateOperationResult,
-} from "@/checklist/state/state-operations";
+} from "./state/state-operations";
 import {
   findTaskItemLabelElement,
   taskItemIndexFromCheckboxElement,
-} from "@/checklist/task-items/task-item-tree";
+} from "./task-items/task-item-tree";
 import type { ChecklistReadyFile, Checklist } from "./types";
 import { copyToClipboard } from "@/shared/clipboard.ts";
 

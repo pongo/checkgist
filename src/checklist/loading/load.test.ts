@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createSourceRegistry, unsupportedSourceUrlMessage } from "@/source-services/registry";
-import type { LoadedSource, SourceReference, SourceService } from "@/source-services/types";
+import { createSourceRegistry, unsupportedSourceUrlMessage } from "@/source-services";
+import type { LoadedSource, SourceReference, SourceService } from "@/source-services";
 
 import { loadChecklist } from "./load";
 

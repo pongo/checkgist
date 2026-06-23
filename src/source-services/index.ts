@@ -1,4 +1,5 @@
 export {
+  createSourceRegistry,
   referenceFromRoute,
   referenceFromUrlInput,
   routeForReference,
@@ -12,5 +13,6 @@ export {
   type SourceFile,
   type SourceFileId,
   type SourceReference,
+  type SourceService,
   type SourceTextFile,
 } from "./types";
