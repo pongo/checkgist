@@ -46,7 +46,7 @@ onMounted(() => {
       <div>
         <h1 class="text-4xl font-semibold tracking-normal">Checkgist</h1>
         <p class="mt-2 text-base text-zinc-600 dark:text-zinc-400">
-          Turn Markdown task lists into interactive checklists.
+          Turn Markdown task lists into reusable checklists.
           <RouterLink
             to="/gist.github.com/6850950b2f317048e6c59fe2878c1fda"
             class="border-b-2 border-[#0969da] hover:text-[#0969da] dark:border-[#4493f8] dark:hover:text-[#4493f8]"

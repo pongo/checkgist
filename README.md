@@ -1,6 +1,6 @@
 # Checkgist
 
-Turn Markdown task lists into interactive checklists.
+Turn Markdown task lists into reusable checklists.
 
 <img width="800" alt="screen" src="https://github.com/user-attachments/assets/38ccee1f-29eb-4d09-adc1-181fee61f838" />
 
