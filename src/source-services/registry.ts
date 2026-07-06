@@ -1,5 +1,4 @@
-import { githubGistService } from "./services/github-gist.ts";
-import { pastebinService } from "./services/pastebin.ts";
+import { sourceServices } from "./services/index.ts";
 import type { SourceReference, SourceService } from "./types";
 
 /**
@@ -25,4 +24,4 @@ export function createSourceRegistry(
 /**
  * Application Source Service loading registry for all supported Source Services.
  */
-export const sourceRegistry = createSourceRegistry([githubGistService, pastebinService]);
+export const sourceRegistry = createSourceRegistry(sourceServices);

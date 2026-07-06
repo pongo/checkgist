@@ -1,7 +1,6 @@
 import type { RouteComponent, RouteRecordRaw } from "vue-router";
 
-import { githubGistAddressRule } from "./services/github-gist.ts";
-import { pastebinAddressRule } from "./services/pastebin.ts";
+import { sourceAddressRules } from "./services/index.ts";
 import type { SourceReference } from "./types";
 
 type SourceRouteDefinition = {
@@ -37,10 +36,7 @@ export function createSourceAddressCatalog(
   };
 }
 
-const sourceAddressCatalog = createSourceAddressCatalog([
-  githubGistAddressRule,
-  pastebinAddressRule,
-]);
+const sourceAddressCatalog = createSourceAddressCatalog(sourceAddressRules);
 
 function normalizeSourceUrlInput(input: string): URL | null {
   const trimmedInput = input.trim();

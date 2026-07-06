@@ -23,9 +23,9 @@ External source-service integration boundary.
 
 - `addressing.ts` is the Source Addressing catalog. It owns Source URL normalization, supported Source Reference recognition, canonical app route generation, and Vue route records.
 - `registry.ts` is the Source Service loading registry. It maps a Source Reference type to the adapter that can load the corresponding Loaded Source.
-- `services/` contains one adapter per supported Source Service. Keep service-specific address rules beside the loading adapter, and export both to the catalog/registry.
+- `services/` contains one adapter per supported Source Service. Keep service-specific address rules beside the loading adapter, and register each supported Source Service once in `services/index.ts` as an address-rule/loading-adapter pair.
 
-Add a new Source Service here first, then wire its address rule into `addressing.ts` and its loading adapter into `registry.ts`. Do not hardcode Source Service routes in `src/app/router.ts`; route records are produced by the Source Addressing catalog.
+Add a new Source Service here first, then register its address rule and loading adapter together in `services/index.ts`. Do not hardcode Source Service routes in `src/app/router.ts`; route records are produced by the Source Addressing catalog.
 
 ### `src/checklist/`
 
@@ -67,9 +67,8 @@ Keep this guide for changes where the sequence matters or where multiple source 
 
 1. Add service-specific reference, address rule, and loading behavior under `src/source-services/services/`.
 2. Extend source-service types if the new service needs a new reference shape.
-3. Register URL parsing and route conversion by adding the service address rule to `src/source-services/addressing.ts`.
-4. Register service lookup by adding the loading adapter to `src/source-services/registry.ts`.
-5. Add focused tests next to the source-service code and contract tests under `test/source-services/` when useful.
+3. Register URL parsing, route conversion, and service lookup by adding one address-rule/loading-adapter pair to `src/source-services/services/index.ts`.
+4. Add focused tests next to the source-service code and contract tests under `test/source-services/` when useful.
 
 ### Source Service Routing
 
