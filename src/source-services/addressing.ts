@@ -1,9 +1,8 @@
 import type { RouteComponent, RouteRecordRaw } from "vue-router";
 
-import type { GitHubGistReference, PastebinReference, SourceReference } from "./types";
-
-const GIST_HOST = "gist.github.com";
-const PASTEBIN_HOST = "pastebin.com";
+import { githubGistAddressRule } from "./services/github-gist.ts";
+import { pastebinAddressRule } from "./services/pastebin.ts";
+import type { SourceReference } from "./types";
 
 type SourceRouteDefinition = {
   type: SourceReference["type"];
@@ -24,77 +23,6 @@ export type SourceAddressCatalog = {
 };
 
 export const unsupportedSourceUrlMessage = "Enter a supported URL";
-
-function isNonEmptySegment(segment: string | undefined): segment is string {
-  return segment !== undefined && segment.length > 0;
-}
-
-function getPasteId(segments: string[]) {
-  if (segments.length === 1 && segments[0] !== "raw") return segments[0];
-  if (segments.length === 2 && segments[0] === "raw") return segments[1];
-  return undefined;
-}
-
-const githubGistAddressRule: SourceAddressRule = {
-  type: "github-gist",
-  name: "github-gist-source",
-  path: `/${GIST_HOST}/:gistId`,
-
-  fromUrl(url: URL): GitHubGistReference | null {
-    if (url.hostname.toLowerCase() !== GIST_HOST) {
-      return null;
-    }
-
-    const segments = url.pathname.split("/").filter(Boolean);
-    if (segments.length !== 1 && segments.length !== 2) {
-      return null;
-    }
-
-    const gistId = segments[segments.length - 1];
-    return isNonEmptySegment(gistId) ? { type: "github-gist", gistId } : null;
-  },
-
-  fromRoute(path: string[]): GitHubGistReference | null {
-    const [host, gistId, extra] = path;
-    if (host !== GIST_HOST || extra !== undefined || !isNonEmptySegment(gistId)) {
-      return null;
-    }
-
-    return { type: "github-gist", gistId };
-  },
-
-  toRouteSegments(reference: SourceReference): string[] | null {
-    return reference.type === "github-gist" ? [GIST_HOST, reference.gistId] : null;
-  },
-};
-
-const pastebinAddressRule: SourceAddressRule = {
-  type: "pastebin",
-  name: "pastebin-source",
-  path: `/${PASTEBIN_HOST}/:pasteId`,
-
-  fromUrl(url: URL): PastebinReference | null {
-    if (url.hostname.toLowerCase() !== PASTEBIN_HOST) {
-      return null;
-    }
-
-    const pasteId = getPasteId(url.pathname.split("/").filter(Boolean));
-    return isNonEmptySegment(pasteId) ? { type: "pastebin", pasteId } : null;
-  },
-
-  fromRoute(path: string[]): PastebinReference | null {
-    const [host, pasteId, extra] = path;
-    if (host !== PASTEBIN_HOST || extra !== undefined || !isNonEmptySegment(pasteId)) {
-      return null;
-    }
-
-    return { type: "pastebin", pasteId };
-  },
-
-  toRouteSegments(reference: SourceReference): string[] | null {
-    return reference.type === "pastebin" ? [PASTEBIN_HOST, reference.pasteId] : null;
-  },
-};
 
 export function createSourceAddressCatalog(
   rules: ReadonlyArray<SourceAddressRule>,
