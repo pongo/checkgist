@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  createSourceRegistry,
+  createSourceAddressCatalog,
   referenceFromRoute,
   referenceFromUrlInput,
   routeForReference,
-} from "./registry";
-import type { SourceReference, SourceService } from "./types";
+  routeForUrlInput,
+} from "./addressing";
+import type { SourceAddressRule } from "./addressing";
+import type { SourceReference } from "./types";
 
-describe("source service registry", () => {
+describe("source addressing", () => {
   it.each([
     [
       "https://gist.github.com/octocat/0123456789abcdef?file=one.md#hash",
@@ -45,6 +47,7 @@ describe("source service registry", () => {
 
     expect(reference).toEqual(expectedReference);
     expect(routeForReference(reference as SourceReference)).toBe(expectedRoute);
+    expect(routeForUrlInput(input)).toBe(expectedRoute);
   });
 
   it.each([
@@ -71,31 +74,29 @@ describe("source service registry", () => {
   });
 
   it("uses deterministic first-match resolution", () => {
-    const firstService: SourceService<SourceReference> = {
+    const firstRule: SourceAddressRule = {
       type: "github-gist",
+      name: "first-source",
+      path: "/first/:id",
       fromUrl: () => ({ type: "github-gist", gistId: "first" }),
       fromRoute: () => ({ type: "github-gist", gistId: "first" }),
-      toRoute: () => ["first"],
-      load: async () => {
-        throw new Error("Not used by this test.");
-      },
+      toRouteSegments: () => ["first"],
     };
-    const secondService: SourceService<SourceReference> = {
+    const secondRule: SourceAddressRule = {
       type: "pastebin",
+      name: "second-source",
+      path: "/second/:id",
       fromUrl: () => ({ type: "pastebin", pasteId: "second" }),
       fromRoute: () => ({ type: "pastebin", pasteId: "second" }),
-      toRoute: () => ["second"],
-      load: async () => {
-        throw new Error("Not used by this test.");
-      },
+      toRouteSegments: () => ["second"],
     };
-    const registry = createSourceRegistry([firstService, secondService]);
+    const catalog = createSourceAddressCatalog([firstRule, secondRule]);
 
-    expect(referenceFromUrlInput("https://example.com/source", registry)).toEqual({
+    expect(referenceFromUrlInput("https://example.com/source", catalog)).toEqual({
       type: "github-gist",
       gistId: "first",
     });
-    expect(referenceFromRoute(["example.com", "source"], registry)).toEqual({
+    expect(referenceFromRoute(["example.com", "source"], catalog)).toEqual({
       type: "github-gist",
       gistId: "first",
     });

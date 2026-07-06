@@ -5,8 +5,7 @@ import security from "comark/plugins/security";
 import taskList from "comark/plugins/task-list";
 
 import {
-  referenceFromUrlInput,
-  routeForReference,
+  routeForUrlInput,
   type LoadedSource,
   type SourceFile,
   type SourceTextFile,
@@ -117,8 +116,8 @@ function rewriteSupportedSourceLink(href: string): string {
     return href;
   }
 
-  const reference = referenceFromUrlInput(href);
-  return reference === null ? href : hrefForAppRoute(routeForReference(reference));
+  const route = routeForUrlInput(href);
+  return route === null ? href : hrefForAppRoute(route);
 }
 
 function isAbsoluteHttpUrl(href: string): boolean {

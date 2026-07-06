@@ -77,13 +77,10 @@ export type SourceLoadOptions = {
 /**
  * Adapter contract for a supported external Source Service.
  *
- * Implementations own parsing Source URLs, mapping references to app routes,
- * and loading the referenced content into a Loaded Source.
+ * Implementations own loading the referenced content into a Loaded Source.
+ * Source URL and app route grammar lives in the Source Addressing module.
  */
 export type SourceService<TReference extends SourceReference> = {
   type: TReference["type"];
-  fromUrl(url: URL): TReference | null;
-  fromRoute(path: string[]): TReference | null;
-  toRoute(reference: TReference): string[];
   load(reference: TReference, options?: SourceLoadOptions): Promise<LoadedSource>;
 };

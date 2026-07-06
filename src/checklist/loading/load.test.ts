@@ -30,9 +30,6 @@ function createSource(overrides: Partial<LoadedSource> = {}): LoadedSource {
 function createPastebinService(load: LoadPastebinSource): SourceService<PastebinReference> {
   return {
     type: "pastebin",
-    fromUrl: () => null,
-    fromRoute: () => null,
-    toRoute: (reference) => ["pastebin.com", reference.pasteId],
     load,
   };
 }

@@ -5,16 +5,11 @@ import { RouterLink, useRoute } from "vue-router";
 
 import { BookmarkToggleButton } from "@/bookmarks";
 import { ChecklistView, useChecklistSourceLifecycle } from "@/checklist";
-import { referenceFromRoute, type SourceReference } from "@/source-services";
+import { referenceFromRoutePath } from "@/source-services";
 
 import ChecklistCopyLink from "./ChecklistCopyLink.vue";
 
 const route = useRoute();
-
-function referenceFromRoutePath(routePath: string): SourceReference | null {
-  const path = routePath.split("/").filter(Boolean);
-  return referenceFromRoute(path);
-}
 
 const checklistView = ref<InstanceType<typeof ChecklistView> | null>(null);
 const lifecycle = useChecklistSourceLifecycle();

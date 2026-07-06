@@ -4,11 +4,7 @@ import { useRouter } from "vue-router";
 
 import { BookmarkList } from "@/bookmarks";
 import HomePageGitHubCorner from "./HomePageGitHubCorner.vue";
-import {
-  referenceFromUrlInput,
-  routeForReference,
-  unsupportedSourceUrlMessage,
-} from "@/source-services";
+import { routeForUrlInput, unsupportedSourceUrlMessage } from "@/source-services";
 
 const router = useRouter();
 const sourceUrl = ref("");
@@ -21,14 +17,14 @@ async function focusSourceInput() {
 }
 
 async function openSource() {
-  const reference = referenceFromUrlInput(sourceUrl.value);
-  if (reference === null) {
+  const routePath = routeForUrlInput(sourceUrl.value);
+  if (routePath === null) {
     inputError.value = unsupportedSourceUrlMessage;
     return;
   }
 
   inputError.value = "";
-  await router.push(routeForReference(reference));
+  await router.push(routePath);
 }
 
 onMounted(() => {

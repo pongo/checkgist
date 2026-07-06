@@ -7,12 +7,6 @@ import type {
 } from "../types.ts";
 import { SourceLoadError } from "../types.ts";
 
-const PASTEBIN_HOST = "pastebin.com";
-
-function isNonEmptySegment(segment: string | undefined): segment is string {
-  return segment !== undefined && segment.length > 0;
-}
-
 function pastebinPageUrl(pasteId: string): string {
   return `https://pastebin.com/${pasteId}`;
 }
@@ -21,42 +15,8 @@ function pastebinRawUrl(pasteId: string): string {
   return `https://pastebin.com/raw/${pasteId}`;
 }
 
-function getPasteId(segments: string[]) {
-  if (segments.length === 1 && segments[0] !== "raw") return segments[0];
-  if (segments.length === 2 && segments[0] === "raw") return segments[1];
-  return undefined;
-}
-
 export const pastebinService: SourceService<PastebinReference> = {
   type: "pastebin",
-
-  fromUrl(url: URL): PastebinReference | null {
-    if (url.hostname.toLowerCase() !== PASTEBIN_HOST) {
-      return null;
-    }
-
-    const segments = url.pathname.split("/").filter(Boolean);
-    const pasteId = getPasteId(segments);
-
-    if (!isNonEmptySegment(pasteId)) {
-      return null;
-    }
-
-    return { type: "pastebin", pasteId };
-  },
-
-  fromRoute(path: string[]): PastebinReference | null {
-    const [host, pasteId, extra] = path;
-    if (host !== PASTEBIN_HOST || extra !== undefined || !isNonEmptySegment(pasteId)) {
-      return null;
-    }
-
-    return { type: "pastebin", pasteId };
-  },
-
-  toRoute(reference: PastebinReference): string[] {
-    return [PASTEBIN_HOST, reference.pasteId];
-  },
 
   async load(reference: PastebinReference, options?: SourceLoadOptions): Promise<LoadedSource> {
     let content: string;

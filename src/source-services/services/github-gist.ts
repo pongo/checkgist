@@ -8,8 +8,6 @@ import type {
 } from "../types.ts";
 import { SourceLoadError } from "../types.ts";
 
-const GIST_HOST = "gist.github.com";
-
 type GitHubGistApiFile = {
   filename?: string;
   content?: string;
@@ -82,37 +80,6 @@ async function loadGistFile(
 
 export const githubGistService: SourceService<GitHubGistReference> = {
   type: "github-gist",
-
-  fromUrl(url: URL): GitHubGistReference | null {
-    if (url.hostname.toLowerCase() !== GIST_HOST) {
-      return null;
-    }
-
-    const segments = url.pathname.split("/").filter(Boolean);
-    if (segments.length !== 1 && segments.length !== 2) {
-      return null;
-    }
-
-    const gistId = segments[segments.length - 1];
-    if (!isNonEmptySegment(gistId)) {
-      return null;
-    }
-
-    return { type: "github-gist", gistId };
-  },
-
-  fromRoute(path: string[]): GitHubGistReference | null {
-    const [host, gistId, extra] = path;
-    if (host !== GIST_HOST || extra !== undefined || !isNonEmptySegment(gistId)) {
-      return null;
-    }
-
-    return { type: "github-gist", gistId };
-  },
-
-  toRoute(reference: GitHubGistReference): string[] {
-    return [GIST_HOST, reference.gistId];
-  },
 
   async load(reference: GitHubGistReference, options?: SourceLoadOptions): Promise<LoadedSource> {
     let response: GitHubGistApiResponse;
