@@ -21,10 +21,11 @@ Route-level pages.
 
 External source-service integration boundary.
 
-- `registry.ts` turns URL input and routes into supported source references.
-- `services/` contains one adapter per supported Source Service.
+- `addressing.ts` is the Source Addressing catalog. It owns Source URL normalization, supported Source Reference recognition, canonical app route generation, and Vue route records.
+- `registry.ts` is the Source Service loading registry. It maps a Source Reference type to the adapter that can load the corresponding Loaded Source.
+- `services/` contains one adapter per supported Source Service. Keep service-specific address rules beside the loading adapter, and export both to the catalog/registry.
 
-Add a new Source Service here first, then wire it into the registry and router (`src/app/router.ts`).
+Add a new Source Service here first, then wire its address rule into `addressing.ts` and its loading adapter into `registry.ts`. Do not hardcode Source Service routes in `src/app/router.ts`; route records are produced by the Source Addressing catalog.
 
 ### `src/checklist/`
 
@@ -64,11 +65,17 @@ Keep this guide for changes where the sequence matters or where multiple source 
 
 ### Add a Source Service
 
-1. Add service-specific reference and loading behavior under `src/source-services/services/`.
+1. Add service-specific reference, address rule, and loading behavior under `src/source-services/services/`.
 2. Extend source-service types if the new service needs a new reference shape.
-3. Register URL parsing, route conversion, and service lookup in `src/source-services/registry.ts`.
-4. Add a route in `src/app/router.ts`.
+3. Register URL parsing and route conversion by adding the service address rule to `src/source-services/addressing.ts`.
+4. Register service lookup by adding the loading adapter to `src/source-services/registry.ts`.
 5. Add focused tests next to the source-service code and contract tests under `test/source-services/` when useful.
+
+### Source Service Routing
+
+Source Service route patterns live in each service's `SourceAddressRule`, next to the URL parsing rule for that service. For example, the GitHub Gist rule owns both the external URL shape it recognizes and the app route pattern such as `/gist.github.com/:gistId`.
+
+`src/app/router.ts` should stay generic: it asks `createSourceRouteRecords()` for Source Service routes and provides the Checklist page component. When adding or changing a Source Service route, update the service address rule and its addressing tests, not `router.ts`.
 
 ## Boundaries
 

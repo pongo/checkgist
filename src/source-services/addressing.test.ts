@@ -4,11 +4,9 @@ import {
   createSourceAddressCatalog,
   referenceFromRoute,
   referenceFromUrlInput,
-  routeForReference,
   routeForUrlInput,
 } from "./addressing";
 import type { SourceAddressRule } from "./addressing";
-import type { SourceReference } from "./types";
 
 describe("source addressing", () => {
   it.each([
@@ -46,7 +44,6 @@ describe("source addressing", () => {
     const reference = referenceFromUrlInput(input);
 
     expect(reference).toEqual(expectedReference);
-    expect(routeForReference(reference as SourceReference)).toBe(expectedRoute);
     expect(routeForUrlInput(input)).toBe(expectedRoute);
   });
 

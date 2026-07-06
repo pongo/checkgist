@@ -22,6 +22,9 @@ export type SourceAddressCatalog = {
   routeDefinitions: ReadonlyArray<SourceRouteDefinition>;
 };
 
+/**
+ * User-facing validation message for text that cannot become a supported Source URL.
+ */
 export const unsupportedSourceUrlMessage = "Enter a supported URL";
 
 export function createSourceAddressCatalog(
@@ -98,6 +101,9 @@ export function referenceFromRoute(
   return null;
 }
 
+/**
+ * Parses a browser route path into a Source Reference when it matches a supported app route.
+ */
 export function referenceFromRoutePath(
   routePath: string,
   catalog: SourceAddressCatalog = sourceAddressCatalog,
@@ -105,7 +111,32 @@ export function referenceFromRoutePath(
   return referenceFromRoute(routePath.split("/").filter(Boolean), catalog);
 }
 
-export function routeForReference(
+/**
+ * Converts user-entered Source URL text directly into the canonical app route.
+ */
+export function routeForUrlInput(
+  input: string,
+  catalog: SourceAddressCatalog = sourceAddressCatalog,
+): string | null {
+  const reference = referenceFromUrlInput(input, catalog);
+  return reference === null ? null : routeForReference(reference, catalog);
+}
+
+/**
+ * Builds Vue route records for every supported Source Service route.
+ */
+export function createSourceRouteRecords(
+  component: RouteComponent,
+  catalog: SourceAddressCatalog = sourceAddressCatalog,
+): RouteRecordRaw[] {
+  return catalog.routeDefinitions.map(({ name, path }) => ({
+    path,
+    name,
+    component,
+  }));
+}
+
+function routeForReference(
   reference: SourceReference,
   catalog: SourceAddressCatalog = sourceAddressCatalog,
 ): string {
@@ -117,23 +148,4 @@ export function routeForReference(
   }
 
   return `/${segments.map(encodeURIComponent).join("/")}`;
-}
-
-export function routeForUrlInput(
-  input: string,
-  catalog: SourceAddressCatalog = sourceAddressCatalog,
-): string | null {
-  const reference = referenceFromUrlInput(input, catalog);
-  return reference === null ? null : routeForReference(reference, catalog);
-}
-
-export function createSourceRouteRecords(
-  component: RouteComponent,
-  catalog: SourceAddressCatalog = sourceAddressCatalog,
-): RouteRecordRaw[] {
-  return catalog.routeDefinitions.map(({ name, path }) => ({
-    path,
-    name,
-    component,
-  }));
 }
