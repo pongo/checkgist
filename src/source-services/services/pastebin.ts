@@ -32,7 +32,7 @@ function getPasteId(segments: string[]) {
 export const pastebinAddressRule: SourceAddressRule = {
   type: "pastebin",
   name: "pastebin-source",
-  path: `/${PASTEBIN_HOST}/:pasteId`,
+  path: "/pastebin.com/:pasteId",
 
   fromUrl(url: URL): PastebinReference | null {
     if (url.hostname.toLowerCase() !== PASTEBIN_HOST) {

@@ -85,7 +85,7 @@ async function loadGistFile(
 export const githubGistAddressRule: SourceAddressRule = {
   type: "github-gist",
   name: "github-gist-source",
-  path: `/${GIST_HOST}/:gistId`,
+  path: "/gist.github.com/:gistId",
 
   fromUrl(url: URL): GitHubGistReference | null {
     if (url.hostname.toLowerCase() !== GIST_HOST) {
