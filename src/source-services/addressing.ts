@@ -34,7 +34,7 @@ export function createSourceAddressCatalog(
   };
 }
 
-export const sourceAddressCatalog = createSourceAddressCatalog([
+const sourceAddressCatalog = createSourceAddressCatalog([
   githubGistAddressRule,
   pastebinAddressRule,
 ]);

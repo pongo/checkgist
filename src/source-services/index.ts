@@ -1,15 +1,8 @@
 export {
-  createSourceAddressCatalog,
   createSourceRouteRecords,
-  referenceFromRoute,
   referenceFromRoutePath,
-  referenceFromUrlInput,
-  routeForReference,
   routeForUrlInput,
-  sourceAddressCatalog,
   unsupportedSourceUrlMessage,
-  type SourceAddressCatalog,
-  type SourceAddressRule,
 } from "./addressing";
 export { createSourceRegistry, sourceRegistry, type SourceRegistry } from "./registry";
 export {
