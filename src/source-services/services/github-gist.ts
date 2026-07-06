@@ -5,8 +5,10 @@ import type {
   LoadedSource,
   SourceLoadOptions,
   SourceService,
+  SourceReference,
 } from "../types.ts";
 import { SourceLoadError } from "../types.ts";
+import type { SourceAddressRule } from "../addressing.ts";
 
 const GIST_HOST = "gist.github.com";
 
@@ -80,8 +82,10 @@ async function loadGistFile(
   };
 }
 
-export const githubGistService: SourceService<GitHubGistReference> = {
+export const githubGistAddressRule: SourceAddressRule = {
   type: "github-gist",
+  name: "github-gist-source",
+  path: "/gist.github.com/:gistId",
 
   fromUrl(url: URL): GitHubGistReference | null {
     if (url.hostname.toLowerCase() !== GIST_HOST) {
@@ -94,11 +98,7 @@ export const githubGistService: SourceService<GitHubGistReference> = {
     }
 
     const gistId = segments[segments.length - 1];
-    if (!isNonEmptySegment(gistId)) {
-      return null;
-    }
-
-    return { type: "github-gist", gistId };
+    return isNonEmptySegment(gistId) ? { type: "github-gist", gistId } : null;
   },
 
   fromRoute(path: string[]): GitHubGistReference | null {
@@ -110,9 +110,13 @@ export const githubGistService: SourceService<GitHubGistReference> = {
     return { type: "github-gist", gistId };
   },
 
-  toRoute(reference: GitHubGistReference): string[] {
-    return [GIST_HOST, reference.gistId];
+  toRouteSegments(reference: SourceReference): string[] | null {
+    return reference.type === "github-gist" ? [GIST_HOST, reference.gistId] : null;
   },
+};
+
+export const githubGistService: SourceService<GitHubGistReference> = {
+  type: "github-gist",
 
   async load(reference: GitHubGistReference, options?: SourceLoadOptions): Promise<LoadedSource> {
     let response: GitHubGistApiResponse;

@@ -4,8 +4,10 @@ import type {
   LoadedSource,
   SourceLoadOptions,
   SourceService,
+  SourceReference,
 } from "../types.ts";
 import { SourceLoadError } from "../types.ts";
+import type { SourceAddressRule } from "../addressing.ts";
 
 const PASTEBIN_HOST = "pastebin.com";
 
@@ -27,22 +29,18 @@ function getPasteId(segments: string[]) {
   return undefined;
 }
 
-export const pastebinService: SourceService<PastebinReference> = {
+export const pastebinAddressRule: SourceAddressRule = {
   type: "pastebin",
+  name: "pastebin-source",
+  path: "/pastebin.com/:pasteId",
 
   fromUrl(url: URL): PastebinReference | null {
     if (url.hostname.toLowerCase() !== PASTEBIN_HOST) {
       return null;
     }
 
-    const segments = url.pathname.split("/").filter(Boolean);
-    const pasteId = getPasteId(segments);
-
-    if (!isNonEmptySegment(pasteId)) {
-      return null;
-    }
-
-    return { type: "pastebin", pasteId };
+    const pasteId = getPasteId(url.pathname.split("/").filter(Boolean));
+    return isNonEmptySegment(pasteId) ? { type: "pastebin", pasteId } : null;
   },
 
   fromRoute(path: string[]): PastebinReference | null {
@@ -54,9 +52,13 @@ export const pastebinService: SourceService<PastebinReference> = {
     return { type: "pastebin", pasteId };
   },
 
-  toRoute(reference: PastebinReference): string[] {
-    return [PASTEBIN_HOST, reference.pasteId];
+  toRouteSegments(reference: SourceReference): string[] | null {
+    return reference.type === "pastebin" ? [PASTEBIN_HOST, reference.pasteId] : null;
   },
+};
+
+export const pastebinService: SourceService<PastebinReference> = {
+  type: "pastebin",
 
   async load(reference: PastebinReference, options?: SourceLoadOptions): Promise<LoadedSource> {
     let content: string;

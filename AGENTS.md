@@ -10,6 +10,7 @@
 
 - Write comments for complex or non-trivial code where the intent is not immediately obvious. Explain why something is done, important assumptions, invariants, edge cases, and trade-offs. Avoid comments that simply describe what the code does when that is already clear from the code itself.
 - Добавляй в код комментарии, которые помогут разработчикам-людям быстрее сориентироваться в кодовой базе.
+- Add TSDoc for external exports. When a folder-level `index.ts` re-exports a symbol, document that symbol in its source file rather than in the barrel.
 
 ## UI
 

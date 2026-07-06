@@ -1,12 +1,10 @@
 export {
-  createSourceRegistry,
-  referenceFromRoute,
-  referenceFromUrlInput,
-  routeForReference,
-  sourceRegistry,
+  createSourceRouteRecords,
+  referenceFromRoutePath,
+  routeForUrlInput,
   unsupportedSourceUrlMessage,
-  type SourceRegistry,
-} from "./registry";
+} from "./addressing";
+export { createSourceRegistry, sourceRegistry, type SourceRegistry } from "./registry";
 export {
   type LoadedSource,
   type LoadError,

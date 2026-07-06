@@ -22,9 +22,15 @@ type SourceMetadata = {
   url: string;
 };
 
+/**
+ * Stable identifier for a Source File within a Loaded Source.
+ */
 export type SourceFileId = string;
 type MarkdownContent = string;
 
+/**
+ * Recoverable load error attached to a Source File.
+ */
 export type LoadError = {
   message: string;
 };
@@ -36,6 +42,9 @@ export class SourceLoadError extends Error {
   }
 }
 
+/**
+ * Source File whose Markdown-like text content is ready to render.
+ */
 export type SourceTextFile = {
   status: "ready";
   id: SourceFileId;
@@ -50,6 +59,12 @@ type SourceFileError = {
   error: LoadError;
 };
 
+/**
+ * File-level result inside a Loaded Source.
+ *
+ * Individual Source Files can fail while other files from the same Loaded Source
+ * remain renderable.
+ */
 export type SourceFile = SourceTextFile | SourceFileError;
 
 /**
@@ -77,13 +92,10 @@ export type SourceLoadOptions = {
 /**
  * Adapter contract for a supported external Source Service.
  *
- * Implementations own parsing Source URLs, mapping references to app routes,
- * and loading the referenced content into a Loaded Source.
+ * Implementations own loading the referenced content into a Loaded Source.
+ * Source URL and app route grammar lives in the Source Addressing module.
  */
 export type SourceService<TReference extends SourceReference> = {
   type: TReference["type"];
-  fromUrl(url: URL): TReference | null;
-  fromRoute(path: string[]): TReference | null;
-  toRoute(reference: TReference): string[];
   load(reference: TReference, options?: SourceLoadOptions): Promise<LoadedSource>;
 };
