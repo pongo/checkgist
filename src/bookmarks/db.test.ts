@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 
 import { IDBFactory } from "fake-indexeddb";
+import { type DBSchema, openDB } from "idb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -12,6 +13,20 @@ import {
   reorderBookmark,
   restoreBookmark,
 } from "./db";
+
+interface LegacyBookmarkDatabase extends DBSchema {
+  bookmarks: {
+    key: string;
+    value: {
+      routePath: string;
+      title: string;
+      position: number;
+    };
+    indexes: {
+      "by-position": number;
+    };
+  };
+}
 
 function resetIndexedDb() {
   vi.stubGlobal("indexedDB", new IDBFactory());
@@ -30,6 +45,27 @@ describe("bookmark database", () => {
     expect(await listBookmarks()).toEqual([
       { routePath: "/pastebin.com/one", title: "One", position: 0 },
       { routePath: "/pastebin.com/two", title: "Two", position: 1 },
+    ]);
+  });
+
+  it("reads Bookmark records created before database lifecycle centralization", async () => {
+    const legacyDatabase = await openDB<LegacyBookmarkDatabase>("checkgist", 1, {
+      upgrade(database) {
+        const store = database.createObjectStore("bookmarks", {
+          keyPath: "routePath",
+        });
+        store.createIndex("by-position", "position");
+      },
+    });
+    await legacyDatabase.put("bookmarks", {
+      routePath: "/pastebin.com/legacy",
+      title: "Legacy bookmark",
+      position: 0,
+    });
+    legacyDatabase.close();
+
+    expect(await listBookmarks()).toEqual([
+      { routePath: "/pastebin.com/legacy", title: "Legacy bookmark", position: 0 },
     ]);
   });
 
