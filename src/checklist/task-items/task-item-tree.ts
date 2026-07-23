@@ -49,6 +49,12 @@ const blockTags = new Set([
   "ul",
 ]);
 
+/**
+ * Prepares explicit Markdown task items for Checklist rendering.
+ *
+ * The transformation gives each task a stable index, wraps its inline content in a label,
+ * and removes parser-introduced paragraphs that would otherwise alter list spacing.
+ */
 export function prepareExplicitTaskItems(tree: ComarkTree): number {
   let taskItemIndex = 0;
 
