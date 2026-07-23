@@ -86,9 +86,29 @@ describe("githubGistService.load", () => {
     );
 
     expect(source.metadata).toEqual({
-      title: "gist-2",
+      title: "todo.md",
       url: "https://gist.github.com/gist-2",
     });
+  });
+
+  it("uses the gist ID when the description and first file name are empty", async () => {
+    fetcherMock.mockResolvedValueOnce({
+      description: "   ",
+      files: {
+        unnamed: {
+          filename: "",
+          content: "- [ ] task",
+          truncated: false,
+        },
+      },
+    });
+
+    const source = await githubGistService.load(
+      { type: "github-gist", gistId: "gist-with-unnamed-file" },
+      { fetcher },
+    );
+
+    expect(source.metadata.title).toBe("gist-with-unnamed-file");
   });
 
   it("loads full content for truncated files from their raw URL", async () => {

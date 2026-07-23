@@ -142,7 +142,7 @@ export const githubGistService: SourceService<GitHubGistReference> = {
     return {
       reference,
       metadata: {
-        title: trimmedDescription || reference.gistId,
+        title: trimmedDescription || files[0]?.name || reference.gistId,
         ...mapDescription(trimmedDescription),
         url: response.html_url ?? gistPageUrl(reference.gistId),
       },
