@@ -42,7 +42,7 @@ onMounted(() => {
         @click="createAndOpenDocument"
       >
         <FilePlus2 class="size-4" aria-hidden="true" />
-        {{ isCreating ? "Creating..." : "New document" }}
+        New document
       </button>
     </div>
 
