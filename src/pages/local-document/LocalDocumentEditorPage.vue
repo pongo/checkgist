@@ -16,7 +16,7 @@ import LocalDocumentPreview from "@/local-documents/LocalDocumentPreview.vue";
 const route = useRoute();
 const router = useRouter();
 const { saveDocument, deleteDocument } = useLocalDocuments();
-const { refresh: refreshBookmarks } = useBookmarks();
+const { refresh: refreshBookmarks, invalidate: invalidateBookmarks } = useBookmarks();
 const title = ref("");
 const content = ref("");
 const savedTitle = ref("");
@@ -107,13 +107,22 @@ async function deleteCurrentDocument() {
       state.value = "missing";
       return;
     }
-    await refreshBookmarks();
-    await router.push("/");
   } catch (deleteError) {
     isDeleting.value = false;
     error.value =
       deleteError instanceof Error ? deleteError.message : "Failed to delete Local Document.";
+    return;
   }
+
+  try {
+    await refreshBookmarks();
+  } catch {
+    // The delete transaction already committed; clear the stale shared cache and
+    // let the home page reload it instead of presenting a deleted draft as intact.
+    invalidateBookmarks();
+  }
+
+  await router.push("/");
 }
 
 function beforeUnload(event: BeforeUnloadEvent) {

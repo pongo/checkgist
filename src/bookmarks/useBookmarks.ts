@@ -24,6 +24,13 @@ async function refreshBookmarks(): Promise<void> {
   bookmarks.value = await listBookmarks();
 }
 
+function invalidateBookmarks(): void {
+  bookmarks.value = [];
+  error.value = null;
+  status.value = "idle";
+  loadPromise = null;
+}
+
 async function ensureLoaded(): Promise<void> {
   if (status.value === "ready") {
     return;
@@ -136,6 +143,7 @@ export function useBookmarks() {
     isReady: computed(() => status.value === "ready"),
     ensureLoaded,
     refresh: refreshBookmarks,
+    invalidate: invalidateBookmarks,
     addBookmark,
     removeBookmark,
     renameBookmark,

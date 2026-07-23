@@ -55,7 +55,11 @@ async function saveDocument(input: { id: string; title: string; content: string 
 
 async function deleteDocument(documentId: string) {
   const deleted = await deleteLocalDocumentInDatabase(documentId);
-  if (deleted !== null) await refresh();
+  if (deleted !== null && status.value === "ready") {
+    // The transaction has committed, so remove the cache entry without risking a
+    // second database read turning a completed deletion into a reported failure.
+    documents.value = documents.value.filter((document) => document.id !== deleted.id);
+  }
   return deleted;
 }
 
