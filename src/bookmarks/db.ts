@@ -13,7 +13,7 @@ function withDensePositions(bookmarks: Bookmark[]): Bookmark[] {
 }
 
 function orderedBookmarks(bookmarks: Bookmark[]): Bookmark[] {
-  return [...bookmarks].sort((first, second) => {
+  return bookmarks.toSorted((first, second) => {
     const positionDiff = first.position - second.position;
     return positionDiff === 0 ? first.routePath.localeCompare(second.routePath) : positionDiff;
   });
