@@ -33,6 +33,14 @@
   list-style-type: decimal;
 }
 
+/* Keep the vertical rhythm identical */
+.markdown-body.checkgist-markdown li + li,
+.markdown-body.checkgist-markdown .task-list-item + .task-list-item,
+.markdown-body.checkgist-markdown li > ul,
+.markdown-body.checkgist-markdown li > ol {
+  margin-top: 0.125rem; /* 2px at the default 16px root font size */
+}
+
 .checkgist-markdown code {
   cursor: pointer;
   transition: background-color 120ms ease;
