@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Trash2 } from "@lucide/vue";
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import { onBeforeRouteLeave, RouterLink, useRoute, useRouter } from "vue-router";
 
 import {
@@ -26,6 +26,7 @@ const error = ref("");
 const isSaving = ref(false);
 const isDeleting = ref(false);
 const previewActive = ref(false);
+const contentTextarea = useTemplateRef<HTMLTextAreaElement>("contentTextarea");
 
 const documentId = computed(() => String(route.params.documentId ?? ""));
 const titleValidation = computed(() => validateLocalDocumentTitle(title.value));
@@ -55,6 +56,8 @@ async function loadDocument(id: string) {
     savedTitle.value = document.title;
     savedContent.value = document.content;
     state.value = "ready";
+    await nextTick();
+    contentTextarea.value?.focus();
   } catch (loadError) {
     error.value = loadError instanceof Error ? loadError.message : "Failed to load Local Document.";
     state.value = "error";
@@ -231,6 +234,7 @@ onBeforeRouteLeave(() => {
           class="mx-auto flex h-full max-w-6xl sm:divide-x sm:divide-zinc-200 dark:sm:divide-zinc-800"
         >
           <textarea
+            ref="contentTextarea"
             v-model="content"
             class="h-full min-h-0 w-full resize-none rounded-md border border-zinc-300 bg-white p-4 font-mono text-sm leading-6 outline-none sm:block sm:w-1/2 dark:border-zinc-700 dark:bg-zinc-950"
             :class="previewActive ? 'hidden' : 'block'"
