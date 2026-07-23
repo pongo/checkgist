@@ -6,17 +6,18 @@
       { "name": "pages", "patterns": ["src/pages/**"] },
       { "name": "bookmarks", "patterns": ["src/bookmarks/**"] },
       { "name": "checklist", "patterns": ["src/checklist/**"] },
+      { "name": "local-documents", "patterns": ["src/local-documents/**"] },
       { "name": "source-services", "patterns": ["src/source-services/**"] },
       { "name": "shared", "patterns": ["src/shared/**"] }
     ],
     "rules": [
       {
         "from": "app",
-        "allow": ["pages", "bookmarks", "checklist", "source-services", "shared"]
+        "allow": ["pages", "bookmarks", "checklist", "local-documents", "source-services", "shared"]
       },
       {
         "from": "pages",
-        "allow": ["bookmarks", "checklist", "source-services", "shared"]
+        "allow": ["bookmarks", "checklist", "local-documents", "source-services", "shared"]
       },
       {
         "from": "bookmarks",
@@ -27,8 +28,12 @@
         "allow": ["source-services", "shared"]
       },
       {
+        "from": "local-documents",
+        "allow": ["bookmarks", "shared"]
+      },
+      {
         "from": "source-services",
-        "allow": []
+        "allow": ["local-documents"]
       },
       {
         "from": "shared",
