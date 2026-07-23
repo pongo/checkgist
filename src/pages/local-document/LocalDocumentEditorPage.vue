@@ -153,7 +153,7 @@ onBeforeRouteLeave(() => {
   <main
     class="flex h-dvh flex-col overflow-hidden bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50"
   >
-    <header class="shrink-0 border-zinc-200 px-4 py-3 dark:border-zinc-800">
+    <header class="shrink-0 px-4 py-3">
       <div
         v-if="state === 'ready'"
         class="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2"
