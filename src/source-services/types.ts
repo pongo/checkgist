@@ -8,13 +8,19 @@ export type PastebinReference = {
   pasteId: string;
 };
 
+/** Stable reference to a Local Document stored in this browser profile. */
+export type LocalDocumentReference = {
+  type: "local-document";
+  documentId: string;
+};
+
 /**
  * Stable application reference to content on a supported Source Service.
  *
  * A Source Reference is safe to store in routes and use later to load the same
  * Source URL through the matching Source Service.
  */
-export type SourceReference = GitHubGistReference | PastebinReference;
+export type SourceReference = GitHubGistReference | PastebinReference | LocalDocumentReference;
 
 type SourceMetadata = {
   title: string;

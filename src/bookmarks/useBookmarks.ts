@@ -135,6 +135,7 @@ export function useBookmarks() {
     error: readonly(error),
     isReady: computed(() => status.value === "ready"),
     ensureLoaded,
+    refresh: refreshBookmarks,
     addBookmark,
     removeBookmark,
     renameBookmark,

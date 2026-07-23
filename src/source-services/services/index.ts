@@ -1,5 +1,6 @@
 import { githubGistAddressRule, githubGistService } from "./github-gist.ts";
 import { pastebinAddressRule, pastebinService } from "./pastebin.ts";
+import { localDocumentAddressRule, localDocumentService } from "@/local-documents/source-service";
 import type { SourceAddressRule } from "../addressing.ts";
 import type { SourceReference, SourceService } from "../types.ts";
 
@@ -16,6 +17,10 @@ const sourceServiceDefinitions: ReadonlyArray<SourceServiceDefinition> = [
   {
     addressRule: pastebinAddressRule,
     service: pastebinService,
+  },
+  {
+    addressRule: localDocumentAddressRule,
+    service: localDocumentService,
   },
 ];
 

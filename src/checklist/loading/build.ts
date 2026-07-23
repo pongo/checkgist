@@ -43,6 +43,11 @@ const checklistMarkdownPlugins = [
   }))(),
 ] as const;
 
+/** Parses Markdown with the same security policy used by Checklist rendering. */
+export function parseChecklistMarkdown(markdown: string): Promise<ComarkTree> {
+  return parse(markdown, { plugins: checklistMarkdownPlugins });
+}
+
 export async function buildChecklist(
   source: LoadedSource,
   options: BuildChecklistOptions = {},

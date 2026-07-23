@@ -1,7 +1,7 @@
 import { type DBSchema, type IDBPDatabase, openDB } from "idb";
 
 const databaseName = "checkgist";
-const databaseVersion = 1;
+const databaseVersion = 2;
 
 /** The object-store name for user-managed Bookmarks. */
 export const bookmarksStoreName = "bookmarks";
@@ -9,11 +9,26 @@ export const bookmarksStoreName = "bookmarks";
 /** The Bookmark index that preserves the user-managed list order. */
 export const bookmarksByPositionIndexName = "by-position";
 
+/** The object-store name for application-owned Local Documents. */
+export const localDocumentsStoreName = "local-documents";
+
+/** The Local Document index used to order the home-page list by latest save. */
+export const localDocumentsByUpdatedAtIndexName = "by-updated-at";
+
 /** A persisted Bookmark record. */
 export type Bookmark = {
   routePath: string;
   title: string;
   position: number;
+};
+
+/** A persisted Markdown document owned by Checkgist. */
+export type LocalDocumentRecord = {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
 };
 
 /** The typed schema shared by all Checkgist IndexedDB feature boundaries. */
@@ -23,6 +38,13 @@ export interface CheckgistDatabase extends DBSchema {
     value: Bookmark;
     indexes: {
       "by-position": number;
+    };
+  };
+  "local-documents": {
+    key: string;
+    value: LocalDocumentRecord;
+    indexes: {
+      "by-updated-at": number;
     };
   };
 }
@@ -43,12 +65,18 @@ export function openCheckgistDatabase(): Promise<IDBPDatabase<CheckgistDatabase>
 
   let database: IDBPDatabase<CheckgistDatabase> | null = null;
   const openingPromise = openDB<CheckgistDatabase>(databaseName, databaseVersion, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains(bookmarksStoreName)) {
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
         const store = db.createObjectStore(bookmarksStoreName, {
           keyPath: "routePath",
         });
         store.createIndex(bookmarksByPositionIndexName, "position");
+      }
+
+      if (oldVersion < 2) {
+        // The v1 Bookmark store remains untouched, preserving existing records.
+        const store = db.createObjectStore(localDocumentsStoreName, { keyPath: "id" });
+        store.createIndex(localDocumentsByUpdatedAtIndexName, "updatedAt");
       }
     },
     blocking() {

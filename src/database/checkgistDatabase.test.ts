@@ -7,6 +7,8 @@ import {
   bookmarksByPositionIndexName,
   bookmarksStoreName,
   closeCheckgistDatabaseForTests,
+  localDocumentsByUpdatedAtIndexName,
+  localDocumentsStoreName,
   openCheckgistDatabase,
 } from "./checkgistDatabase";
 
@@ -31,16 +33,49 @@ describe("Checkgist database lifecycle", () => {
     ).toBe(true);
   });
 
+  it("preserves version-1 Bookmark records while adding the Local Document store", async () => {
+    const legacyDatabase = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("checkgist", 1);
+      request.addEventListener("upgradeneeded", () => {
+        const store = request.result.createObjectStore(bookmarksStoreName, {
+          keyPath: "routePath",
+        });
+        store.createIndex(bookmarksByPositionIndexName, "position");
+      });
+      request.addEventListener("success", () => resolve(request.result));
+      request.addEventListener("error", () => reject(request.error));
+    });
+    legacyDatabase
+      .transaction(bookmarksStoreName, "readwrite")
+      .objectStore(bookmarksStoreName)
+      .put({ routePath: "/pastebin.com/legacy", title: "Legacy bookmark", position: 0 });
+    legacyDatabase.close();
+
+    const database = await openCheckgistDatabase();
+
+    expect(await database.get(bookmarksStoreName, "/pastebin.com/legacy")).toEqual({
+      routePath: "/pastebin.com/legacy",
+      title: "Legacy bookmark",
+      position: 0,
+    });
+    expect(database.objectStoreNames.contains(localDocumentsStoreName)).toBe(true);
+    expect(
+      database
+        .transaction(localDocumentsStoreName)
+        .store.indexNames.contains(localDocumentsByUpdatedAtIndexName),
+    ).toBe(true);
+  });
+
   it("closes its connection when a later schema version is opened", async () => {
     await openCheckgistDatabase();
 
     const upgradedDatabase = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open("checkgist", 2);
+      const request = indexedDB.open("checkgist", 3);
       request.addEventListener("success", () => resolve(request.result));
       request.addEventListener("error", () => reject(request.error));
     });
 
-    expect(upgradedDatabase.version).toBe(2);
+    expect(upgradedDatabase.version).toBe(3);
     upgradedDatabase.close();
   });
 

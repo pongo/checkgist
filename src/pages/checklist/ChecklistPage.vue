@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ExternalLink, RotateCcw } from "@lucide/vue";
+import { ExternalLink, Pencil, RotateCcw } from "@lucide/vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 
@@ -61,7 +61,18 @@ onBeforeUnmount(() => {
             class="inline-flex h-9 w-9 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:h-8 sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
           />
 
+          <RouterLink
+            v-if="session.source.reference.type === 'local-document'"
+            class="inline-flex h-9 w-9 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:h-8 sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            :to="session.source.metadata.url"
+            aria-label="Edit"
+            title="Edit"
+          >
+            <Pencil class="size-4" aria-hidden="true" />
+            <span class="hidden sm:inline">Edit</span>
+          </RouterLink>
           <a
+            v-else
             class="inline-flex h-9 w-9 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:h-8 sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
             :href="session.source.metadata.url"
             aria-label="View source"

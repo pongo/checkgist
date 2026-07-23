@@ -10,6 +10,11 @@ const router = createRouter({
       name: "home",
       component: () => import("@/pages/home/HomePage.vue"),
     },
+    {
+      path: "/local/:documentId/edit",
+      name: "local-document-editor",
+      component: () => import("@/pages/local-document/LocalDocumentEditorPage.vue"),
+    },
     ...createSourceRouteRecords(() => import("@/pages/checklist/ChecklistPage.vue")),
   ],
 });
