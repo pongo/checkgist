@@ -172,6 +172,7 @@ onBeforeRouteLeave(() => {
           class="hidden h-9 min-w-40 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-600/30 sm:block dark:border-zinc-700 dark:bg-zinc-950"
           :aria-invalid="!titleValidation.valid"
           type="text"
+          autocomplete="off"
         />
         <RouterLink
           class="ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:ml-0 sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
@@ -260,6 +261,7 @@ onBeforeRouteLeave(() => {
           class="h-9 min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950"
           :aria-invalid="!titleValidation.valid"
           type="text"
+          autocomplete="off"
         />
       </div>
       <div class="min-h-0 flex-1 px-4 py-3 sm:pt-0">
