@@ -19,3 +19,7 @@
 - [ ] Saves use last-write-wins semantics and do not introduce revisions or conflict UI.
 - [ ] An invalid UUID or missing record shows `Local document not found.` with `Back to home` and never recreates a document.
 - [ ] Public persistence tests cover creation, exact content, validation boundaries, ordering, missing records, failed writes, and the version-1-to-version-2 migration.
+
+## Comments
+
+- 2026-07-23: The Local Documents creation affordance prototype settled the visual question of how prominent `New document` should be. Variant A was selected: a compact, borderless text action with a small icon. It remains visible but does not compete with the section heading or document rows. The other prototype variants were removed from the main branch.

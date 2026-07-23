@@ -36,12 +36,12 @@ onMounted(() => {
     <div class="flex items-center justify-between gap-3">
       <h2 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Local documents</h2>
       <button
-        class="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-zinc-300 px-2.5 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-900"
+        class="inline-flex min-h-8 items-center gap-1.5 rounded-md px-1.5 text-sm font-medium text-zinc-500 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none disabled:cursor-wait disabled:opacity-60 dark:text-zinc-400 dark:hover:text-zinc-50"
         type="button"
         :disabled="isCreating"
         @click="createAndOpenDocument"
       >
-        <FilePlus2 class="size-4" aria-hidden="true" />
+        <FilePlus2 class="size-3.5" aria-hidden="true" />
         New document
       </button>
     </div>
