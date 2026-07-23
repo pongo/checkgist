@@ -13,6 +13,7 @@ export {
 } from "./types";
 export { resetLocalDocumentsForTests, useLocalDocuments } from "./useLocalDocuments";
 export { default as LocalDocumentList } from "./LocalDocumentList.vue";
+export { default as LocalDocumentPreview } from "./LocalDocumentPreview.vue";
 export {
   localDocumentAddressRule,
   localDocumentEditRoute,

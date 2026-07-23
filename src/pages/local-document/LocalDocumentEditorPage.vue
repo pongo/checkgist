@@ -6,12 +6,12 @@ import { onBeforeRouteLeave, RouterLink, useRoute, useRouter } from "vue-router"
 import {
   getLocalDocument,
   isLocalDocumentId,
+  LocalDocumentPreview,
   localDocumentViewRoute,
   useLocalDocuments,
   validateLocalDocumentTitle,
 } from "@/local-documents";
 import { useBookmarks } from "@/bookmarks";
-import LocalDocumentPreview from "@/local-documents/LocalDocumentPreview.vue";
 
 const route = useRoute();
 const router = useRouter();

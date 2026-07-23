@@ -36,7 +36,12 @@ export default defineConfigWithVueTs(
         {
           patterns: [
             {
-              group: ["@/bookmarks/*", "@/checklist/*", "@/source-services/*"],
+              group: [
+                "@/bookmarks/*",
+                "@/checklist/*",
+                "@/local-documents/*",
+                "@/source-services/*",
+              ],
               message: "Import this module through its public index.ts API.",
             },
           ],
@@ -49,7 +54,17 @@ export default defineConfigWithVueTs(
     name: "app/bookmarks-internal-imports",
     files: ["src/bookmarks/**/*.{vue,ts,mts,tsx}"],
     rules: {
-      "no-restricted-imports": "off",
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/checklist/*", "@/local-documents/*", "@/source-services/*"],
+              message: "Import this module through its public index.ts API.",
+            },
+          ],
+        },
+      ],
     },
   },
 
@@ -62,7 +77,7 @@ export default defineConfigWithVueTs(
         {
           patterns: [
             {
-              group: ["@/bookmarks/*", "@/source-services/*"],
+              group: ["@/bookmarks/*", "@/local-documents/*", "@/source-services/*"],
               message: "Import this module through its public index.ts API.",
             },
           ],
@@ -80,7 +95,25 @@ export default defineConfigWithVueTs(
         {
           patterns: [
             {
-              group: ["@/bookmarks/*", "@/checklist/*"],
+              group: ["@/bookmarks/*", "@/checklist/*", "@/local-documents/*"],
+              message: "Import this module through its public index.ts API.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    name: "app/local-documents-internal-imports",
+    files: ["src/local-documents/**/*.{vue,ts,mts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/bookmarks/*", "@/checklist/*", "@/source-services/*"],
               message: "Import this module through its public index.ts API.",
             },
           ],

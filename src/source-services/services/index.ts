@@ -1,5 +1,8 @@
 import { githubGistAddressRule, githubGistService } from "./github-gist.ts";
 import { pastebinAddressRule, pastebinService } from "./pastebin.ts";
+// The Local Document adapter depends on Source Service internals while this registry initializes,
+// so the public barrel would create a runtime initialization cycle here.
+// eslint-disable-next-line no-restricted-imports
 import { localDocumentAddressRule, localDocumentService } from "@/local-documents/source-service";
 import type { SourceAddressRule } from "../addressing.ts";
 import type { SourceReference, SourceService } from "../types.ts";
