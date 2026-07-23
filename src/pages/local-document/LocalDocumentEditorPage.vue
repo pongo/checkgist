@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ExternalLink, Home, LoaderCircle, Save, Trash2 } from "@lucide/vue";
+import { ExternalLink, Save, Trash2 } from "@lucide/vue";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import { onBeforeRouteLeave, RouterLink, useRoute, useRouter } from "vue-router";
 
@@ -154,16 +154,16 @@ onBeforeRouteLeave(() => {
         >
           <h1 class="text-lg font-semibold tracking-normal">Checkgist</h1>
         </RouterLink>
-        <label class="sr-only" for="local-document-title">Title</label>
+        <label class="sr-only" for="local-document-title-desktop">Title</label>
         <input
-          id="local-document-title"
+          id="local-document-title-desktop"
           v-model="title"
-          class="order-last h-9 min-w-0 basis-full rounded-md border border-zinc-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-600/30 sm:order-none sm:min-w-40 sm:flex-1 sm:basis-auto dark:border-zinc-700 dark:bg-zinc-950"
+          class="hidden h-9 min-w-40 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-600/30 sm:block dark:border-zinc-700 dark:bg-zinc-950"
           :aria-invalid="!titleValidation.valid"
           type="text"
         />
         <RouterLink
-          class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          class="ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:ml-0 sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
           :to="localDocumentViewRoute(documentId)"
           target="_blank"
           rel="noopener noreferrer"
@@ -232,9 +232,9 @@ onBeforeRouteLeave(() => {
     </header>
 
     <template v-if="state === 'ready'">
-      <div class="shrink-0 px-4 pt-3 sm:hidden">
+      <div class="flex shrink-0 gap-2 px-4 pt-3 sm:hidden">
         <button
-          class="min-h-9 rounded-md border border-zinc-300 px-3 text-sm font-medium focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700"
+          class="h-9 shrink-0 rounded-md border border-zinc-300 px-3 text-sm font-medium focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700"
           :class="previewActive ? 'bg-zinc-100 dark:bg-zinc-900' : ''"
           type="button"
           :aria-pressed="previewActive"
@@ -242,6 +242,14 @@ onBeforeRouteLeave(() => {
         >
           Preview
         </button>
+        <label class="sr-only" for="local-document-title">Title</label>
+        <input
+          id="local-document-title"
+          v-model="title"
+          class="h-9 min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950"
+          :aria-invalid="!titleValidation.valid"
+          type="text"
+        />
       </div>
       <div class="min-h-0 flex-1 px-4 py-3">
         <div
