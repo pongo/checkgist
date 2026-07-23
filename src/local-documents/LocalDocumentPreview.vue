@@ -46,7 +46,7 @@ onBeforeUnmount(() => {
 
 <template>
   <article
-    class="markdown-body checkgist-markdown h-full overflow-auto px-4 py-5"
+    class="markdown-body checkgist-markdown h-full overflow-auto py-3 sm:px-4 sm:py-4"
     @click.capture="preventTaskInteraction"
     @change.capture="preventTaskInteraction"
   >

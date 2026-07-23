@@ -143,7 +143,7 @@ onBeforeRouteLeave(() => {
   <main
     class="flex h-dvh flex-col overflow-hidden bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50"
   >
-    <header class="shrink-0 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+    <header class="shrink-0 border-zinc-200 px-4 py-3 dark:border-zinc-800">
       <div
         v-if="state === 'ready'"
         class="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2"
@@ -232,7 +232,7 @@ onBeforeRouteLeave(() => {
     </header>
 
     <template v-if="state === 'ready'">
-      <div class="flex shrink-0 gap-2 px-4 pt-3 sm:hidden">
+      <div class="flex shrink-0 gap-2 px-4 sm:hidden">
         <button
           class="h-9 shrink-0 rounded-md border border-zinc-300 px-3 text-sm font-medium focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700"
           :class="previewActive ? 'bg-zinc-100 dark:bg-zinc-900' : ''"
@@ -251,7 +251,7 @@ onBeforeRouteLeave(() => {
           type="text"
         />
       </div>
-      <div class="min-h-0 flex-1 px-4 py-3">
+      <div class="min-h-0 flex-1 px-4 py-3 sm:pt-0">
         <div
           class="mx-auto flex h-full max-w-6xl sm:divide-x sm:divide-zinc-200 dark:sm:divide-zinc-800"
         >
