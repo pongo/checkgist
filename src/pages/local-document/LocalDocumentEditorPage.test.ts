@@ -27,11 +27,6 @@ const route = reactive({ params: { documentId } });
 vi.mock("@/local-documents", () => ({
   getLocalDocument,
   isLocalDocumentId: () => true,
-  LocalDocumentPreview: {
-    name: "LocalDocumentPreview",
-    props: ["content"],
-    template: "<div data-preview>{{ content }}</div>",
-  },
   localDocumentViewRoute: (id: string) => `/local/${id}`,
   useLocalDocuments: () => ({ saveDocument, deleteDocument }),
   validateLocalDocumentTitle: (title: string) => ({ valid: true, title }),

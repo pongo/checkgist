@@ -1,16 +1,12 @@
-import { getLocalDocument } from "./db";
-import { isLocalDocumentId } from "./types";
-// This adapter is registered while the source-services barrel initializes, so
-// importing that barrel here would create a runtime initialization cycle.
-// eslint-disable-next-line no-restricted-imports
+import { getLocalDocument, isLocalDocumentId, localDocumentEditRoute } from "@/local-documents";
+
+import type { SourceAddressRule } from "../addressing.ts";
 import {
   SourceLoadError,
   type LoadedSource,
   type LocalDocumentReference,
   type SourceService,
-} from "@/source-services/types";
-// eslint-disable-next-line no-restricted-imports
-import type { SourceAddressRule } from "@/source-services/addressing";
+} from "../types.ts";
 
 const localDocumentsSegment = "local";
 
@@ -32,16 +28,6 @@ function appPathFromUrl(url: URL): string | null {
     return null;
   }
   return `/${url.pathname.slice(basePath.length)}`;
-}
-
-/** Returns the canonical checklist view route for a Local Document. */
-export function localDocumentViewRoute(documentId: string): string {
-  return `/${localDocumentsSegment}/${encodeURIComponent(documentId)}`;
-}
-
-/** Returns the canonical editor route for a Local Document. */
-export function localDocumentEditRoute(documentId: string): string {
-  return `${localDocumentViewRoute(documentId)}/edit`;
 }
 
 function referenceFromLocalSegments(path: string[]): LocalDocumentReference | null {

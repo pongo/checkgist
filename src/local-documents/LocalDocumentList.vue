@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 
 import { useBookmarks } from "@/bookmarks";
 
-import { localDocumentEditRoute, localDocumentViewRoute } from "./source-service";
+import { localDocumentEditRoute, localDocumentViewRoute } from "./routes";
 import type { LocalDocument } from "./types";
 import { useLocalDocuments } from "./useLocalDocuments";
 

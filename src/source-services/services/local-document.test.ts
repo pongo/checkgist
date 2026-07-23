@@ -5,14 +5,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadChecklist } from "@/checklist";
 import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
+import {
+  createLocalDocument,
+  localDocumentEditRoute,
+  localDocumentViewRoute,
+  saveLocalDocument,
+} from "@/local-documents";
 import { referenceFromUrlInput, routeForUrlInput, SourceLoadError } from "@/source-services";
 
-import { createLocalDocument, saveLocalDocument } from "./db";
-import {
-  localDocumentEditRoute,
-  localDocumentService,
-  localDocumentViewRoute,
-} from "./source-service";
+import { localDocumentService } from "./local-document.ts";
 
 const documentId = "11111111-1111-4111-8111-111111111111";
 
