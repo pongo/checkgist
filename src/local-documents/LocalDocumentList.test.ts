@@ -7,9 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
 
 import LocalDocumentList from "./LocalDocumentList.vue";
+import { deleteLocalDocument } from "./db";
 import { resetLocalDocumentsForTests } from "./useLocalDocuments";
 
 const push = vi.hoisted(() => vi.fn<(path: string) => Promise<void>>());
+const refreshBookmarks = vi.hoisted(() => vi.fn<() => Promise<void>>());
+const invalidateBookmarks = vi.hoisted(() => vi.fn<() => void>());
 const documentId = "11111111-1111-4111-8111-111111111111";
 const mountOptions = {
   global: {
@@ -30,6 +33,10 @@ vi.mock("vue-router", () => ({
   useRouter: () => ({ push }),
 }));
 
+vi.mock("@/bookmarks", () => ({
+  useBookmarks: () => ({ refresh: refreshBookmarks, invalidate: invalidateBookmarks }),
+}));
+
 function resetIndexedDb() {
   vi.stubGlobal("indexedDB", new IDBFactory());
 }
@@ -41,11 +48,15 @@ describe("LocalDocumentList", () => {
     resetIndexedDb();
     push.mockReset();
     push.mockResolvedValue(undefined);
+    refreshBookmarks.mockReset();
+    refreshBookmarks.mockResolvedValue(undefined);
+    invalidateBookmarks.mockReset();
     vi.stubGlobal("crypto", { randomUUID: () => documentId });
   });
 
   afterEach(async () => {
     await resetLocalDocumentsForTests();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -73,5 +84,92 @@ describe("LocalDocumentList", () => {
 
     expect(push).not.toHaveBeenCalled();
     expect(wrapper.get("[role='alert']").text()).not.toBe("");
+  });
+
+  it("links each document action to its editor", async () => {
+    const wrapper = mount(LocalDocumentList, mountOptions);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("No local documents yet"));
+    await wrapper.get("button").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Untitled document"));
+
+    expect(wrapper.get("a[aria-label='Edit Local Document']").attributes("href")).toBe(
+      `/local/${documentId}/edit`,
+    );
+  });
+
+  it("keeps the document when deletion is canceled", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    const wrapper = mount(LocalDocumentList, mountOptions);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("No local documents yet"));
+    await wrapper.get("button").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Untitled document"));
+
+    await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
+
+    expect(window.confirm).toHaveBeenCalledWith(
+      "Delete “Untitled document”? This cannot be undone.",
+    );
+    expect(wrapper.text()).toContain("Untitled document");
+    expect(refreshBookmarks).not.toHaveBeenCalled();
+  });
+
+  it("removes a confirmed document and refreshes Bookmark state", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const wrapper = mount(LocalDocumentList, mountOptions);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("No local documents yet"));
+    await wrapper.get("button").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Untitled document"));
+
+    await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("No local documents yet"));
+
+    expect(refreshBookmarks).toHaveBeenCalledOnce();
+    expect(invalidateBookmarks).not.toHaveBeenCalled();
+  });
+
+  it("invalidates Bookmark state when its refresh fails after a committed deletion", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    refreshBookmarks.mockRejectedValue(new Error("Storage is unavailable."));
+    const wrapper = mount(LocalDocumentList, mountOptions);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("No local documents yet"));
+    await wrapper.get("button").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Untitled document"));
+
+    await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
+    await vi.waitFor(() => expect(invalidateBookmarks).toHaveBeenCalledOnce());
+
+    expect(wrapper.text()).toContain("No local documents yet");
+  });
+
+  it("refreshes stale state when the document was already deleted", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const wrapper = mount(LocalDocumentList, mountOptions);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("No local documents yet"));
+    await wrapper.get("button").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Untitled document"));
+    await deleteLocalDocument(documentId);
+
+    await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("No local documents yet"));
+
+    expect(refreshBookmarks).toHaveBeenCalledOnce();
+    expect(wrapper.find("[role='alert']").exists()).toBe(false);
+  });
+
+  it("keeps the document and reports a storage failure when deletion does not commit", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const wrapper = mount(LocalDocumentList, mountOptions);
+    await vi.waitFor(() => expect(wrapper.text()).toContain("No local documents yet"));
+    await wrapper.get("button").trigger("click");
+    await vi.waitFor(() => expect(wrapper.text()).toContain("Untitled document"));
+    await closeCheckgistDatabaseForTests();
+    vi.stubGlobal("indexedDB", undefined);
+
+    await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Untitled document");
+    expect(wrapper.get("[role='alert']").text()).not.toBe("");
+    expect(refreshBookmarks).not.toHaveBeenCalled();
   });
 });
