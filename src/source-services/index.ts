@@ -1,5 +1,6 @@
 export {
   createSourceRouteRecords,
+  referenceFromUrlInput,
   referenceFromRoutePath,
   routeForUrlInput,
   unsupportedSourceUrlMessage,

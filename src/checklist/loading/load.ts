@@ -29,6 +29,10 @@ type UnsupportedChecklistSource = {
 
 export type LoadChecklistResult = LoadedChecklist | UnsupportedChecklistSource;
 
+/**
+ * Loads a Source Reference through its registered Source Service and builds its
+ * interactive Checklist representation.
+ */
 export async function loadChecklist(
   reference: SourceReference | null,
   options: LoadChecklistOptions = {},

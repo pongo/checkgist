@@ -102,6 +102,17 @@ describe("Local Document persistence", () => {
     expect(await deleteLocalDocument(secondId)).toBeNull();
   });
 
+  it("preserves a user-managed Bookmark title when the Local Document is renamed", async () => {
+    await createLocalDocument(firstId);
+    await addBookmark({ routePath: `/local/${firstId}`, title: "Trip preparation" });
+
+    await saveLocalDocument({ id: firstId, title: "Packing checklist", content: "- [ ] Passport" });
+
+    expect(await listBookmarks()).toEqual([
+      { routePath: `/local/${firstId}`, title: "Trip preparation", position: 0 },
+    ]);
+  });
+
   it("deletes the matching Bookmark and keeps remaining Bookmark positions dense", async () => {
     await createLocalDocument(firstId);
     await addBookmark({ routePath: "/pastebin.com/one", title: "One" });
