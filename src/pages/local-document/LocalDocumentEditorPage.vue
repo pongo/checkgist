@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Trash2 } from "@lucide/vue";
+import { ExternalLink, Home, LoaderCircle, Save, Trash2 } from "@lucide/vue";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import { onBeforeRouteLeave, RouterLink, useRoute, useRouter } from "vue-router";
 
@@ -149,36 +149,50 @@ onBeforeRouteLeave(() => {
         class="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2"
       >
         <RouterLink
-          class="inline-flex min-h-9 items-center rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:border-zinc-700 dark:hover:bg-zinc-900"
-          :to="localDocumentViewRoute(documentId)"
-          target="_blank"
-          rel="noopener noreferrer"
-          >Browse</RouterLink
+          class="rounded-sm focus:ring-2 focus:ring-blue-600/30 focus:outline-none"
+          to="/"
         >
-        <button
-          class="min-h-9 rounded-md border border-zinc-300 px-3 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
-          type="button"
-          :disabled="!canSave"
-          @click="save"
-        >
-          {{ isSaving ? "Saving…" : "Save" }}
-        </button>
+          <h1 class="text-lg font-semibold tracking-normal">Checkgist</h1>
+        </RouterLink>
         <label class="sr-only" for="local-document-title">Title</label>
         <input
           id="local-document-title"
           v-model="title"
-          class="min-h-9 min-w-40 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-600/30 dark:border-zinc-700 dark:bg-zinc-950"
+          class="order-last h-9 min-w-0 basis-full rounded-md border border-zinc-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-600/30 sm:order-none sm:min-w-40 sm:flex-1 sm:basis-auto dark:border-zinc-700 dark:bg-zinc-950"
           :aria-invalid="!titleValidation.valid"
           type="text"
         />
+        <RouterLink
+          class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          :to="localDocumentViewRoute(documentId)"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Browse"
+          title="Browse"
+        >
+          <ExternalLink class="size-4" aria-hidden="true" />
+          <span class="hidden sm:inline">Browse</span>
+        </RouterLink>
         <button
-          class="inline-flex min-h-9 items-center justify-center rounded-md border border-red-300 px-3 text-red-700 hover:bg-red-50 focus:ring-2 focus:ring-red-600/30 focus:outline-none disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
+          class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-md border border-zinc-300 text-sm font-medium hover:bg-zinc-100 focus:ring-2 focus:ring-blue-600/30 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-3 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          type="button"
+          :disabled="!canSave"
+          aria-label="Save"
+          title="Save"
+          @click="save"
+        >
+          <Save class="size-4" aria-hidden="true" />
+          <span class="hidden sm:inline"> Save </span>
+        </button>
+        <button
+          class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-md border border-red-300 text-sm font-medium text-red-700 hover:bg-red-50 focus:ring-2 focus:ring-red-600/30 focus:outline-none disabled:opacity-50 sm:w-auto sm:px-3 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
           type="button"
           :disabled="isDeleting"
           aria-label="Delete Local Document"
           @click="deleteCurrentDocument"
         >
-          <Trash2 class="size-4" aria-hidden="true" /><span class="sr-only">Delete</span>
+          <Trash2 class="size-4" aria-hidden="true" />
+          <span class="hidden sm:inline">Delete</span>
         </button>
         <p
           v-if="!titleValidation.valid || error"
