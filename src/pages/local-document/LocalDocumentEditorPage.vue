@@ -81,6 +81,7 @@ async function save() {
       return;
     }
     title.value = saved.title;
+    content.value = saved.content;
     savedTitle.value = saved.title;
     savedContent.value = saved.content;
   } catch (saveError) {

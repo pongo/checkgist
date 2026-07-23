@@ -17,11 +17,25 @@ const documents = ref<LocalDocument[]>([]);
 const status = ref<LocalDocumentStatus>("idle");
 const error = ref<unknown>(null);
 let loadPromise: Promise<void> | null = null;
+let stateOperation: Promise<void> = Promise.resolve();
 
-async function refresh(): Promise<void> {
+function serializeStateOperation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = stateOperation.then(operation, operation);
+  stateOperation = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
+
+async function refreshState(): Promise<void> {
   documents.value = await listLocalDocuments();
   error.value = null;
   status.value = "ready";
+}
+
+async function refresh(): Promise<void> {
+  return serializeStateOperation(refreshState);
 }
 
 async function ensureLoaded(): Promise<void> {
@@ -41,26 +55,32 @@ async function ensureLoaded(): Promise<void> {
 }
 
 async function createDocument(): Promise<LocalDocument> {
-  const document = await createLocalDocumentInDatabase();
-  await refresh();
-  requestPersistentStorageOnce();
-  return document;
+  return serializeStateOperation(async () => {
+    const document = await createLocalDocumentInDatabase();
+    await refreshState();
+    requestPersistentStorageOnce();
+    return document;
+  });
 }
 
 async function saveDocument(input: { id: string; title: string; content: string }) {
-  const saved = await saveLocalDocumentInDatabase(input);
-  if (saved !== null) await refresh();
-  return saved;
+  return serializeStateOperation(async () => {
+    const saved = await saveLocalDocumentInDatabase(input);
+    if (saved !== null) await refreshState();
+    return saved;
+  });
 }
 
 async function deleteDocument(documentId: string) {
-  const deleted = await deleteLocalDocumentInDatabase(documentId);
-  if (deleted !== null && status.value === "ready") {
-    // The transaction has committed, so remove the cache entry without risking a
-    // second database read turning a completed deletion into a reported failure.
-    documents.value = documents.value.filter((document) => document.id !== deleted.id);
-  }
-  return deleted;
+  return serializeStateOperation(async () => {
+    const deleted = await deleteLocalDocumentInDatabase(documentId);
+    if (deleted !== null) {
+      // The transaction has committed, so update the cache without a second read
+      // that could turn a completed deletion into a reported failure.
+      documents.value = documents.value.filter((document) => document.id !== deleted.id);
+    }
+    return deleted;
+  });
 }
 
 /** Returns the shared lazy Local Documents state and persistence commands. */
@@ -85,4 +105,5 @@ export async function resetLocalDocumentsForTests(): Promise<void> {
   status.value = "idle";
   error.value = null;
   loadPromise = null;
+  stateOperation = Promise.resolve();
 }

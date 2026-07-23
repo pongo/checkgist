@@ -29,7 +29,7 @@ A file belonging to a Loaded Source. Text Source Files can be rendered as Markdo
 _Avoid_: Checklist document, document
 
 **Source URL**:
-A URL that identifies content on a supported Source Service. It may be an external URL or Checkgist's edit route for a Local Document.
+A URL that identifies content on a supported Source Service. It may be an external URL or Checkgist's view or edit route for a Local Document (`/local/:documentId` or `/local/:documentId/edit`).
 _Avoid_: Checklist URL, document URL
 
 **Source Service**:

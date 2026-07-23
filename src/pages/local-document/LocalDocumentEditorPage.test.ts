@@ -212,6 +212,25 @@ describe("LocalDocumentEditorPage save protection", () => {
     expect(routeLeaveGuard.callback?.()).toBe(false);
     expect(unload.defaultPrevented).toBe(true);
   });
+
+  it("adopts normalized persisted content and clears navigation protections", async () => {
+    saveDocument.mockResolvedValue({
+      id: documentId,
+      title: "Packing",
+      content: "- [x] Passport",
+      createdAt: 1,
+      updatedAt: 2,
+    });
+    const wrapper = await mountEditor();
+    await wrapper.get("textarea[aria-label='Markdown content']").setValue("- [x] Passport ");
+
+    await wrapper.get("button[aria-label='Save']").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.get<HTMLTextAreaElement>("textarea").element.value).toBe("- [x] Passport");
+    expect(wrapper.get("button[aria-label='Save']").attributes("disabled")).toBeDefined();
+    expect(routeLeaveGuard.callback?.()).toBe(true);
+  });
 });
 
 describe("LocalDocumentEditorPage deletion", () => {
