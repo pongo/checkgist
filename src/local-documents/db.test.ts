@@ -72,15 +72,12 @@ describe("Local Document persistence", () => {
     expect((await getLocalDocument(firstId))?.title).toBe("Untitled document");
   });
 
-  it("orders documents by last successful save with an ID tie-breaker", async () => {
-    vi.spyOn(Date, "now")
-      .mockReturnValueOnce(100)
-      .mockReturnValueOnce(100)
-      .mockReturnValueOnce(200)
-      .mockReturnValueOnce(200);
-    await createLocalDocument(secondId);
+  it("orders documents by last successful save", async () => {
+    const now = vi.spyOn(Date, "now").mockReturnValue(100);
     await createLocalDocument(firstId);
-    await saveLocalDocument({ id: secondId, title: "Second", content: "" });
+    now.mockReturnValue(200);
+    await createLocalDocument(secondId);
+    now.mockReturnValue(300);
     await saveLocalDocument({ id: firstId, title: "First", content: "" });
 
     expect((await listLocalDocuments()).map((document) => document.id)).toEqual([

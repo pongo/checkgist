@@ -10,13 +10,6 @@ import { isLocalDocumentId, validateLocalDocumentTitle, type LocalDocument } fro
 
 export type { LocalDocument } from "./types";
 
-function orderedDocuments(documents: LocalDocument[]): LocalDocument[] {
-  return documents.toSorted((first, second) => {
-    const updatedAtDifference = second.updatedAt - first.updatedAt;
-    return updatedAtDifference === 0 ? first.id.localeCompare(second.id) : updatedAtDifference;
-  });
-}
-
 function orderedBookmarks<T extends { position: number; routePath: string }>(bookmarks: T[]): T[] {
   return bookmarks.toSorted((first, second) => {
     const positionDifference = first.position - second.position;
@@ -67,7 +60,7 @@ export async function listLocalDocuments(): Promise<LocalDocument[]> {
     localDocumentsStoreName,
     localDocumentsByUpdatedAtIndexName,
   );
-  return orderedDocuments(documents);
+  return documents.toReversed();
 }
 
 /**
