@@ -21,7 +21,6 @@ const {
 } = useLocalDocuments();
 const { refresh: refreshBookmarks, invalidate: invalidateBookmarks } = useBookmarks();
 const isCreating = ref(false);
-const deletingDocumentIds = ref(new Set<string>());
 const createError = ref("");
 const deleteError = ref("");
 
@@ -40,33 +39,11 @@ async function createAndOpenDocument() {
   }
 }
 
-function isDeletingDocument(documentId: string): boolean {
-  return deletingDocumentIds.value.has(documentId);
-}
-
-function setDocumentDeleting(documentId: string, isDeleting: boolean) {
-  const nextIds = new Set(deletingDocumentIds.value);
-  if (isDeleting) {
-    nextIds.add(documentId);
-  } else {
-    nextIds.delete(documentId);
-  }
-  deletingDocumentIds.value = nextIds;
-}
-
-function preventEditWhileDeleting(documentId: string, event: MouseEvent) {
-  if (isDeletingDocument(documentId)) event.preventDefault();
-}
-
 async function deleteLocalDocument(document: LocalDocument) {
-  if (
-    isDeletingDocument(document.id) ||
-    !window.confirm(`Delete “${document.title}”? This cannot be undone.`)
-  ) {
+  if (!window.confirm(`Delete “${document.title}”? This cannot be undone.`)) {
     return;
   }
 
-  setDocumentDeleting(document.id, true);
   deleteError.value = "";
   try {
     const deleted = await deleteDocument(document.id);
@@ -84,8 +61,6 @@ async function deleteLocalDocument(document: LocalDocument) {
     }
   } catch (error) {
     deleteError.value = error instanceof Error ? error.message : "Failed to delete Local Document.";
-  } finally {
-    setDocumentDeleting(document.id, false);
   }
 }
 
@@ -140,19 +115,14 @@ onMounted(() => {
           >
             <RouterLink
               class="inline-flex size-6 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
-              :class="isDeletingDocument(document.id) ? 'pointer-events-none opacity-50' : ''"
               :to="localDocumentEditRoute(document.id)"
-              :aria-disabled="isDeletingDocument(document.id) ? 'true' : undefined"
-              :tabindex="isDeletingDocument(document.id) ? -1 : undefined"
               aria-label="Edit Local Document"
-              @click="preventEditWhileDeleting(document.id, $event)"
             >
               <Pencil class="size-3.5" aria-hidden="true" />
             </RouterLink>
             <button
-              class="inline-flex size-6 items-center justify-center rounded-md text-zinc-500 hover:bg-red-50 hover:text-red-700 focus:text-red-700 focus:ring-2 focus:ring-red-600/30 focus:outline-none disabled:cursor-wait disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-red-950/30 dark:hover:text-red-300 dark:focus:text-red-300"
+              class="inline-flex size-6 items-center justify-center rounded-md text-zinc-500 hover:bg-red-50 hover:text-red-700 focus:text-red-700 focus:ring-2 focus:ring-red-600/30 focus:outline-none dark:text-zinc-400 dark:hover:bg-red-950/30 dark:hover:text-red-300 dark:focus:text-red-300"
               type="button"
-              :disabled="isDeletingDocument(document.id)"
               aria-label="Delete Local Document"
               @click="deleteLocalDocument(document)"
             >
