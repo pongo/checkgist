@@ -19,7 +19,7 @@ const {
   createDocument,
   deleteDocument,
 } = useLocalDocuments();
-const { refresh: refreshBookmarks, invalidate: invalidateBookmarks } = useBookmarks();
+const { removeBookmark, invalidate: invalidateBookmarks } = useBookmarks();
 const isCreating = ref(false);
 const createError = ref("");
 const deleteError = ref("");
@@ -50,13 +50,14 @@ async function deleteLocalDocument(document: LocalDocument) {
     if (deleted === null) {
       // Another tab may have deleted the document while this shared cache was stale.
       await refreshDocuments();
+      return;
     }
 
     try {
-      await refreshBookmarks();
+      await removeBookmark(localDocumentViewRoute(document.id));
     } catch {
-      // The document transaction is already committed; discard stale Bookmark state
-      // so its next consumer reloads the database instead of showing an orphaned link.
+      // The document is already deleted, so Bookmark cleanup cannot roll it back.
+      // Discard the cache and let the next consumer reload the surviving Bookmark.
       invalidateBookmarks();
     }
   } catch (error) {

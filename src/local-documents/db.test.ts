@@ -3,7 +3,6 @@ import "fake-indexeddb/auto";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { addBookmark, listBookmarks } from "@/bookmarks";
 import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
 
 import {
@@ -99,29 +98,13 @@ describe("Local Document persistence", () => {
     expect(await deleteLocalDocument(secondId)).toBeNull();
   });
 
-  it("preserves a user-managed Bookmark title when the Local Document is renamed", async () => {
+  it("deletes only the requested Local Document", async () => {
     await createLocalDocument(firstId);
-    await addBookmark({ routePath: `/local/${firstId}`, title: "Trip preparation" });
+    await createLocalDocument(secondId);
 
-    await saveLocalDocument({ id: firstId, title: "Packing checklist", content: "- [ ] Passport" });
-
-    expect(await listBookmarks()).toEqual([
-      { routePath: `/local/${firstId}`, title: "Trip preparation", position: 0 },
-    ]);
-  });
-
-  it("deletes the matching Bookmark and keeps remaining Bookmark positions dense", async () => {
-    await createLocalDocument(firstId);
-    await addBookmark({ routePath: "/pastebin.com/one", title: "One" });
-    await addBookmark({ routePath: `/local/${firstId}`, title: "Document bookmark" });
-    await addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
-
-    await deleteLocalDocument(firstId);
+    expect(await deleteLocalDocument(firstId)).toMatchObject({ id: firstId });
 
     expect(await getLocalDocument(firstId)).toBeNull();
-    expect(await listBookmarks()).toEqual([
-      { routePath: "/pastebin.com/one", title: "One", position: 0 },
-      { routePath: "/pastebin.com/two", title: "Two", position: 1 },
-    ]);
+    expect(await getLocalDocument(secondId)).toMatchObject({ id: secondId });
   });
 });

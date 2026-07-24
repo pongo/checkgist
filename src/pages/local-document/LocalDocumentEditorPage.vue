@@ -17,7 +17,7 @@ import LocalDocumentPreview from "./LocalDocumentPreview.vue";
 const route = useRoute();
 const router = useRouter();
 const { saveDocument, deleteDocument } = useLocalDocuments();
-const { refresh: refreshBookmarks, invalidate: invalidateBookmarks } = useBookmarks();
+const { removeBookmark, invalidate: invalidateBookmarks } = useBookmarks();
 const title = ref("");
 const content = ref("");
 const savedTitle = ref("");
@@ -117,10 +117,10 @@ async function deleteCurrentDocument() {
   }
 
   try {
-    await refreshBookmarks();
+    await removeBookmark(localDocumentViewRoute(documentId.value));
   } catch {
-    // The delete transaction already committed; clear the stale shared cache and
-    // let the home page reload it instead of presenting a deleted draft as intact.
+    // The document is already deleted, so Bookmark cleanup cannot roll it back.
+    // Clear the shared cache before the home page reads Bookmark state again.
     invalidateBookmarks();
   }
 

@@ -1,5 +1,4 @@
 import {
-  bookmarksStoreName,
   localDocumentsByUpdatedAtIndexName,
   localDocumentsStoreName,
   openCheckgistDatabase,
@@ -9,19 +8,6 @@ import {
 import { isLocalDocumentId, validateLocalDocumentTitle, type LocalDocument } from "./types";
 
 export type { LocalDocument } from "./types";
-
-function orderedBookmarks<T extends { position: number; routePath: string }>(bookmarks: T[]): T[] {
-  return bookmarks.toSorted((first, second) => {
-    const positionDifference = first.position - second.position;
-    return positionDifference === 0
-      ? first.routePath.localeCompare(second.routePath)
-      : positionDifference;
-  });
-}
-
-function documentRoutePath(documentId: string): string {
-  return `/local/${documentId}`;
-}
 
 /** Creates and commits the initial empty Local Document before an editor opens it. */
 export async function createLocalDocument(
@@ -99,39 +85,20 @@ export async function saveLocalDocument(input: {
   return saved;
 }
 
-/**
- * Removes a Local Document and its matching Bookmark in one committed transaction.
- * Bookmark cache consumers must refresh only after this promise resolves.
- */
+/** Removes a Local Document by its stable ID. */
 export async function deleteLocalDocument(documentId: string): Promise<LocalDocument | null> {
   if (!isLocalDocumentId(documentId)) {
     return null;
   }
 
   const db = await openCheckgistDatabase();
-  const tx = db.transaction([localDocumentsStoreName, bookmarksStoreName], "readwrite");
-  const documents = tx.objectStore(localDocumentsStoreName);
-  const bookmarks = tx.objectStore(bookmarksStoreName);
-  const document = await documents.get(documentId);
+  const tx = db.transaction(localDocumentsStoreName, "readwrite");
+  const document = await tx.store.get(documentId);
   if (document === undefined) {
     await tx.done;
     return null;
   }
 
-  const removedBookmarkRoutePath = documentRoutePath(documentId);
-  const remainingBookmarks = orderedBookmarks(await bookmarks.getAll()).filter(
-    (bookmark) => bookmark.routePath !== removedBookmarkRoutePath,
-  );
-  const normalizedBookmarks = remainingBookmarks.map((bookmark, position) => ({
-    ...bookmark,
-    position,
-  }));
-
-  await Promise.all([
-    documents.delete(documentId),
-    bookmarks.delete(removedBookmarkRoutePath),
-    ...normalizedBookmarks.map((bookmark) => bookmarks.put(bookmark)),
-    tx.done,
-  ]);
+  await Promise.all([tx.store.delete(documentId), tx.done]);
   return document;
 }

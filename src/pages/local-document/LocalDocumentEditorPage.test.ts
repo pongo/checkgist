@@ -18,7 +18,7 @@ const getLocalDocument = vi.hoisted(() =>
 );
 const saveDocument = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unknown>>());
 const deleteDocument = vi.hoisted(() => vi.fn<(id: string) => Promise<unknown>>());
-const refreshBookmarks = vi.hoisted(() => vi.fn<() => Promise<void>>());
+const removeBookmark = vi.hoisted(() => vi.fn<(routePath: string) => Promise<unknown>>());
 const invalidateBookmarks = vi.hoisted(() => vi.fn<() => void>());
 const routerPush = vi.hoisted(() => vi.fn<() => Promise<void>>());
 const routeLeaveGuard = vi.hoisted(() => ({ callback: undefined as (() => boolean) | undefined }));
@@ -33,7 +33,7 @@ vi.mock("@/local-documents", () => ({
 }));
 
 vi.mock("@/bookmarks", () => ({
-  useBookmarks: () => ({ refresh: refreshBookmarks, invalidate: invalidateBookmarks }),
+  useBookmarks: () => ({ removeBookmark, invalidate: invalidateBookmarks }),
 }));
 
 vi.mock("vue-router", () => ({
@@ -68,7 +68,8 @@ function resetEditorMocks() {
   getLocalDocument.mockReset();
   saveDocument.mockReset();
   deleteDocument.mockReset();
-  refreshBookmarks.mockReset();
+  removeBookmark.mockReset();
+  removeBookmark.mockResolvedValue(null);
   invalidateBookmarks.mockReset();
   routerPush.mockReset();
   routeLeaveGuard.callback = undefined;
@@ -248,10 +249,9 @@ describe("LocalDocumentEditorPage deletion", () => {
     expect(titleInput.element.value).toBe("Draft title");
   });
 
-  it("refreshes Bookmark state only after confirmed deletion and returns home", async () => {
+  it("removes the Bookmark only after confirmed deletion and returns home", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     deleteDocument.mockResolvedValue({ id: documentId });
-    refreshBookmarks.mockResolvedValue(undefined);
     routerPush.mockResolvedValue(undefined);
     const wrapper = await mountEditor();
 
@@ -259,14 +259,14 @@ describe("LocalDocumentEditorPage deletion", () => {
     await flushPromises();
 
     expect(deleteDocument).toHaveBeenCalledWith(documentId);
-    expect(refreshBookmarks).toHaveBeenCalledOnce();
+    expect(removeBookmark).toHaveBeenCalledWith(`/local/${documentId}`);
     expect(routerPush).toHaveBeenCalledWith("/");
   });
 
-  it("returns home after a committed deletion even when Bookmark cache refresh fails", async () => {
+  it("returns home after a committed deletion even when Bookmark removal fails", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     deleteDocument.mockResolvedValue({ id: documentId });
-    refreshBookmarks.mockRejectedValue(new Error("Storage is unavailable."));
+    removeBookmark.mockRejectedValue(new Error("Storage is unavailable."));
     routerPush.mockResolvedValue(undefined);
     const wrapper = await mountEditor();
 
