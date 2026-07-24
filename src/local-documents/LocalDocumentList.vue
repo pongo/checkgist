@@ -3,8 +3,6 @@ import { FilePlus2, Pencil, Trash2 } from "@lucide/vue";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
-import { useBookmarks } from "@/bookmarks";
-
 import { localDocumentEditRoute, localDocumentViewRoute } from "./routes";
 import type { LocalDocument } from "./types";
 import { useLocalDocuments } from "./useLocalDocuments";
@@ -19,7 +17,6 @@ const {
   createDocument,
   deleteDocument,
 } = useLocalDocuments();
-const { removeBookmark, invalidate: invalidateBookmarks } = useBookmarks();
 const isCreating = ref(false);
 const createError = ref("");
 const deleteError = ref("");
@@ -51,14 +48,6 @@ async function deleteLocalDocument(document: LocalDocument) {
       // Another tab may have deleted the document while this shared cache was stale.
       await refreshDocuments();
       return;
-    }
-
-    try {
-      await removeBookmark(localDocumentViewRoute(document.id));
-    } catch {
-      // The document is already deleted, so Bookmark cleanup cannot roll it back.
-      // Discard the cache and let the next consumer reload the surviving Bookmark.
-      invalidateBookmarks();
     }
   } catch (error) {
     deleteError.value = error instanceof Error ? error.message : "Failed to delete Local Document.";

@@ -10,14 +10,12 @@ import {
   useLocalDocuments,
   validateLocalDocumentTitle,
 } from "@/local-documents";
-import { useBookmarks } from "@/bookmarks";
 
 import LocalDocumentPreview from "./LocalDocumentPreview.vue";
 
 const route = useRoute();
 const router = useRouter();
 const { saveDocument, deleteDocument } = useLocalDocuments();
-const { removeBookmark, invalidate: invalidateBookmarks } = useBookmarks();
 const title = ref("");
 const content = ref("");
 const savedTitle = ref("");
@@ -114,14 +112,6 @@ async function deleteCurrentDocument() {
     error.value =
       deleteError instanceof Error ? deleteError.message : "Failed to delete Local Document.";
     return;
-  }
-
-  try {
-    await removeBookmark(localDocumentViewRoute(documentId.value));
-  } catch {
-    // The document is already deleted, so Bookmark cleanup cannot roll it back.
-    // Clear the shared cache before the home page reads Bookmark state again.
-    invalidateBookmarks();
   }
 
   await router.push("/");

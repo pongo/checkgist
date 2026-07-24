@@ -18,8 +18,6 @@ const getLocalDocument = vi.hoisted(() =>
 );
 const saveDocument = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unknown>>());
 const deleteDocument = vi.hoisted(() => vi.fn<(id: string) => Promise<unknown>>());
-const removeBookmark = vi.hoisted(() => vi.fn<(routePath: string) => Promise<unknown>>());
-const invalidateBookmarks = vi.hoisted(() => vi.fn<() => void>());
 const routerPush = vi.hoisted(() => vi.fn<() => Promise<void>>());
 const routeLeaveGuard = vi.hoisted(() => ({ callback: undefined as (() => boolean) | undefined }));
 const route = reactive({ params: { documentId } });
@@ -30,10 +28,6 @@ vi.mock("@/local-documents", () => ({
   localDocumentViewRoute: (id: string) => `/local/${id}`,
   useLocalDocuments: () => ({ saveDocument, deleteDocument }),
   validateLocalDocumentTitle: (title: string) => ({ valid: true, title }),
-}));
-
-vi.mock("@/bookmarks", () => ({
-  useBookmarks: () => ({ removeBookmark, invalidate: invalidateBookmarks }),
 }));
 
 vi.mock("vue-router", () => ({
@@ -68,9 +62,6 @@ function resetEditorMocks() {
   getLocalDocument.mockReset();
   saveDocument.mockReset();
   deleteDocument.mockReset();
-  removeBookmark.mockReset();
-  removeBookmark.mockResolvedValue(null);
-  invalidateBookmarks.mockReset();
   routerPush.mockReset();
   routeLeaveGuard.callback = undefined;
   getLocalDocument.mockResolvedValue({
@@ -249,7 +240,7 @@ describe("LocalDocumentEditorPage deletion", () => {
     expect(titleInput.element.value).toBe("Draft title");
   });
 
-  it("removes the Bookmark only after confirmed deletion and returns home", async () => {
+  it("deletes the confirmed document and returns home", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     deleteDocument.mockResolvedValue({ id: documentId });
     routerPush.mockResolvedValue(undefined);
@@ -259,21 +250,6 @@ describe("LocalDocumentEditorPage deletion", () => {
     await flushPromises();
 
     expect(deleteDocument).toHaveBeenCalledWith(documentId);
-    expect(removeBookmark).toHaveBeenCalledWith(`/local/${documentId}`);
-    expect(routerPush).toHaveBeenCalledWith("/");
-  });
-
-  it("returns home after a committed deletion even when Bookmark removal fails", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-    deleteDocument.mockResolvedValue({ id: documentId });
-    removeBookmark.mockRejectedValue(new Error("Storage is unavailable."));
-    routerPush.mockResolvedValue(undefined);
-    const wrapper = await mountEditor();
-
-    await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
-    await flushPromises();
-
-    expect(invalidateBookmarks).toHaveBeenCalledOnce();
     expect(routerPush).toHaveBeenCalledWith("/");
   });
 

@@ -1,5 +1,6 @@
 import { computed, readonly, ref } from "vue";
 
+import { useBookmarks } from "@/bookmarks";
 import { requestPersistentStorageOnce } from "@/shared/persistent-storage";
 import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
 
@@ -10,6 +11,7 @@ import {
   saveLocalDocument as saveLocalDocumentInDatabase,
   type LocalDocument,
 } from "./db";
+import { localDocumentViewRoute } from "./routes";
 
 type LocalDocumentStatus = "idle" | "loading" | "ready" | "error";
 
@@ -72,7 +74,7 @@ async function saveDocument(input: { id: string; title: string; content: string 
 }
 
 async function deleteDocument(documentId: string) {
-  return serializeStateOperation(async () => {
+  const deleted = await serializeStateOperation(async () => {
     const deleted = await deleteLocalDocumentInDatabase(documentId);
     if (deleted !== null) {
       // The transaction has committed, so update the cache without a second read
@@ -81,9 +83,28 @@ async function deleteDocument(documentId: string) {
     }
     return deleted;
   });
+
+  if (deleted === null) return null;
+
+  const { removeBookmark, invalidate } = useBookmarks();
+  try {
+    await removeBookmark(localDocumentViewRoute(documentId));
+  } catch {
+    // Local Document deletion is intentionally committed before Bookmark cleanup.
+    // Invalidate the shared cache because cleanup failure cannot roll it back.
+    invalidate();
+  }
+
+  return deleted;
 }
 
-/** Returns the shared lazy Local Documents state and persistence commands. */
+/**
+ * Returns the shared lazy Local Documents state and persistence commands.
+ *
+ * `deleteDocument` removes the Local Document's owned Bookmark after the document
+ * commit. Bookmark cleanup failure invalidates Bookmark state but does not turn
+ * the committed deletion into a reported failure.
+ */
 export function useLocalDocuments() {
   return {
     documents: readonly(documents),
