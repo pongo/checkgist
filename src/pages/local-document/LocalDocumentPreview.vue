@@ -3,7 +3,7 @@ import { ComarkRenderer } from "@comark/vue";
 import type { ComarkTree } from "comark";
 import { onBeforeUnmount, ref, watch } from "vue";
 
-import { parseChecklistMarkdown, prepareExplicitTaskItems } from "@/checklist";
+import { prepareMarkdown } from "@/checklist";
 
 const props = defineProps<{ content: string }>();
 const tree = ref<ComarkTree | null>(null);
@@ -18,9 +18,7 @@ function scheduleParse(content: string) {
 
   timeout = setTimeout(async () => {
     try {
-      const nextTree = await parseChecklistMarkdown(content);
-      // Match the Checklist tree shape so nested parent tasks do not retain a paragraph margin.
-      prepareExplicitTaskItems(nextTree);
+      const { tree: nextTree } = await prepareMarkdown(content);
       // A slower parse of an old draft must never replace the latest preview.
       if (token !== parseToken) return;
       tree.value = nextTree;

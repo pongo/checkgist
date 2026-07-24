@@ -34,9 +34,9 @@ Checklist loading, rendering model, and shareable Checklist State.
 
 This area owns the transition from a `SourceReference` and `LoadedSource` into a user-facing Checklist. It also owns rendering support plus encoding, applying, and mutating Checklist State.
 
-- `loading/` owns source-reference lifecycle, Loaded Source loading, Checklist building, and browser title formatting.
+- `loading/` owns source-reference lifecycle, Loaded Source loading, Checklist building, browser title formatting, and the shared Markdown preparation policy used by Checklist building and Local Document preview.
 - `state/` owns Checklist State mutation, hash encoding/decoding, and state operation results consumed by UI and lifecycle code.
-- `task-items/` owns Task Item preparation and synchronization inside the rendered Markdown tree.
+- `task-items/` owns the internal tree transformations for Task Item preparation and synchronization. Callers outside `src/checklist/` use the prepared Markdown interface from the folder-level `index.ts` instead of composing these transformations directly.
 
 Keep cross-feature imports on the folder-level `index.ts`. Treat the subfolders as internal modules unless a caller has a specific reason to depend on their lower-level interface.
 

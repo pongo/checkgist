@@ -5,14 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import LocalDocumentPreview from "./LocalDocumentPreview.vue";
 
-const parseChecklistMarkdown = vi.hoisted(() => vi.fn<(markdown: string) => Promise<ComarkTree>>());
+const prepareMarkdown = vi.hoisted(() =>
+  vi.fn<(markdown: string) => Promise<{ tree: ComarkTree; taskItemCount: number }>>(),
+);
 
 vi.mock("@/checklist", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/checklist")>();
 
   return {
     ...actual,
-    parseChecklistMarkdown,
+    prepareMarkdown,
   };
 });
 
@@ -74,8 +76,8 @@ describe("LocalDocumentPreview", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     const checklist = await vi.importActual<typeof import("@/checklist")>("@/checklist");
-    parseChecklistMarkdown.mockReset();
-    parseChecklistMarkdown.mockImplementation(checklist.parseChecklistMarkdown);
+    prepareMarkdown.mockReset();
+    prepareMarkdown.mockImplementation(checklist.prepareMarkdown);
     window.history.replaceState(null, "", "/");
   });
 
@@ -87,13 +89,13 @@ describe("LocalDocumentPreview", () => {
     const wrapper = mountPreview("# First draft");
 
     await vi.advanceTimersByTimeAsync(149);
-    expect(parseChecklistMarkdown).not.toHaveBeenCalled();
+    expect(prepareMarkdown).not.toHaveBeenCalled();
 
     await wrapper.setProps({ content: "# Latest draft" });
     await finishDebounce();
 
-    expect(parseChecklistMarkdown).toHaveBeenCalledTimes(1);
-    expect(parseChecklistMarkdown).toHaveBeenCalledWith("# Latest draft");
+    expect(prepareMarkdown).toHaveBeenCalledTimes(1);
+    expect(prepareMarkdown).toHaveBeenCalledWith("# Latest draft");
     expect(wrapper.text()).toContain("Latest draft");
     expect(wrapper.text()).not.toContain("First draft");
   });
@@ -101,17 +103,17 @@ describe("LocalDocumentPreview", () => {
   it("keeps the latest preview when Markdown parses finish out of order", async () => {
     let resolveFirst: ((tree: ComarkTree) => void) | undefined;
     let resolveSecond: ((tree: ComarkTree) => void) | undefined;
-    parseChecklistMarkdown
+    prepareMarkdown
       .mockImplementationOnce(
         () =>
-          new Promise<ComarkTree>((resolve) => {
-            resolveFirst = resolve;
+          new Promise<{ tree: ComarkTree; taskItemCount: number }>((resolve) => {
+            resolveFirst = (tree) => resolve({ tree, taskItemCount: 0 });
           }),
       )
       .mockImplementationOnce(
         () =>
-          new Promise<ComarkTree>((resolve) => {
-            resolveSecond = resolve;
+          new Promise<{ tree: ComarkTree; taskItemCount: number }>((resolve) => {
+            resolveSecond = (tree) => resolve({ tree, taskItemCount: 0 });
           }),
       );
     const wrapper = mountPreview("First draft");
@@ -131,7 +133,7 @@ describe("LocalDocumentPreview", () => {
   });
 
   it("keeps the draft and shows a visible error when Markdown parsing fails", async () => {
-    parseChecklistMarkdown.mockRejectedValueOnce(new Error("parse failed"));
+    prepareMarkdown.mockRejectedValueOnce(new Error("parse failed"));
     const wrapper = mountPreview("# Keep this draft");
 
     await finishDebounce();
@@ -163,9 +165,10 @@ describe("LocalDocumentPreview", () => {
   });
 
   it("keeps preview Task Items visual without changing the URL hash", async () => {
-    parseChecklistMarkdown.mockResolvedValueOnce(
-      createTree([["input", { type: "checkbox", class: "task-list-item-checkbox" }]]),
-    );
+    prepareMarkdown.mockResolvedValueOnce({
+      tree: createTree([["input", { type: "checkbox", class: "task-list-item-checkbox" }]]),
+      taskItemCount: 1,
+    });
     const wrapper = mountPreview("- [ ] Visual task");
 
     await finishDebounce();
