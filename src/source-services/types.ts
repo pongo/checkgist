@@ -41,6 +41,11 @@ export type LoadError = {
   message: string;
 };
 
+/**
+ * Signals that a Source Service could not load a requested source.
+ *
+ * Unlike a Source File error, this prevents construction of a Loaded Source.
+ */
 export class SourceLoadError extends Error {
   constructor(message: string) {
     super(message);
