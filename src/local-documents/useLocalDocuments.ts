@@ -7,6 +7,7 @@ import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
 import {
   createLocalDocument as createLocalDocumentInDatabase,
   deleteLocalDocument as deleteLocalDocumentInDatabase,
+  getLocalDocument as getLocalDocumentInDatabase,
   listLocalDocuments,
   saveLocalDocument as saveLocalDocumentInDatabase,
   type LocalDocument,
@@ -38,6 +39,10 @@ async function refreshState(): Promise<void> {
 
 async function refresh(): Promise<void> {
   return serializeStateOperation(refreshState);
+}
+
+async function getDocument(documentId: string): Promise<LocalDocument | null> {
+  return serializeStateOperation(() => getLocalDocumentInDatabase(documentId));
 }
 
 async function ensureLoaded(): Promise<void> {
@@ -113,6 +118,7 @@ export function useLocalDocuments() {
     isReady: computed(() => status.value === "ready"),
     ensureLoaded,
     refresh,
+    getDocument,
     createDocument,
     saveDocument,
     deleteDocument,

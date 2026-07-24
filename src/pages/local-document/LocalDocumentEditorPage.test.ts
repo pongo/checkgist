@@ -5,30 +5,87 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import LocalDocumentEditorPage from "./LocalDocumentEditorPage.vue";
 
 const documentId = "11111111-1111-4111-8111-111111111111";
-const getLocalDocument = vi.hoisted(() =>
-  vi.fn<
-    (id: string) => Promise<{
-      id: string;
-      title: string;
-      content: string;
-      createdAt: number;
-      updatedAt: number;
-    } | null>
-  >(),
-);
 const saveDocument = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unknown>>());
 const deleteDocument = vi.hoisted(() => vi.fn<(id: string) => Promise<unknown>>());
 const routerPush = vi.hoisted(() => vi.fn<() => Promise<void>>());
 const routeLeaveGuard = vi.hoisted(() => ({ callback: undefined as (() => boolean) | undefined }));
 const route = reactive({ params: { documentId } });
 
-vi.mock("@/local-documents", () => ({
-  getLocalDocument,
-  isLocalDocumentId: () => true,
-  localDocumentViewRoute: (id: string) => `/local/${id}`,
-  useLocalDocuments: () => ({ saveDocument, deleteDocument }),
-  validateLocalDocumentTitle: (title: string) => ({ valid: true, title }),
-}));
+vi.mock("@/local-documents", async () => {
+  const { computed, ref } = await import("vue");
+
+  return {
+    localDocumentViewRoute: (id: string) => `/local/${id}`,
+    useLocalDocumentEditor: () => {
+      const title = ref("Packing");
+      const content = ref("- [ ] Passport");
+      const savedTitle = ref("Packing");
+      const savedContent = ref("- [ ] Passport");
+      const state = ref<"ready">("ready");
+      const error = ref("");
+      const isSaving = ref(false);
+      const isDeleting = ref(false);
+      const isDirty = computed(
+        () => title.value !== savedTitle.value || content.value !== savedContent.value,
+      );
+      const titleValidation = computed(() => ({ valid: true as const, title: title.value }));
+      const canSave = computed(() => isDirty.value && !isSaving.value && !isDeleting.value);
+      const canDelete = computed(() => !isSaving.value && !isDeleting.value);
+
+      const save = async () => {
+        if (!canSave.value) return null;
+        isSaving.value = true;
+        try {
+          const saved = (await saveDocument({
+            id: documentId,
+            title: title.value,
+            content: content.value,
+          })) as { title: string; content: string } | null;
+          if (saved !== null) {
+            title.value = saved.title;
+            content.value = saved.content;
+            savedTitle.value = saved.title;
+            savedContent.value = saved.content;
+          }
+          return saved;
+        } catch (saveError) {
+          error.value = saveError instanceof Error ? saveError.message : "Save failed.";
+          throw saveError;
+        } finally {
+          isSaving.value = false;
+        }
+      };
+
+      const remove = async () => {
+        if (!canDelete.value) return null;
+        isDeleting.value = true;
+        try {
+          return await deleteDocument(documentId);
+        } catch (deleteError) {
+          error.value = deleteError instanceof Error ? deleteError.message : "Delete failed.";
+          throw deleteError;
+        } finally {
+          isDeleting.value = false;
+        }
+      };
+
+      return {
+        title,
+        content,
+        state,
+        error,
+        isSaving,
+        isDeleting,
+        titleValidation,
+        isDirty,
+        canSave,
+        canDelete,
+        save,
+        deleteDocument: remove,
+      };
+    },
+  };
+});
 
 vi.mock("vue-router", () => ({
   RouterLink: {
@@ -59,18 +116,10 @@ async function mountEditor() {
 
 function resetEditorMocks() {
   vi.restoreAllMocks();
-  getLocalDocument.mockReset();
   saveDocument.mockReset();
   deleteDocument.mockReset();
   routerPush.mockReset();
   routeLeaveGuard.callback = undefined;
-  getLocalDocument.mockResolvedValue({
-    id: documentId,
-    title: "Packing",
-    content: "- [ ] Passport",
-    createdAt: 1,
-    updatedAt: 1,
-  });
 }
 
 beforeEach(resetEditorMocks);

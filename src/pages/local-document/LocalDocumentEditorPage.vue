@@ -3,114 +3,55 @@ import { ExternalLink, Save, Trash2 } from "@lucide/vue";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import { onBeforeRouteLeave, RouterLink, useRoute, useRouter } from "vue-router";
 
-import {
-  getLocalDocument,
-  isLocalDocumentId,
-  localDocumentViewRoute,
-  useLocalDocuments,
-  validateLocalDocumentTitle,
-} from "@/local-documents";
+import { localDocumentViewRoute, useLocalDocumentEditor } from "@/local-documents";
 
 import LocalDocumentPreview from "./LocalDocumentPreview.vue";
 
 const route = useRoute();
 const router = useRouter();
-const { saveDocument, deleteDocument } = useLocalDocuments();
-const title = ref("");
-const content = ref("");
-const savedTitle = ref("");
-const savedContent = ref("");
-const state = ref<"loading" | "ready" | "missing" | "error">("loading");
-const error = ref("");
-const isSaving = ref(false);
-const isDeleting = ref(false);
 const previewActive = ref(false);
 const contentTextarea = useTemplateRef<HTMLTextAreaElement>("contentTextarea");
 
 const documentId = computed(() => String(route.params.documentId ?? ""));
-const titleValidation = computed(() => validateLocalDocumentTitle(title.value));
-const isDirty = computed(
-  () => title.value !== savedTitle.value || content.value !== savedContent.value,
-);
-const canSave = computed(
-  () => state.value === "ready" && isDirty.value && titleValidation.value.valid && !isSaving.value,
-);
+const {
+  title,
+  content,
+  state,
+  error,
+  isDeleting,
+  titleValidation,
+  isDirty,
+  canSave,
+  canDelete,
+  save,
+  deleteDocument,
+} = useLocalDocumentEditor(documentId);
 
-async function loadDocument(id: string) {
-  state.value = "loading";
-  error.value = "";
-  if (!isLocalDocumentId(id)) {
-    state.value = "missing";
-    return;
-  }
-
+async function saveFromUserIntent() {
   try {
-    const document = await getLocalDocument(id);
-    if (document === null) {
-      state.value = "missing";
-      return;
-    }
-    title.value = document.title;
-    content.value = document.content;
-    savedTitle.value = document.title;
-    savedContent.value = document.content;
-    state.value = "ready";
-    await nextTick();
-    contentTextarea.value?.focus();
-  } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : "Failed to load Local Document.";
-    state.value = "error";
-  }
-}
-
-async function save() {
-  if (!canSave.value) return;
-
-  isSaving.value = true;
-  error.value = "";
-  try {
-    const saved = await saveDocument({
-      id: documentId.value,
-      title: title.value,
-      content: content.value,
-    });
-    if (saved === null) {
-      state.value = "missing";
-      return;
-    }
-    title.value = saved.title;
-    content.value = saved.content;
-    savedTitle.value = saved.title;
-    savedContent.value = saved.content;
-  } catch (saveError) {
-    error.value = saveError instanceof Error ? saveError.message : "Failed to save Local Document.";
-  } finally {
-    isSaving.value = false;
+    await save();
+  } catch {
+    // The lifecycle module retains the error for the page; the adapter prevents an unhandled UI rejection.
   }
 }
 
 function onKeydown(event: KeyboardEvent) {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
     event.preventDefault();
-    void save();
+    void saveFromUserIntent();
   }
 }
 
 async function deleteCurrentDocument() {
   if (!window.confirm(`Delete “${title.value}”? This cannot be undone.`)) return;
 
-  isDeleting.value = true;
-  error.value = "";
   try {
-    const deleted = await deleteDocument(documentId.value);
+    const deleted = await deleteDocument();
     if (deleted === null) {
-      state.value = "missing";
       return;
     }
-  } catch (deleteError) {
-    isDeleting.value = false;
-    error.value =
-      deleteError instanceof Error ? deleteError.message : "Failed to delete Local Document.";
+  } catch {
+    // The lifecycle module retains the error for the page; the adapter prevents an unhandled UI rejection.
     return;
   }
 
@@ -124,7 +65,15 @@ function beforeUnload(event: BeforeUnloadEvent) {
   }
 }
 
-watch(documentId, (id) => void loadDocument(id), { immediate: true });
+watch(
+  () => state.value,
+  async (nextState) => {
+    if (nextState !== "ready") return;
+    await nextTick();
+    contentTextarea.value?.focus();
+  },
+  { immediate: true },
+);
 onMounted(() => {
   window.addEventListener("keydown", onKeydown);
   window.addEventListener("beforeunload", beforeUnload);
@@ -181,7 +130,7 @@ onBeforeRouteLeave(() => {
           :disabled="!canSave"
           aria-label="Save"
           title="Save"
-          @click="save"
+          @click="saveFromUserIntent"
         >
           <Save class="size-4" aria-hidden="true" />
           <span class="hidden sm:inline"> Save </span>
@@ -189,7 +138,7 @@ onBeforeRouteLeave(() => {
         <button
           class="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-md border border-red-300 text-sm font-medium text-red-700 hover:bg-red-50 focus:ring-2 focus:ring-red-600/30 focus:outline-none disabled:opacity-50 sm:w-auto sm:px-3 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
           type="button"
-          :disabled="isDeleting"
+          :disabled="!canDelete"
           aria-label="Delete Local Document"
           @click="deleteCurrentDocument"
         >
