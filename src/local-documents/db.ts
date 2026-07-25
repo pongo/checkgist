@@ -39,7 +39,6 @@ export async function getLocalDocument(documentId: string): Promise<LocalDocumen
   return (await db.get(localDocumentsStoreName, documentId)) ?? null;
 }
 
-/** Lists Local Documents in deterministic last-successful-save order. */
 export async function listLocalDocuments(): Promise<LocalDocument[]> {
   const db = await openCheckgistDatabase();
   const documents = await db.getAllFromIndex(
@@ -85,7 +84,6 @@ export async function saveLocalDocument(input: {
   return saved;
 }
 
-/** Removes a Local Document by its stable ID. */
 export async function deleteLocalDocument(documentId: string): Promise<LocalDocument | null> {
   if (!isLocalDocumentId(documentId)) {
     return null;

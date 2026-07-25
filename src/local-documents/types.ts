@@ -7,13 +7,8 @@ export type LocalDocument = {
   updatedAt: number;
 };
 
-/** Maximum number of characters allowed in a persisted Local Document title. */
-export const localDocumentTitleMaxLength = 200;
+const localDocumentTitleMaxLength = 200;
 
-/**
- * Returns the canonical persisted title or a user-facing validation message.
- * Content intentionally is not normalized: Markdown must round-trip exactly.
- */
 export function validateLocalDocumentTitle(
   title: string,
 ): { valid: true; title: string } | { valid: false; message: string } {

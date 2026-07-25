@@ -103,13 +103,6 @@ async function deleteDocument(documentId: string) {
   return deleted;
 }
 
-/**
- * Returns the shared lazy Local Documents state and persistence commands.
- *
- * `deleteDocument` removes the Local Document's owned Bookmark after the document
- * commit. Bookmark cleanup failure invalidates Bookmark state but does not turn
- * the committed deletion into a reported failure.
- */
 export function useLocalDocuments() {
   return {
     documents: readonly(documents),
@@ -125,7 +118,6 @@ export function useLocalDocuments() {
   };
 }
 
-/** Resets the shared Local Documents cache and database connection for isolated tests. */
 export async function resetLocalDocumentsForTests(): Promise<void> {
   await closeCheckgistDatabaseForTests();
   documents.value = [];
