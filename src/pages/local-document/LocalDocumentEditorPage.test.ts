@@ -196,6 +196,7 @@ describe("LocalDocumentEditorPage save protection", () => {
 
     const saveShortcut = new KeyboardEvent("keydown", {
       key: "s",
+      code: "KeyS",
       ctrlKey: true,
       cancelable: true,
     });
@@ -223,6 +224,7 @@ describe("LocalDocumentEditorPage save protection", () => {
     });
     const commandSaveShortcut = new KeyboardEvent("keydown", {
       key: "s",
+      code: "KeyS",
       metaKey: true,
       cancelable: true,
     });

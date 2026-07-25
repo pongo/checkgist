@@ -36,7 +36,7 @@ async function saveFromUserIntent() {
 }
 
 function onKeydown(event: KeyboardEvent) {
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+  if ((event.ctrlKey || event.metaKey) && event.code === "KeyS") {
     event.preventDefault();
     void saveFromUserIntent();
   }
