@@ -9,6 +9,9 @@ const saveDocument = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unknown>
 const deleteDocument = vi.hoisted(() => vi.fn<(id: string) => Promise<unknown>>());
 const routerPush = vi.hoisted(() => vi.fn<() => Promise<void>>());
 const routeLeaveGuard = vi.hoisted(() => ({ callback: undefined as (() => boolean) | undefined }));
+const editorFixture = vi.hoisted(() => ({
+  state: "ready" as "loading" | "ready" | "missing" | "error",
+}));
 const route = reactive({ params: { documentId } });
 
 vi.mock("@/local-documents", async () => {
@@ -21,7 +24,7 @@ vi.mock("@/local-documents", async () => {
       const content = ref("- [ ] Passport");
       const savedTitle = ref("Packing");
       const savedContent = ref("- [ ] Passport");
-      const state = ref<"ready">("ready");
+      const state = ref(editorFixture.state);
       const error = ref("");
       const isSaving = ref(false);
       const isDeleting = ref(false);
@@ -116,6 +119,7 @@ async function mountEditor() {
 
 function resetEditorMocks() {
   vi.restoreAllMocks();
+  editorFixture.state = "ready";
   saveDocument.mockReset();
   deleteDocument.mockReset();
   routerPush.mockReset();
@@ -125,6 +129,16 @@ function resetEditorMocks() {
 beforeEach(resetEditorMocks);
 
 describe("LocalDocumentEditorPage preview workspace", () => {
+  it("renders no transient feedback while the Local Document is loading", async () => {
+    editorFixture.state = "loading";
+
+    const wrapper = await mountEditor();
+
+    expect(wrapper.text()).not.toContain("Loading Local Document");
+    expect(wrapper.find("textarea[aria-label='Markdown content']").exists()).toBe(false);
+    expect(wrapper.get("main").text()).toBe("");
+  });
+
   it("switches the small-screen workspace between the editable draft and preview", async () => {
     const wrapper = await mountEditor();
     const previewToggle = wrapper.get("button[aria-pressed]");

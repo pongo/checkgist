@@ -153,12 +153,6 @@ onBeforeRouteLeave(() => {
           {{ !titleValidation.valid ? titleValidation.message : error }}
         </p>
       </div>
-      <p
-        v-else-if="state === 'loading'"
-        class="mx-auto max-w-6xl text-sm text-zinc-600 dark:text-zinc-400"
-      >
-        Loading Local Document...
-      </p>
       <div
         v-else-if="state === 'missing'"
         class="mx-auto flex max-w-6xl items-center justify-between gap-3"
@@ -172,7 +166,10 @@ onBeforeRouteLeave(() => {
           >Back to home</RouterLink
         >
       </div>
-      <div v-else class="mx-auto flex max-w-6xl items-center justify-between gap-3">
+      <div
+        v-else-if="state === 'error'"
+        class="mx-auto flex max-w-6xl items-center justify-between gap-3"
+      >
         <p class="text-sm font-medium text-red-700 dark:text-red-300" role="alert">{{ error }}</p>
         <RouterLink
           class="rounded-sm text-sm text-blue-700 underline focus:ring-2 focus:ring-blue-600/30 focus:outline-none dark:text-blue-300"

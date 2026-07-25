@@ -62,6 +62,8 @@ describe("LocalDocumentList", () => {
 
   it("shows the always-visible empty state and persists before navigating to the editor", async () => {
     const wrapper = mount(LocalDocumentList, mountOptions);
+
+    expect(wrapper.text()).not.toContain("Loading Local Documents");
     await vi.waitFor(() => expect(wrapper.text()).toContain("No local documents yet"));
 
     expect(wrapper.text()).toContain("Local documents");

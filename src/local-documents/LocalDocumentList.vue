@@ -10,8 +10,8 @@ import { useLocalDocuments } from "./useLocalDocuments";
 const router = useRouter();
 const {
   documents,
-  status,
   error,
+  isReady,
   ensureLoaded,
   refresh: refreshDocuments,
   createDocument,
@@ -74,16 +74,13 @@ onMounted(() => {
       </button>
     </div>
 
-    <p v-if="status === 'loading'" class="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-      Loading Local Documents...
-    </p>
     <p
-      v-else-if="status === 'ready' && documents.length === 0"
+      v-if="isReady && documents.length === 0"
       class="mt-3 text-sm text-zinc-600 dark:text-zinc-400"
     >
       No local documents yet
     </p>
-    <ul v-else-if="status === 'ready'" class="mt-3 space-y-1">
+    <ul v-else-if="isReady" class="mt-3 space-y-1">
       <li
         v-for="document in documents"
         :key="document.id"
