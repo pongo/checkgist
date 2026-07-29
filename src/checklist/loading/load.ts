@@ -29,6 +29,10 @@ type UnsupportedChecklistSource = {
 
 export type LoadChecklistResult = LoadedChecklist | UnsupportedChecklistSource;
 
+/**
+ * Loads a Source Reference through its registered Source Service and builds its
+ * interactive Checklist representation.
+ */
 export async function loadChecklist(
   reference: SourceReference | null,
   options: LoadChecklistOptions = {},
@@ -41,7 +45,7 @@ export async function loadChecklist(
   }
 
   const registry = options.registry ?? sourceRegistry;
-  const service = registry.byType.get(reference.type);
+  const service = registry.get(reference.type);
 
   if (service === undefined) {
     return {

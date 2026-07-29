@@ -21,11 +21,7 @@
 
 ### Issue tracker
 
-Issues and PRDs are tracked as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Uses the default five-role triage vocabulary. See `docs/agents/triage-labels.md`.
+Issues and specs are tracked as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
 
 ### Domain docs
 

@@ -41,13 +41,11 @@ vi.mock("@/source-services", async (importOriginal) => {
 
   return {
     ...actual,
-    sourceRegistry: {
-      services: [],
-      byType: new Map([
-        ["github-gist", { type: "github-gist", load: loadSource }],
-        ["pastebin", { type: "pastebin", load: loadSource }],
-      ]),
-    },
+    sourceRegistry: new Map([
+      ["github-gist", { type: "github-gist", load: loadSource }],
+      ["pastebin", { type: "pastebin", load: loadSource }],
+      ["local-document", { type: "local-document", load: loadSource }],
+    ]),
   };
 });
 
@@ -109,6 +107,24 @@ function createGitHubGistSource(gistId: string): LoadedSource {
         id: "two.md",
         name: "two.md",
         content: "- [ ] Second task",
+      },
+    ],
+  });
+}
+
+function createLocalDocumentSource(documentId: string): LoadedSource {
+  return createSource({
+    reference: { type: "local-document", documentId },
+    metadata: {
+      title: "Local checklist",
+      url: `/local/${documentId}/edit`,
+    },
+    files: [
+      {
+        status: "ready",
+        id: documentId,
+        name: "Local checklist",
+        content: "- [ ] Local task",
       },
     ],
   });
@@ -246,6 +262,18 @@ describe("ChecklistPage", () => {
     expect(wrapper.text()).toContain("HdpnureE");
     expect(wrapper.text()).toContain("No task items found in this source.");
     expect(document.title).toBe("HdpnureE - Checkgist");
+  });
+
+  it("replaces View source with the Local Document Edit route", async () => {
+    const documentId = "11111111-1111-4111-8111-111111111111";
+    const wrapper = await mountLoadedSource(createLocalDocumentSource(documentId));
+
+    const editLink = wrapper.get(`[data-router-link='/local/${documentId}/edit']`);
+    expect(editLink.text()).toBe("Edit");
+    expect(wrapper.find("a[title='View source']").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Reset all");
+    expect(wrapper.text()).toContain("Copy link");
+    wrapper.unmount();
   });
 
   it("renders the primary Pastebin flow and updates the checkbox hash", async () => {

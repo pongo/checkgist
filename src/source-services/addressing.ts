@@ -9,6 +9,7 @@ type SourceRouteDefinition = {
   path: string;
 };
 
+/** Bidirectional URL and route grammar for one supported Source Service. */
 export type SourceAddressRule = SourceRouteDefinition & {
   fromUrl: (url: URL) => SourceReference | null;
   fromRoute: (path: string[]) => SourceReference | null;

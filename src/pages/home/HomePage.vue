@@ -3,6 +3,7 @@ import { nextTick, onMounted, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 
 import { BookmarkList } from "@/bookmarks";
+import { LocalDocumentList } from "@/local-documents";
 import HomePageGitHubCorner from "./HomePageGitHubCorner.vue";
 import { routeForUrlInput, unsupportedSourceUrlMessage } from "@/source-services";
 
@@ -90,6 +91,7 @@ onMounted(() => {
       </form>
 
       <BookmarkList />
+      <LocalDocumentList />
     </section>
   </main>
 </template>

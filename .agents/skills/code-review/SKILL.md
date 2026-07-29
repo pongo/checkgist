@@ -57,7 +57,13 @@ Each smell reads _what it is_ → _how to fix_; match it against the diff:
 
 ### 4. Spawn both sub-agents in parallel
 
-Send a single message with two `Agent` tool calls. Use the `general-purpose` subagent for both.
+Spawn two sub-agents concurrently using the available sub-agent orchestration tool. Spawn both sub-agents with:
+
+- model: `gpt-5.6-terra`
+- reasoning effort: `medium`
+- fork turns: `none`
+
+The prompts must be fully self-contained because no parent conversation context is inherited. Use the same model and reasoning effort for both reviews.
 
 **Standards sub-agent prompt** — include:
 

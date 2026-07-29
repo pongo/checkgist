@@ -1,61 +1,31 @@
-import { type DBSchema, type IDBPDatabase, openDB } from "idb";
+import {
+  bookmarksByPositionIndexName,
+  bookmarksStoreName,
+  openCheckgistDatabase,
+} from "@/database/checkgistDatabase";
+import type { Bookmark } from "@/database/checkgistDatabase";
 
-const databaseName = "checkgist";
-const databaseVersion = 1;
-const bookmarksStoreName = "bookmarks";
-const bookmarksByPositionIndexName = "by-position";
-
-export type Bookmark = {
-  routePath: string;
-  title: string;
-  position: number;
-};
-
-interface CheckgistDatabase extends DBSchema {
-  bookmarks: {
-    key: string;
-    value: Bookmark;
-    indexes: {
-      "by-position": number;
-    };
-  };
-}
-
-let dbPromise: Promise<IDBPDatabase<CheckgistDatabase>> | null = null;
-
-function openBookmarkDatabase(): Promise<IDBPDatabase<CheckgistDatabase>> {
-  dbPromise ??= openDB<CheckgistDatabase>(databaseName, databaseVersion, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains(bookmarksStoreName)) {
-        const store = db.createObjectStore(bookmarksStoreName, {
-          keyPath: "routePath",
-        });
-        store.createIndex(bookmarksByPositionIndexName, "position");
-      }
-    },
-  });
-
-  return dbPromise;
-}
+export type { Bookmark } from "@/database/checkgistDatabase";
+export { closeCheckgistDatabaseForTests as closeBookmarkDatabaseForTests } from "@/database/checkgistDatabase";
 
 function withDensePositions(bookmarks: Bookmark[]): Bookmark[] {
   return bookmarks.map((bookmark, position) => ({ ...bookmark, position }));
 }
 
 function orderedBookmarks(bookmarks: Bookmark[]): Bookmark[] {
-  return [...bookmarks].sort((first, second) => {
+  return bookmarks.toSorted((first, second) => {
     const positionDiff = first.position - second.position;
     return positionDiff === 0 ? first.routePath.localeCompare(second.routePath) : positionDiff;
   });
 }
 
 export async function listBookmarks(): Promise<Bookmark[]> {
-  const db = await openBookmarkDatabase();
+  const db = await openCheckgistDatabase();
   return db.getAllFromIndex(bookmarksStoreName, bookmarksByPositionIndexName);
 }
 
 export async function addBookmark(input: { routePath: string; title: string }): Promise<Bookmark> {
-  const db = await openBookmarkDatabase();
+  const db = await openCheckgistDatabase();
   const tx = db.transaction(bookmarksStoreName, "readwrite");
   const existing = await tx.store.get(input.routePath);
 
@@ -75,7 +45,7 @@ export async function addBookmark(input: { routePath: string; title: string }): 
 }
 
 export async function removeBookmark(routePath: string): Promise<Bookmark | null> {
-  const db = await openBookmarkDatabase();
+  const db = await openCheckgistDatabase();
   const tx = db.transaction(bookmarksStoreName, "readwrite");
   const bookmarks = orderedBookmarks(await tx.store.getAll());
   const removed = bookmarks.find((bookmark) => bookmark.routePath === routePath);
@@ -97,7 +67,7 @@ export async function removeBookmark(routePath: string): Promise<Bookmark | null
 }
 
 export async function renameBookmark(routePath: string, title: string): Promise<Bookmark | null> {
-  const db = await openBookmarkDatabase();
+  const db = await openCheckgistDatabase();
   const tx = db.transaction(bookmarksStoreName, "readwrite");
   const bookmark = await tx.store.get(routePath);
 
@@ -112,7 +82,7 @@ export async function renameBookmark(routePath: string, title: string): Promise<
 }
 
 export async function reorderBookmark(routePath: string, toIndex: number): Promise<Bookmark[]> {
-  const db = await openBookmarkDatabase();
+  const db = await openCheckgistDatabase();
   const tx = db.transaction(bookmarksStoreName, "readwrite");
   const bookmarks = orderedBookmarks(await tx.store.getAll());
   const fromIndex = bookmarks.findIndex((bookmark) => bookmark.routePath === routePath);
@@ -135,7 +105,7 @@ export async function reorderBookmark(routePath: string, toIndex: number): Promi
 }
 
 export async function restoreBookmark(bookmark: Bookmark, toIndex: number): Promise<Bookmark[]> {
-  const db = await openBookmarkDatabase();
+  const db = await openCheckgistDatabase();
   const tx = db.transaction(bookmarksStoreName, "readwrite");
   const bookmarks = orderedBookmarks(await tx.store.getAll()).filter(
     (currentBookmark) => currentBookmark.routePath !== bookmark.routePath,
@@ -144,14 +114,4 @@ export async function restoreBookmark(bookmark: Bookmark, toIndex: number): Prom
   const normalized = withDensePositions(bookmarks);
   await Promise.all([...normalized.map((nextBookmark) => tx.store.put(nextBookmark)), tx.done]);
   return normalized;
-}
-
-export async function closeBookmarkDatabaseForTests(): Promise<void> {
-  if (dbPromise === null) {
-    return;
-  }
-
-  const db = await dbPromise;
-  db.close();
-  dbPromise = null;
 }

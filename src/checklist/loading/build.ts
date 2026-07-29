@@ -1,18 +1,10 @@
-import { parse } from "comark";
-import type { ComarkElement, ComarkNode, ComarkTree, ParseOptions } from "comark";
-import { defineComarkPlugin } from "comark";
-import security from "comark/plugins/security";
-import taskList from "comark/plugins/task-list";
+import type { ComarkTree, ParseOptions } from "comark";
 
-import {
-  routeForUrlInput,
-  type LoadedSource,
-  type SourceFile,
-  type SourceTextFile,
-} from "@/source-services";
+import type { LoadedSource, SourceFile, SourceTextFile } from "@/source-services";
 
-import { prepareExplicitTaskItems, promoteOrdinaryListItems } from "../task-items/task-item-tree";
+import { promoteOrdinaryListItems } from "../task-items/task-item-tree";
 import type { ChecklistErrorFile, ChecklistReadyFile, Checklist } from "../types";
+import { prepareMarkdown } from "./markdown-preparation";
 
 type ParseMarkdown = (markdown: string, options?: ParseOptions) => Promise<ComarkTree>;
 
@@ -20,36 +12,12 @@ export type BuildChecklistOptions = {
   parseMarkdown?: ParseMarkdown;
 };
 
-const unsafeTags = ["script", "iframe", "object", "embed", "link", "style", "base", "meta"];
-
-const checklistMarkdownPlugins = [
-  taskList({ enabled: true }),
-  security({
-    blockedTags: unsafeTags,
-    allowedProtocols: ["http", "https", "mailto"],
-    allowDataImages: false,
-  }),
-  defineComarkPlugin(() => ({
-    name: "external-link-targets",
-    post(state) {
-      visitNodes(state.tree.nodes, (node) => {
-        if (isElement(node) && node[0] === "a" && typeof node[1].href === "string") {
-          node[1].href = rewriteSupportedSourceLink(node[1].href);
-          node[1].target = "_blank";
-          node[1].rel = "noopener noreferrer";
-        }
-      });
-    },
-  }))(),
-] as const;
-
 export async function buildChecklist(
   source: LoadedSource,
   options: BuildChecklistOptions = {},
 ): Promise<Checklist> {
-  const parseMarkdown = options.parseMarkdown ?? parse;
   const files = await Promise.all(
-    source.files.map((sourceFile) => buildChecklistFile(sourceFile, parseMarkdown)),
+    source.files.map((sourceFile) => buildChecklistFile(sourceFile, options.parseMarkdown)),
   );
   const hasExplicitTaskItems = files.some(
     (file) => file.status === "ready" && file.checked.length > 0,
@@ -57,10 +25,9 @@ export async function buildChecklist(
 
   if (!hasExplicitTaskItems) {
     for (const file of files) {
-      if (file.status === "ready") {
-        const taskItemCount = promoteOrdinaryListItems(file.tree);
-        file.checked = Array.from({ length: taskItemCount }, () => false);
-      }
+      if (file.status !== "ready") continue;
+      const taskItemCount = promoteOrdinaryListItems(file.tree);
+      file.checked = Array.from({ length: taskItemCount }, () => false);
     }
   }
 
@@ -73,23 +40,14 @@ export async function buildChecklist(
 
 async function buildChecklistFile(
   sourceFile: SourceFile,
-  parseMarkdown: ParseMarkdown,
+  parseMarkdown?: ParseMarkdown,
 ): Promise<ChecklistReadyFile | ChecklistErrorFile> {
   if (sourceFile.status === "error") {
-    return {
-      status: "error",
-      id: sourceFile.id,
-      sourceFile,
-      error: sourceFile.error,
-    };
+    return { status: "error", id: sourceFile.id, sourceFile, error: sourceFile.error };
   }
 
   try {
-    const tree = await parseMarkdown(sourceFile.content, {
-      plugins: checklistMarkdownPlugins,
-    });
-    const taskItemCount = prepareExplicitTaskItems(tree);
-
+    const { tree, taskItemCount } = await prepareMarkdown(sourceFile.content, parseMarkdown);
     return {
       status: "ready",
       id: sourceFile.id,
@@ -103,50 +61,5 @@ async function buildChecklistFile(
 }
 
 function createChecklistFileError(sourceFile: SourceTextFile, message: string): ChecklistErrorFile {
-  return {
-    status: "error",
-    id: sourceFile.id,
-    sourceFile,
-    error: { message },
-  };
-}
-
-function rewriteSupportedSourceLink(href: string): string {
-  if (!isAbsoluteHttpUrl(href)) {
-    return href;
-  }
-
-  const route = routeForUrlInput(href);
-  return route === null ? href : hrefForAppRoute(route);
-}
-
-function isAbsoluteHttpUrl(href: string): boolean {
-  try {
-    const url = new URL(href);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-function hrefForAppRoute(route: string): string {
-  const baseUrl = import.meta.env.BASE_URL;
-  return baseUrl === "/" ? route : `${baseUrl.replace(/\/$/, "")}${route}`;
-}
-
-function visitNodes(nodes: ComarkNode[], visit: (node: ComarkNode) => void): void {
-  for (const node of nodes) {
-    visit(node);
-    if (isElement(node)) {
-      visitNodes(elementChildren(node), visit);
-    }
-  }
-}
-
-function isElement(node: ComarkNode): node is ComarkElement {
-  return Array.isArray(node) && node[0] !== null;
-}
-
-function elementChildren(node: ComarkElement): ComarkNode[] {
-  return node.slice(2) as ComarkNode[];
+  return { status: "error", id: sourceFile.id, sourceFile, error: { message } };
 }

@@ -101,7 +101,7 @@ export function createBookmarkListModel({
       bookmark,
     }));
 
-    for (const placeholder of [...recentlyRemoved.value].sort(
+    for (const placeholder of recentlyRemoved.value.toSorted(
       (first, second) => first.position - second.position,
     )) {
       nextRows.splice(Math.max(0, Math.min(placeholder.position, nextRows.length)), 0, {

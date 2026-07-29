@@ -1,6 +1,6 @@
 # Architecture Map
 
-Checkgist is a client-side Vue application that loads Markdown-like content from supported external source services and renders task lists as interactive checklists.
+Checkgist is a client-side Vue application that loads Markdown-like content from supported external or locally owned Source Services and renders task lists as interactive checklists.
 
 ## Source Areas
 
@@ -15,11 +15,12 @@ Application bootstrap and global UI wiring.
 Route-level pages.
 
 - `home/` contains the landing/input page for opening supported Source URLs.
-- `checklist/` contains the page for opening a Checklist from supported Source routes such as GitHub Gist or Pastebin.
+- `checklist/` contains the page for opening a Checklist from supported Source routes, including external services such as GitHub Gist or Pastebin and locally owned Local Documents.
+- `local-document/` contains the route-level Local Document editor and its read-only, debounced Markdown preview. The page coordinates unsaved-change guards, save/delete flows, and navigation; reusable Local Document persistence and validation stay in `src/local-documents/`.
 
 ### `src/source-services/`
 
-External source-service integration boundary.
+Source Service integration boundary for external and locally owned sources.
 
 - `addressing.ts` is the Source Addressing catalog. It owns Source URL normalization, supported Source Reference recognition, canonical app route generation, and Vue route records.
 - `registry.ts` is the Source Service loading registry. It maps a Source Reference type to the adapter that can load the corresponding Loaded Source.
@@ -33,11 +34,19 @@ Checklist loading, rendering model, and shareable Checklist State.
 
 This area owns the transition from a `SourceReference` and `LoadedSource` into a user-facing Checklist. It also owns rendering support plus encoding, applying, and mutating Checklist State.
 
-- `loading/` owns source-reference lifecycle, Loaded Source loading, Checklist building, and browser title formatting.
+- `loading/` owns source-reference lifecycle, Loaded Source loading, Checklist building, browser title formatting, and the shared Markdown preparation policy used by Checklist building and Local Document preview.
 - `state/` owns Checklist State mutation, hash encoding/decoding, and state operation results consumed by UI and lifecycle code.
-- `task-items/` owns Task Item preparation and synchronization inside the rendered Markdown tree.
+- `task-items/` owns the internal tree transformations for Task Item preparation and synchronization. Callers outside `src/checklist/` use the prepared Markdown interface from the folder-level `index.ts` instead of composing these transformations directly.
 
 Keep cross-feature imports on the folder-level `index.ts`. Treat the subfolders as internal modules unless a caller has a specific reason to depend on their lower-level interface.
+
+### `src/local-documents/`
+
+Locally owned Markdown document model, persistence, routes, and reusable UI.
+
+This area owns Local Document title and ID validation, IndexedDB create/read/update/delete operations, canonical view and edit route generation, scope-local reactive list snapshots loaded from IndexedDB, and the Local Document list shown on the home page. IndexedDB is the authoritative source of Local Document state. A successful Local Document deletion also triggers best-effort removal of its matching Bookmark.
+
+Use the folder-level `index.ts` from pages, Source Services, and other feature areas. The Local Document Source Service adapts persisted documents into Loaded Sources; keep that adaptation under `src/source-services/` rather than coupling Local Document persistence to Checklist rendering.
 
 ### `src/bookmarks/`
 
@@ -78,8 +87,9 @@ Source Service route patterns live in each service's `SourceAddressRule`, next t
 
 ## Boundaries
 
-- `source-services` knows how to identify and load external sources; it should not know how checklists are rendered.
+- `source-services` knows how to identify and load supported external or locally owned sources; it should not know how checklists are rendered.
 - `checklist` knows how a Loaded Source becomes an interactive Checklist; it should not own bookmarks.
+- `local-documents` owns locally persisted Markdown documents and their reusable operations; it should not own route-level editing flows or Loaded Source adaptation.
 - `bookmarks` stores saved source references; it should not store Checklist State.
 - `pages` coordinate route-level flows; they should not become the long-term home for reusable feature logic.
 - `CONTEXT.md` is a glossary only. Put implementation navigation here, and put durable trade-off decisions in `docs/adr/` when an ADR is justified.
