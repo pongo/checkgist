@@ -46,9 +46,10 @@ async function getDocument(documentId: string): Promise<LocalDocument | null> {
 }
 
 async function ensureLoaded(): Promise<void> {
-  if (status.value === "ready") return;
   if (loadPromise !== null) return loadPromise;
 
+  // Re-read persisted documents on every list mount because another tab may
+  // have changed them since this tab populated its module-level cache.
   status.value = "loading";
   loadPromise = refresh()
     .catch((loadError: unknown) => {

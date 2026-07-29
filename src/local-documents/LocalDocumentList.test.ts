@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
 
 import LocalDocumentList from "./LocalDocumentList.vue";
-import { deleteLocalDocument } from "./db";
+import { createLocalDocument, deleteLocalDocument, saveLocalDocument } from "./db";
 import { resetLocalDocumentsForTests } from "./useLocalDocuments";
 
 const push = vi.hoisted(() => vi.fn<(path: string) => Promise<void>>());
@@ -97,6 +97,18 @@ describe("LocalDocumentList", () => {
     expect(wrapper.get("a[aria-label='Edit Local Document']").attributes("href")).toBe(
       `/local/${documentId}/edit`,
     );
+  });
+
+  it("reloads a title saved by another tab when returning to the home page", async () => {
+    await createLocalDocument(documentId);
+    const firstHomeVisit = mount(LocalDocumentList, mountOptions);
+    await vi.waitFor(() => expect(firstHomeVisit.text()).toContain("Untitled document"));
+    firstHomeVisit.unmount();
+
+    await saveLocalDocument({ id: documentId, title: "Renamed elsewhere", content: "" });
+
+    const secondHomeVisit = mount(LocalDocumentList, mountOptions);
+    await vi.waitFor(() => expect(secondHomeVisit.text()).toContain("Renamed elsewhere"));
   });
 
   it("keeps the document when deletion is canceled", async () => {
