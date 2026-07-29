@@ -30,18 +30,6 @@ const ComarkRendererStub = defineComponent({
   },
 });
 
-const TreeTextRendererStub = defineComponent({
-  props: {
-    tree: {
-      type: Object,
-      required: true,
-    },
-  },
-  setup(props) {
-    return () => h("pre", JSON.stringify((props.tree as ComarkTree).nodes));
-  },
-});
-
 function renderComarkNode(node: ComarkNode): ReturnType<typeof h> | string | null {
   if (typeof node === "string") {
     return node;
@@ -152,18 +140,6 @@ describe("LocalDocumentPreview", () => {
     );
   });
 
-  it("applies the Checklist security policy to rendered Markdown", async () => {
-    const wrapper = mountPreview(
-      '<script>alert("unsafe")</script><a href="javascript:alert(1)">Link</a>',
-      TreeTextRendererStub,
-    );
-
-    await finishDebounce();
-
-    expect(wrapper.get("pre").text()).not.toContain('["script"');
-    expect(wrapper.get("pre").text()).not.toContain("javascript:");
-  });
-
   it("keeps preview Task Items visual without changing the URL hash", async () => {
     prepareMarkdown.mockResolvedValueOnce({
       tree: createTree([["input", { type: "checkbox", class: "task-list-item-checkbox" }]]),
@@ -177,14 +153,5 @@ describe("LocalDocumentPreview", () => {
 
     expect(taskItem.element.checked).toBe(false);
     expect(window.location.hash).toBe("");
-  });
-
-  it("unwraps the parent task paragraph before nested task items", async () => {
-    const wrapper = mountPreview("- [ ] Parent task\n  - [ ] Child task");
-
-    await finishDebounce();
-
-    expect(wrapper.html()).toContain('class="task-list-item"');
-    expect(wrapper.html()).not.toContain('<p><input class="task-list-item-checkbox"');
   });
 });

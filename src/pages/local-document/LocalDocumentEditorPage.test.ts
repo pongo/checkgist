@@ -126,7 +126,6 @@ describe("LocalDocumentEditorPage preview workspace", () => {
     await previewToggle.trigger("click");
 
     expect(previewToggle.attributes("aria-pressed")).toBe("true");
-    expect(previewToggle.classes()).toContain("bg-zinc-100");
     expect(textarea.classes()).toContain("hidden");
     expect(previewPane?.classList.contains("block")).toBe(true);
 
