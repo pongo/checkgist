@@ -80,6 +80,18 @@ function readyChecked(session: Checklist): boolean[][] {
   return session.files.flatMap((file) => (file.status === "ready" ? [file.checked] : []));
 }
 
+function renderedChecked(session: Checklist): boolean[][] {
+  return session.files.flatMap((file) =>
+    file.status === "ready"
+      ? [
+          file.tree.nodes.map(
+            (node) => Array.isArray(node) && node[0] === "input" && node[1].checked === true,
+          ),
+        ]
+      : [],
+  );
+}
+
 describe("Checklist State operations", () => {
   it("sets a Task Item and returns the canonical hash without render invalidation", () => {
     const session = createSession();
@@ -172,18 +184,76 @@ describe("Checklist State operations", () => {
   it("applies browser hash state and reports a normalized hash", () => {
     const session = createSession();
 
-    const result = applyChecklistStateHash(session, "#10100");
+    const result = applyChecklistStateHash(session, "#10101");
 
     expect(result).toEqual({
       changed: true,
-      hash: "#101",
+      hash: "#10101",
       invalidateRender: true,
     });
     expect(readyChecked(session)).toEqual([
       [true, false, true],
-      [false, false],
+      [false, true],
+    ]);
+    expect(renderedChecked(session)).toEqual([
+      [true, false, true],
+      [false, true],
     ]);
   });
+
+  it.each([
+    [
+      "#1",
+      [
+        [true, false, false],
+        [false, false],
+      ],
+      "#1",
+    ],
+    [
+      "#010111111",
+      [
+        [false, true, false],
+        [true, true],
+      ],
+      "#01011",
+    ],
+    [
+      "#10100",
+      [
+        [true, false, true],
+        [false, false],
+      ],
+      "#101",
+    ],
+  ] as const)(
+    "treats missing positions as unchecked and ignores extra positions: %s",
+    (hash, expectedChecked, expectedHash) => {
+      const session = createSession();
+
+      const result = applyChecklistStateHash(session, hash);
+
+      expect(result.hash).toBe(expectedHash);
+      expect(readyChecked(session)).toEqual(expectedChecked);
+    },
+  );
+
+  it.each([undefined, null, "", "101", "##101", "#10x"])(
+    "treats missing, empty, or invalid hash state as all unchecked: %s",
+    (hash) => {
+      const session = createSession();
+      setChecklistTaskChecked(session, "one.md", 0, true);
+      setChecklistTaskChecked(session, "two.md", 1, true);
+
+      const result = applyChecklistStateHash(session, hash);
+
+      expect(result.hash).toBe("");
+      expect(readyChecked(session)).toEqual([
+        [false, false, false],
+        [false, false],
+      ]);
+    },
+  );
 
   it("re-applies Checklist State on browser hash changes", () => {
     const session = createSession();
