@@ -11,7 +11,7 @@ import { prepareExplicitTaskItems } from "../task-items/task-item-tree";
 type ParseMarkdown = (markdown: string, options?: ParseOptions) => Promise<ComarkTree>;
 
 /** The renderer-ready Markdown tree and its explicit Task Item count. */
-export type PreparedMarkdown = {
+type PreparedMarkdown = {
   tree: ComarkTree;
   taskItemCount: number;
 };

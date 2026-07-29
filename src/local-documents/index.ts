@@ -1,4 +1,4 @@
-export { createLocalDocument, getLocalDocument, saveLocalDocument, type LocalDocument } from "./db";
+export { createLocalDocument, getLocalDocument, saveLocalDocument } from "./db";
 export { isLocalDocumentId } from "./types";
 export { useLocalDocumentEditor } from "./useLocalDocumentEditor";
 export { default as LocalDocumentList } from "./LocalDocumentList.vue";
