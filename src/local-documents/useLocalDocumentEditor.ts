@@ -19,8 +19,7 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
   const error = ref("");
   const isSaving = ref(false);
   const isDeleting = ref(false);
-  const loadGeneration = ref(0);
-  let mutationGeneration = 0;
+  let generation = 0;
 
   const titleValidation = computed(() => validateLocalDocumentTitle(title.value));
   const isDirty = computed(
@@ -36,7 +35,7 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
   );
   const canDelete = computed(() => state.value === "ready" && !isSaving.value && !isDeleting.value);
 
-  async function load(id: string, generation: number): Promise<void> {
+  async function load(id: string, loadGeneration: number): Promise<void> {
     state.value = "loading";
     error.value = "";
     isSaving.value = false;
@@ -49,7 +48,7 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
 
     try {
       const document = await getDocument(id);
-      if (generation !== loadGeneration.value || toValue(documentId) !== id) return;
+      if (loadGeneration !== generation || toValue(documentId) !== id) return;
       if (document === null) {
         state.value = "missing";
         return;
@@ -61,7 +60,7 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
       savedContent.value = document.content;
       state.value = "ready";
     } catch (loadError) {
-      if (generation !== loadGeneration.value || toValue(documentId) !== id) return;
+      if (loadGeneration !== generation || toValue(documentId) !== id) return;
       error.value =
         loadError instanceof Error ? loadError.message : "Failed to load Local Document.";
       state.value = "error";
@@ -72,7 +71,7 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
     if (!canSave.value) return null;
 
     const id = toValue(documentId);
-    const operationGeneration = mutationGeneration;
+    const operationGeneration = generation;
     isSaving.value = true;
     error.value = "";
     try {
@@ -81,7 +80,7 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
         title: title.value,
         content: content.value,
       });
-      if (operationGeneration !== mutationGeneration || toValue(documentId) !== id) return saved;
+      if (operationGeneration !== generation || toValue(documentId) !== id) return saved;
       if (saved === null) {
         state.value = "missing";
         return null;
@@ -93,13 +92,13 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
       savedContent.value = saved.content;
       return saved;
     } catch (saveError) {
-      if (operationGeneration === mutationGeneration && toValue(documentId) === id) {
+      if (operationGeneration === generation && toValue(documentId) === id) {
         error.value =
           saveError instanceof Error ? saveError.message : "Failed to save Local Document.";
       }
       throw saveError;
     } finally {
-      if (operationGeneration === mutationGeneration && toValue(documentId) === id) {
+      if (operationGeneration === generation && toValue(documentId) === id) {
         isSaving.value = false;
       }
     }
@@ -109,13 +108,13 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
     if (!canDelete.value) return null;
 
     const id = toValue(documentId);
-    const operationGeneration = mutationGeneration;
+    const operationGeneration = generation;
     isDeleting.value = true;
     error.value = "";
     let keepDeletingForNavigation = false;
     try {
       const deleted = await deleteDocument(id);
-      if (operationGeneration !== mutationGeneration || toValue(documentId) !== id) return deleted;
+      if (operationGeneration !== generation || toValue(documentId) !== id) return deleted;
       if (deleted === null) {
         state.value = "missing";
       } else {
@@ -123,7 +122,7 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
       }
       return deleted;
     } catch (deleteError) {
-      if (operationGeneration === mutationGeneration && toValue(documentId) === id) {
+      if (operationGeneration === generation && toValue(documentId) === id) {
         error.value =
           deleteError instanceof Error ? deleteError.message : "Failed to delete Local Document.";
       }
@@ -131,7 +130,7 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
     } finally {
       if (
         !keepDeletingForNavigation &&
-        operationGeneration === mutationGeneration &&
+        operationGeneration === generation &&
         toValue(documentId) === id
       ) {
         isDeleting.value = false;
@@ -142,9 +141,8 @@ export function useLocalDocumentEditor(documentId: MaybeRefOrGetter<string>) {
   watch(
     () => toValue(documentId),
     (id) => {
-      loadGeneration.value += 1;
-      mutationGeneration += 1;
-      void load(id, loadGeneration.value);
+      generation += 1;
+      void load(id, generation);
     },
     { immediate: true },
   );
