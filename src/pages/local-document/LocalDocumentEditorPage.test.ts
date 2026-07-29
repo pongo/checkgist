@@ -1,92 +1,56 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import { reactive } from "vue";
+import { nextTick, reactive, type Ref } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import LocalDocumentEditorPage from "./LocalDocumentEditorPage.vue";
 
 const documentId = "11111111-1111-4111-8111-111111111111";
-const saveDocument = vi.hoisted(() => vi.fn<(input: unknown) => Promise<unknown>>());
-const deleteDocument = vi.hoisted(() => vi.fn<(id: string) => Promise<unknown>>());
+type EditorState = "loading" | "ready" | "missing" | "error";
+type TitleValidation = { valid: true; title: string } | { valid: false; message: string };
+type EditorFixture = {
+  title: Ref<string>;
+  content: Ref<string>;
+  state: Ref<EditorState>;
+  error: Ref<string>;
+  isSaving: Ref<boolean>;
+  isDeleting: Ref<boolean>;
+  titleValidation: Ref<TitleValidation>;
+  isDirty: Ref<boolean>;
+  canSave: Ref<boolean>;
+  canDelete: Ref<boolean>;
+  save: ReturnType<typeof vi.fn<() => Promise<unknown>>>;
+  deleteDocument: ReturnType<typeof vi.fn<() => Promise<unknown>>>;
+};
+
+const save = vi.hoisted(() => vi.fn<() => Promise<unknown>>());
+const deleteDocument = vi.hoisted(() => vi.fn<() => Promise<unknown>>());
 const routerPush = vi.hoisted(() => vi.fn<() => Promise<void>>());
 const routeLeaveGuard = vi.hoisted(() => ({ callback: undefined as (() => boolean) | undefined }));
-const editorFixture = vi.hoisted(() => ({
-  state: "ready" as "loading" | "ready" | "missing" | "error",
-}));
+const editorFixture = vi.hoisted(() => ({ current: undefined as unknown as EditorFixture }));
 const route = reactive({ params: { documentId } });
 
 vi.mock("@/local-documents", async () => {
-  const { computed, ref } = await import("vue");
+  const { ref } = await import("vue");
+
+  const title = ref("Packing");
+  editorFixture.current = {
+    title,
+    content: ref("- [ ] Passport"),
+    state: ref<EditorState>("ready"),
+    error: ref(""),
+    isSaving: ref(false),
+    isDeleting: ref(false),
+    titleValidation: ref<TitleValidation>({ valid: true, title: "Packing" }),
+    isDirty: ref(false),
+    canSave: ref(false),
+    canDelete: ref(true),
+    save,
+    deleteDocument,
+  };
 
   return {
     localDocumentViewRoute: (id: string) => `/local/${id}`,
-    useLocalDocumentEditor: () => {
-      const title = ref("Packing");
-      const content = ref("- [ ] Passport");
-      const savedTitle = ref("Packing");
-      const savedContent = ref("- [ ] Passport");
-      const state = ref(editorFixture.state);
-      const error = ref("");
-      const isSaving = ref(false);
-      const isDeleting = ref(false);
-      const isDirty = computed(
-        () => title.value !== savedTitle.value || content.value !== savedContent.value,
-      );
-      const titleValidation = computed(() => ({ valid: true as const, title: title.value }));
-      const canSave = computed(() => isDirty.value && !isSaving.value && !isDeleting.value);
-      const canDelete = computed(() => !isSaving.value && !isDeleting.value);
-
-      const save = async () => {
-        if (!canSave.value) return null;
-        isSaving.value = true;
-        try {
-          const saved = (await saveDocument({
-            id: documentId,
-            title: title.value,
-            content: content.value,
-          })) as { title: string; content: string } | null;
-          if (saved !== null) {
-            title.value = saved.title;
-            content.value = saved.content;
-            savedTitle.value = saved.title;
-            savedContent.value = saved.content;
-          }
-          return saved;
-        } catch (saveError) {
-          error.value = saveError instanceof Error ? saveError.message : "Save failed.";
-          throw saveError;
-        } finally {
-          isSaving.value = false;
-        }
-      };
-
-      const remove = async () => {
-        if (!canDelete.value) return null;
-        isDeleting.value = true;
-        try {
-          return await deleteDocument(documentId);
-        } catch (deleteError) {
-          error.value = deleteError instanceof Error ? deleteError.message : "Delete failed.";
-          throw deleteError;
-        } finally {
-          isDeleting.value = false;
-        }
-      };
-
-      return {
-        title,
-        content,
-        state,
-        error,
-        isSaving,
-        isDeleting,
-        titleValidation,
-        isDirty,
-        canSave,
-        canDelete,
-        save,
-        deleteDocument: remove,
-      };
-    },
+    useLocalDocumentEditor: () => editorFixture.current,
   };
 });
 
@@ -119,8 +83,17 @@ async function mountEditor() {
 
 function resetEditorMocks() {
   vi.restoreAllMocks();
-  editorFixture.state = "ready";
-  saveDocument.mockReset();
+  editorFixture.current.title.value = "Packing";
+  editorFixture.current.content.value = "- [ ] Passport";
+  editorFixture.current.state.value = "ready";
+  editorFixture.current.error.value = "";
+  editorFixture.current.isSaving.value = false;
+  editorFixture.current.isDeleting.value = false;
+  editorFixture.current.titleValidation.value = { valid: true, title: "Packing" };
+  editorFixture.current.isDirty.value = false;
+  editorFixture.current.canSave.value = false;
+  editorFixture.current.canDelete.value = true;
+  save.mockReset();
   deleteDocument.mockReset();
   routerPush.mockReset();
   routeLeaveGuard.callback = undefined;
@@ -130,7 +103,7 @@ beforeEach(resetEditorMocks);
 
 describe("LocalDocumentEditorPage preview workspace", () => {
   it("renders no transient feedback while the Local Document is loading", async () => {
-    editorFixture.state = "loading";
+    editorFixture.current.state.value = "loading";
 
     const wrapper = await mountEditor();
 
@@ -192,21 +165,17 @@ describe("LocalDocumentEditorPage save protection", () => {
     });
     await browse.trigger("click");
 
-    expect(saveDocument).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
   });
 
   it("saves the dirty draft through Ctrl+S and Cmd+S and clears navigation protections", async () => {
-    saveDocument.mockResolvedValue({
-      id: documentId,
-      title: "Packing",
-      content: "- [x] Passport",
-      createdAt: 1,
-      updatedAt: 2,
-    });
+    save.mockResolvedValue({ id: documentId });
 
     const wrapper = await mountEditor();
 
     await wrapper.get("textarea[aria-label='Markdown content']").setValue("- [x] Passport");
+    editorFixture.current.isDirty.value = true;
+    editorFixture.current.canSave.value = true;
 
     const saveShortcut = new KeyboardEvent("keydown", {
       key: "s",
@@ -218,24 +187,18 @@ describe("LocalDocumentEditorPage save protection", () => {
     await flushPromises();
 
     expect(saveShortcut.defaultPrevented).toBe(true);
-    expect(saveDocument).toHaveBeenCalledWith({
-      id: documentId,
-      title: "Packing",
-      content: "- [x] Passport",
-    });
+    expect(save).toHaveBeenCalledWith();
+    editorFixture.current.isDirty.value = false;
+    editorFixture.current.canSave.value = false;
+    await nextTick();
     expect(routeLeaveGuard.callback?.()).toBe(true);
     const unloadAfterSave = new Event("beforeunload", { cancelable: true });
     window.dispatchEvent(unloadAfterSave);
     expect(unloadAfterSave.defaultPrevented).toBe(false);
 
     await wrapper.get("textarea[aria-label='Markdown content']").setValue("- [ ] Passport again");
-    saveDocument.mockResolvedValue({
-      id: documentId,
-      title: "Packing",
-      content: "- [ ] Passport again",
-      createdAt: 1,
-      updatedAt: 3,
-    });
+    editorFixture.current.isDirty.value = true;
+    editorFixture.current.canSave.value = true;
     const commandSaveShortcut = new KeyboardEvent("keydown", {
       key: "s",
       code: "KeyS",
@@ -246,20 +209,20 @@ describe("LocalDocumentEditorPage save protection", () => {
     await flushPromises();
 
     expect(commandSaveShortcut.defaultPrevented).toBe(true);
-    expect(saveDocument).toHaveBeenLastCalledWith({
-      id: documentId,
-      title: "Packing",
-      content: "- [ ] Passport again",
-    });
+    expect(save).toHaveBeenLastCalledWith();
   });
 
   it("keeps dirty navigation and unload protection after a failed save", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(false);
-    saveDocument.mockRejectedValue(new Error("Storage is unavailable."));
+    save.mockRejectedValue(new Error("Storage is unavailable."));
     const wrapper = await mountEditor();
     await wrapper.get("textarea[aria-label='Markdown content']").setValue("- [x] Passport");
+    editorFixture.current.isDirty.value = true;
+    editorFixture.current.canSave.value = true;
+    await nextTick();
 
     await wrapper.get("button[aria-label='Save']").trigger("click");
+    editorFixture.current.error.value = "Storage is unavailable.";
     await flushPromises();
 
     const unload = new Event("beforeunload", { cancelable: true });
@@ -268,25 +231,6 @@ describe("LocalDocumentEditorPage save protection", () => {
     expect(wrapper.text()).toContain("Storage is unavailable.");
     expect(routeLeaveGuard.callback?.()).toBe(false);
     expect(unload.defaultPrevented).toBe(true);
-  });
-
-  it("adopts normalized persisted content and clears navigation protections", async () => {
-    saveDocument.mockResolvedValue({
-      id: documentId,
-      title: "Packing",
-      content: "- [x] Passport",
-      createdAt: 1,
-      updatedAt: 2,
-    });
-    const wrapper = await mountEditor();
-    await wrapper.get("textarea[aria-label='Markdown content']").setValue("- [x] Passport ");
-
-    await wrapper.get("button[aria-label='Save']").trigger("click");
-    await flushPromises();
-
-    expect(wrapper.get<HTMLTextAreaElement>("textarea").element.value).toBe("- [x] Passport");
-    expect(wrapper.get("button[aria-label='Save']").attributes("disabled")).toBeDefined();
-    expect(routeLeaveGuard.callback?.()).toBe(true);
   });
 });
 
@@ -314,8 +258,20 @@ describe("LocalDocumentEditorPage deletion", () => {
     await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
     await flushPromises();
 
-    expect(deleteDocument).toHaveBeenCalledWith(documentId);
+    expect(deleteDocument).toHaveBeenCalledWith();
     expect(routerPush).toHaveBeenCalledWith("/");
+  });
+
+  it("keeps the current route when the Local Document no longer exists", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    deleteDocument.mockResolvedValue(null);
+    const wrapper = await mountEditor();
+
+    await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
+    await flushPromises();
+
+    expect(deleteDocument).toHaveBeenCalledWith();
+    expect(routerPush).not.toHaveBeenCalled();
   });
 
   it("keeps the editor draft and reports an error when deletion fails", async () => {
@@ -325,6 +281,7 @@ describe("LocalDocumentEditorPage deletion", () => {
     await wrapper.get("textarea[aria-label='Markdown content']").setValue("- [x] Passport");
 
     await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
+    editorFixture.current.error.value = "Storage is unavailable.";
     await flushPromises();
 
     expect(wrapper.text()).toContain("Storage is unavailable.");

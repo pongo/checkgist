@@ -5,7 +5,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { effectScope, ref } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createLocalDocument } from "./db";
+import { createLocalDocument, deleteLocalDocument } from "./db";
 import { resetLocalDocumentsForTests } from "./useLocalDocuments";
 import { useLocalDocumentEditor } from "./useLocalDocumentEditor";
 
@@ -82,6 +82,49 @@ describe("useLocalDocumentEditor", () => {
     expect(editor.error.value).toBeTruthy();
     expect(editor.isDirty.value).toBe(true);
     expect(editor.canSave.value).toBe(true);
+    scope.stop();
+  });
+
+  it("keeps deletion active after success so the page can navigate without a dirty guard", async () => {
+    await createLocalDocument(documentId);
+    const { editor, scope } = await mountEditor();
+    editor.content.value = "Unsaved content";
+
+    const deleted = await editor.deleteDocument();
+
+    expect(deleted?.id).toBe(documentId);
+    expect(editor.state.value).toBe("ready");
+    expect(editor.isDeleting.value).toBe(true);
+    expect(editor.canSave.value).toBe(false);
+    expect(editor.canDelete.value).toBe(false);
+    scope.stop();
+  });
+
+  it("moves to missing and completes deletion when the Local Document no longer exists", async () => {
+    await createLocalDocument(documentId);
+    const { editor, scope } = await mountEditor();
+    await deleteLocalDocument(documentId);
+
+    await expect(editor.deleteDocument()).resolves.toBeNull();
+
+    expect(editor.state.value).toBe("missing");
+    expect(editor.isDeleting.value).toBe(false);
+    scope.stop();
+  });
+
+  it("reports deletion errors and restores editor availability", async () => {
+    await createLocalDocument(documentId);
+    const { editor, scope } = await mountEditor();
+
+    await resetLocalDocumentsForTests();
+    vi.stubGlobal("indexedDB", undefined);
+    await expect(editor.deleteDocument()).rejects.toThrow("open");
+    await flushPromises();
+
+    expect(editor.state.value).toBe("ready");
+    expect(editor.error.value).toBeTruthy();
+    expect(editor.isDeleting.value).toBe(false);
+    expect(editor.canDelete.value).toBe(true);
     scope.stop();
   });
 });
