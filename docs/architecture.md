@@ -44,7 +44,7 @@ Keep cross-feature imports on the folder-level `index.ts`. Treat the subfolders 
 
 Locally owned Markdown document model, persistence, routes, and reusable UI.
 
-This area owns Local Document title and ID validation, IndexedDB create/read/update/delete operations, canonical view and edit route generation, the shared lazy document-list state, and the Local Document list shown on the home page. A successful Local Document deletion also triggers best-effort removal of its matching Bookmark.
+This area owns Local Document title and ID validation, IndexedDB create/read/update/delete operations, canonical view and edit route generation, scope-local reactive list snapshots loaded from IndexedDB, and the Local Document list shown on the home page. IndexedDB is the authoritative source of Local Document state. A successful Local Document deletion also triggers best-effort removal of its matching Bookmark.
 
 Use the folder-level `index.ts` from pages, Source Services, and other feature areas. The Local Document Source Service adapts persisted documents into Loaded Sources; keep that adaptation under `src/source-services/` rather than coupling Local Document persistence to Checklist rendering.
 

@@ -45,6 +45,22 @@ beforeEach(async () => {
   invalidateBookmarks.mockReset();
 });
 
+describe("useLocalDocuments snapshots", () => {
+  it("keeps document snapshots local to each composable instance", async () => {
+    listLocalDocuments.mockResolvedValueOnce([document]).mockResolvedValueOnce([]);
+    const first = useLocalDocuments();
+    await first.ensureLoaded();
+
+    const second = useLocalDocuments();
+    expect(second.documents.value).toEqual([]);
+
+    await second.ensureLoaded();
+
+    expect(first.documents.value).toEqual([document]);
+    expect(second.documents.value).toEqual([]);
+  });
+});
+
 describe("useLocalDocuments mutation ordering", () => {
   it("prevents an earlier refresh from restoring a document after deletion", async () => {
     const pendingList = deferred<LocalDocument[]>();
