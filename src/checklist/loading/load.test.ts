@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createSourceRegistry, unsupportedSourceUrlMessage } from "@/source-services";
-import type { LoadedSource, SourceReference, SourceService } from "@/source-services";
+import { unsupportedSourceUrlMessage } from "@/source-services";
+import type {
+  LoadedSource,
+  SourceReference,
+  SourceRegistry,
+  SourceService,
+} from "@/source-services";
 
 import { loadChecklist } from "./load";
 
@@ -49,7 +54,7 @@ describe("loadChecklist", () => {
         },
       }),
     );
-    const registry = createSourceRegistry([createPastebinService(load)]);
+    const registry: SourceRegistry = new Map([["pastebin", createPastebinService(load)]]);
 
     const result = await loadChecklist(
       { type: "pastebin", pasteId: "HdpnureE" },
@@ -77,7 +82,9 @@ describe("loadChecklist", () => {
   });
 
   it("returns an unsupported result for a missing Source Reference", async () => {
-    const registry = createSourceRegistry([createPastebinService(createLoadSourceMock())]);
+    const registry: SourceRegistry = new Map([
+      ["pastebin", createPastebinService(createLoadSourceMock())],
+    ]);
 
     await expect(loadChecklist(null, { registry })).resolves.toEqual({
       status: "unsupported",
@@ -86,7 +93,7 @@ describe("loadChecklist", () => {
   });
 
   it("returns an unsupported result when no Source Service matches the reference type", async () => {
-    const registry = createSourceRegistry([]);
+    const registry: SourceRegistry = new Map();
 
     await expect(
       loadChecklist({ type: "pastebin", pasteId: "HdpnureE" }, { registry }),
@@ -98,8 +105,8 @@ describe("loadChecklist", () => {
 
   it("propagates source-level load errors", async () => {
     const error = new Error("Failed to load Pastebin source.");
-    const registry = createSourceRegistry([
-      createPastebinService(createLoadSourceMock().mockRejectedValue(error)),
+    const registry: SourceRegistry = new Map([
+      ["pastebin", createPastebinService(createLoadSourceMock().mockRejectedValue(error))],
     ]);
 
     await expect(
@@ -108,7 +115,9 @@ describe("loadChecklist", () => {
   });
 
   it("accepts unknown Source Reference shapes defensively at runtime", async () => {
-    const registry = createSourceRegistry([createPastebinService(createLoadSourceMock())]);
+    const registry: SourceRegistry = new Map([
+      ["pastebin", createPastebinService(createLoadSourceMock())],
+    ]);
 
     await expect(
       loadChecklist({ type: "unknown" } as unknown as SourceReference, { registry }),

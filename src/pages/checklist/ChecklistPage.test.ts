@@ -41,14 +41,11 @@ vi.mock("@/source-services", async (importOriginal) => {
 
   return {
     ...actual,
-    sourceRegistry: {
-      services: [],
-      byType: new Map([
-        ["github-gist", { type: "github-gist", load: loadSource }],
-        ["pastebin", { type: "pastebin", load: loadSource }],
-        ["local-document", { type: "local-document", load: loadSource }],
-      ]),
-    },
+    sourceRegistry: new Map([
+      ["github-gist", { type: "github-gist", load: loadSource }],
+      ["pastebin", { type: "pastebin", load: loadSource }],
+      ["local-document", { type: "local-document", load: loadSource }],
+    ]),
   };
 });
 

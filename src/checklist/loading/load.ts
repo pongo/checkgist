@@ -45,7 +45,7 @@ export async function loadChecklist(
   }
 
   const registry = options.registry ?? sourceRegistry;
-  const service = registry.byType.get(reference.type);
+  const service = registry.get(reference.type);
 
   if (service === undefined) {
     return {

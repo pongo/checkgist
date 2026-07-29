@@ -5,7 +5,7 @@ export {
   routeForUrlInput,
   unsupportedSourceUrlMessage,
 } from "./addressing";
-export { createSourceRegistry, sourceRegistry, type SourceRegistry } from "./registry";
+export { sourceRegistry, type SourceRegistry } from "./registry";
 export {
   type LoadedSource,
   type LoadError,
