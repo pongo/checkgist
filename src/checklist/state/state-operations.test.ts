@@ -101,13 +101,17 @@ describe("Checklist State operations", () => {
     const session = createSession();
     setChecklistTaskChecked(session, "one.md", 0, true);
 
-    const result = setChecklistTaskChecked(session, "broken.md", 0, true);
+    const errorFileResult = setChecklistTaskChecked(session, "broken.md", 0, true);
+    const outOfRangeResult = setChecklistTaskChecked(session, "two.md", 2, true);
+    const nonIntegerResult = setChecklistTaskChecked(session, "two.md", 0.5, true);
 
-    expect(result).toEqual({
+    expect(errorFileResult).toEqual({
       changed: false,
       hash: "#1",
       invalidateRender: false,
     });
+    expect(outOfRangeResult.changed).toBe(false);
+    expect(nonIntegerResult.changed).toBe(false);
     expect(readyChecked(session)).toEqual([
       [true, false, false],
       [false, false],
@@ -129,6 +133,21 @@ describe("Checklist State operations", () => {
     expect(readyChecked(session)).toEqual([
       [false, false, false],
       [false, true],
+    ]);
+  });
+
+  it("ignores reset intents for files that are not ready", () => {
+    const session = createSession();
+    setChecklistTaskChecked(session, "one.md", 0, true);
+
+    expect(resetChecklistFile(session, "broken.md")).toEqual({
+      changed: false,
+      hash: "#1",
+      invalidateRender: true,
+    });
+    expect(readyChecked(session)).toEqual([
+      [true, false, false],
+      [false, false],
     ]);
   });
 

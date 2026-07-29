@@ -1,5 +1,5 @@
+import { syncTaskItemState } from "../task-items/task-item-tree";
 import type { Checklist } from "../types";
-import { syncSessionTaskCheckboxes } from "./state";
 
 export type ChecklistStateBits = string;
 export type ChecklistStateHash = string;
@@ -54,4 +54,12 @@ export function bitsFromSession(session: Checklist): ChecklistStateBits {
     .join("");
 
   return encoded.replace(/0+$/, "");
+}
+
+function syncSessionTaskCheckboxes(session: Checklist): void {
+  for (const file of session.files) {
+    if (file.status === "ready") {
+      syncTaskItemState(file.tree, file.checked);
+    }
+  }
 }

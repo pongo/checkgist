@@ -5,8 +5,8 @@ import {
   bitsToHash,
   type ChecklistStateHash,
 } from "./state-codec";
-import { resetAll, resetFile, setTaskChecked } from "./state";
-import type { Checklist } from "../types";
+import { syncTaskItemState } from "../task-items/task-item-tree";
+import type { ChecklistReadyFile, Checklist } from "../types";
 
 type HashChangeTarget = Pick<Window, "addEventListener" | "removeEventListener">;
 
@@ -72,6 +72,56 @@ export function listenToChecklistStateHash(
   return () => {
     target.removeEventListener("hashchange", onHashChange);
   };
+}
+
+function setTaskChecked(
+  session: Checklist,
+  fileId: string,
+  localTaskIndex: number,
+  checked: boolean,
+): boolean {
+  const file = session.files.find(
+    (candidate) => candidate.status === "ready" && candidate.id === fileId,
+  );
+
+  if (file?.status !== "ready" || !Number.isInteger(localTaskIndex)) {
+    return false;
+  }
+
+  if (localTaskIndex < 0 || localTaskIndex >= file.checked.length) {
+    return false;
+  }
+
+  file.checked[localTaskIndex] = checked;
+  syncReadyFileTaskItemState(file);
+  return true;
+}
+
+function resetFile(session: Checklist, fileId: string): boolean {
+  const file = session.files.find(
+    (candidate) => candidate.status === "ready" && candidate.id === fileId,
+  );
+
+  if (file?.status !== "ready") {
+    return false;
+  }
+
+  file.checked = file.checked.map(() => false);
+  syncReadyFileTaskItemState(file);
+  return true;
+}
+
+function resetAll(session: Checklist): void {
+  for (const file of session.files) {
+    if (file.status === "ready") {
+      file.checked = file.checked.map(() => false);
+      syncReadyFileTaskItemState(file);
+    }
+  }
+}
+
+function syncReadyFileTaskItemState(file: ChecklistReadyFile): void {
+  syncTaskItemState(file.tree, file.checked);
 }
 
 function createOperationResult(
