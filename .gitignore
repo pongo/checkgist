@@ -37,4 +37,7 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# tools
+/.fallow/
 /tmp/

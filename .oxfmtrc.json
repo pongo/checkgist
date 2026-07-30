@@ -2,5 +2,6 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "sortTailwindcss": {
     "stylesheet": "./src/app/main.css"
-  }
+  },
+  "ignorePatterns": [".agents/**"]
 }
