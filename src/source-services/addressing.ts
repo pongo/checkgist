@@ -39,7 +39,7 @@ export function createSourceAddressCatalog(
 
 const sourceAddressCatalog = createSourceAddressCatalog(sourceAddressRules);
 
-function normalizeSourceUrlInput(input: string): URL | null {
+export function normalizeSourceUrlInput(input: string): URL | null {
   const trimmedInput = input.trim();
   if (trimmedInput.length === 0) {
     return null;

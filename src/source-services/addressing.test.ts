@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createSourceAddressCatalog,
+  normalizeSourceUrlInput,
   referenceFromRoute,
   referenceFromUrlInput,
   routeForUrlInput,
@@ -9,6 +10,29 @@ import {
 import type { SourceAddressRule } from "./addressing";
 
 describe("source addressing", () => {
+  describe("normalizeSourceUrlInput", () => {
+    it.each([
+      ["", null],
+      ["   ", null],
+      [" example.com/path ", "https://example.com/path"],
+      ["http://example.com/path", "http://example.com/path"],
+      ["HTTPS://example.com/path", "https://example.com/path"],
+      ["h1://example.com", null],
+      ["ftp://example.com/path", null],
+      ["https://", null],
+    ])("normalizes %j", (input, expectedHref) => {
+      const url = normalizeSourceUrlInput(input);
+
+      expect(url?.href ?? null).toBe(expectedHref);
+    });
+
+    it("does not treat an embedded protocol marker as a protocol", () => {
+      expect(normalizeSourceUrlInput("1https://example.com")?.href).toBe(
+        "https://1https//example.com",
+      );
+    });
+  });
+
   it.each([
     [
       "https://gist.github.com/octocat/0123456789abcdef?file=one.md#hash",
@@ -97,5 +121,22 @@ describe("source addressing", () => {
       type: "github-gist",
       gistId: "first",
     });
+  });
+
+  it("reports an unknown Source Service type during route conversion", () => {
+    const catalog = createSourceAddressCatalog([
+      {
+        type: "pastebin",
+        name: "pastebin",
+        path: "/pastebin.com/:pasteId",
+        fromUrl: () => ({ type: "github-gist", gistId: "unexpected" }),
+        fromRoute: () => null,
+        toRouteSegments: () => null,
+      },
+    ]);
+
+    expect(() => routeForUrlInput("https://example.com/source", catalog)).toThrow(
+      "Unknown Source Service type: github-gist",
+    );
   });
 });
