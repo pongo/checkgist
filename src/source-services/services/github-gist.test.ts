@@ -111,6 +111,36 @@ describe("githubGistService.load", () => {
     expect(source.metadata.title).toBe("gist-with-unnamed-file");
   });
 
+  it("uses stable defaults when optional file fields are absent", async () => {
+    fetcherMock.mockResolvedValueOnce({
+      description: null,
+      files: {
+        unnamed: {},
+      },
+    });
+
+    const source = await githubGistService.load(
+      { type: "github-gist", gistId: "gist-with-missing-file-fields" },
+      { fetcher },
+    );
+
+    expect(source).toEqual({
+      reference: { type: "github-gist", gistId: "gist-with-missing-file-fields" },
+      metadata: {
+        title: "Untitled",
+        url: "https://gist.github.com/gist-with-missing-file-fields",
+      },
+      files: [
+        {
+          status: "ready",
+          id: "Untitled",
+          name: "Untitled",
+          content: "",
+        },
+      ],
+    });
+  });
+
   it("loads full content for truncated files from their raw URL", async () => {
     const signal = new AbortController().signal;
     fetcherMock.mockResolvedValueOnce({
@@ -161,6 +191,33 @@ describe("githubGistService.load", () => {
         type: "github-gist",
         gistId: "gist-4",
       },
+      { fetcher },
+    );
+
+    expect(source.files).toEqual([
+      {
+        status: "error",
+        id: "large.md",
+        name: "large.md",
+        error: {
+          message: "Failed to load full content for this truncated gist file.",
+        },
+      },
+    ]);
+  });
+
+  it("returns a file-level error when a truncated file has no raw URL", async () => {
+    fetcherMock.mockResolvedValueOnce({
+      files: {
+        "large.md": {
+          filename: "large.md",
+          truncated: true,
+        },
+      },
+    });
+
+    const source = await githubGistService.load(
+      { type: "github-gist", gistId: "gist-without-raw-url" },
       { fetcher },
     );
 
