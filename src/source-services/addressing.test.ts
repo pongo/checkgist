@@ -77,6 +77,8 @@ describe("source addressing", () => {
     "ftp://pastebin.com/HdpnureE",
     "https://gist.github.com/octocat/0123456789abcdef/revisions",
     "https://pastebin.com/raw/",
+    "https://pastebin.com/HdpnureE/extra",
+    "https://pastebin.com/raw/HdpnureE/extra",
   ])("rejects unsupported or ambiguous input %s", (input) => {
     expect(referenceFromUrlInput(input)).toBeNull();
   });
@@ -92,6 +94,14 @@ describe("source addressing", () => {
     [["pastebin.com", "HdpnureE"], { type: "pastebin", pasteId: "HdpnureE" }],
   ])("parses canonical route %s", (path, expectedReference) => {
     expect(referenceFromRoute(path)).toEqual(expectedReference);
+  });
+
+  it.each([
+    [["pastebin.com", ""]],
+    [["example.com", "HdpnureE"]],
+    [["pastebin.com", "HdpnureE", "extra"]],
+  ])("rejects invalid Pastebin route segments %s", (path) => {
+    expect(referenceFromRoute(path)).toBeNull();
   });
 
   it("uses deterministic first-match resolution", () => {
