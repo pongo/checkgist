@@ -92,6 +92,42 @@ describe("useChecklistSourceLifecycle", () => {
     expect(lifecycle.state.value.session?.source.metadata.title).toBe("Loaded source");
   });
 
+  it("exposes the Checklist to the hash listener only while the lifecycle is ready", async () => {
+    const getSessions: Array<() => Checklist | null> = [];
+    const stopHashListener = vi.fn<() => void>();
+    const { browser } = createBrowser({
+      listenToHash: vi.fn<ChecklistSourceBrowser["listenToHash"]>((getSession) => {
+        getSessions.push(getSession);
+        return stopHashListener;
+      }),
+    });
+    let loadCount = 0;
+    const load: LoadChecklistSource = async () => {
+      loadCount += 1;
+
+      return loadCount === 1
+        ? {
+            status: "loaded",
+            session: createSession("Loaded source"),
+            browserTitle: "Loaded source - Checkgist",
+          }
+        : {
+            status: "unsupported",
+            message: "Unsupported source URL.",
+          };
+    };
+    const lifecycle = useChecklistSourceLifecycle({ browser, load });
+
+    await lifecycle.open({ type: "pastebin", pasteId: "HdpnureE" });
+    const session = lifecycle.state.value.session;
+
+    expect(getSessions[0]?.()).toBe(session);
+
+    await lifecycle.open(null);
+
+    expect(getSessions[0]?.()).toBeNull();
+  });
+
   it("returns unsupported state and resets the browser title for invalid Source References", async () => {
     const { browser } = createBrowser();
     const load = vi.fn<LoadChecklistSource>().mockResolvedValue({
@@ -125,6 +161,20 @@ describe("useChecklistSourceLifecycle", () => {
       status: "error",
       session: null,
       message: "Failed to load Pastebin source.",
+    });
+  });
+
+  it("uses a fallback message for non-Error load failures", async () => {
+    const { browser } = createBrowser();
+    const load = vi.fn<LoadChecklistSource>().mockRejectedValue("Network unavailable.");
+    const lifecycle = useChecklistSourceLifecycle({ browser, load });
+
+    await lifecycle.open({ type: "pastebin", pasteId: "HdpnureE" });
+
+    expect(lifecycle.state.value).toEqual({
+      status: "error",
+      session: null,
+      message: "Failed to load source.",
     });
   });
 
