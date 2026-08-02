@@ -20,7 +20,8 @@
     "format": "oxfmt src/ test/",
     "agent:lint": "oxlint -f unix src && eslint --no-color src --cache",
     "agent:test": "vitest run --no-color --reporter=agent",
-    "prepare": "simple-git-hooks"
+    "prepare": "simple-git-hooks",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@comark/vue": "^0.4.0",
@@ -38,6 +39,7 @@
     "@types/jsdom": "^28.0.1",
     "@types/node": "^24.12.2",
     "@vitejs/plugin-vue": "^6.0.6",
+    "@vitest/coverage-v8": "^4.1.10",
     "@vitest/eslint-plugin": "^1.6.16",
     "@vue/eslint-config-typescript": "^14.7.0",
     "@vue/test-utils": "^2.4.6",
