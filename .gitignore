@@ -41,3 +41,7 @@ __screenshots__/
 # tools
 /.fallow/
 /tmp/
+
+# stryker temp files
+.stryker-tmp
+/reports/
