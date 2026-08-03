@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 
 import { IDBFactory } from "fake-indexeddb";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadChecklist } from "@/checklist";
 import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
@@ -30,6 +30,10 @@ describe("Local Document source service", () => {
   beforeEach(async () => {
     await closeCheckgistDatabaseForTests();
     resetIndexedDb();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("loads a stored Local Document as exactly one ready Source File", async () => {
@@ -67,9 +71,25 @@ describe("Local Document source service", () => {
   it("rejects foreign and malformed Local Document URLs through public Source Addressing", () => {
     const foreignUrl = new URL(localDocumentViewRoute(documentId), "https://example.com");
     const malformedUrl = applicationUrl("/local/not-a-uuid");
+    const incompleteUrl = applicationUrl("/local");
 
     expect(referenceFromUrlInput(foreignUrl.href)).toBeNull();
     expect(referenceFromUrlInput(malformedUrl.href)).toBeNull();
+    expect(referenceFromUrlInput(incompleteUrl.href)).toBeNull();
+  });
+
+  it("recognizes Local Document URLs only below a nested application base path", () => {
+    vi.stubEnv("BASE_URL", "/projects/checkgist/");
+    const sourceUrl = applicationUrl(localDocumentViewRoute(documentId));
+    const editorUrl = applicationUrl(localDocumentEditRoute(documentId));
+    const sameOriginUrlOutsideApp = new URL(
+      localDocumentViewRoute(documentId),
+      window.location.origin,
+    );
+
+    expect(referenceFromUrlInput(sourceUrl.href)).toEqual({ type: "local-document", documentId });
+    expect(routeForUrlInput(editorUrl.href)).toBe(localDocumentViewRoute(documentId));
+    expect(referenceFromUrlInput(sameOriginUrlOutsideApp.href)).toBeNull();
   });
 
   it("loads a Local Document through the registered Checklist pipeline", async () => {
