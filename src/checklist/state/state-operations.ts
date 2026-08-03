@@ -144,11 +144,7 @@ function syncReadyFileTaskItemState(file: ChecklistReadyFile): void {
   syncTaskItemState(file.tree, file.checked);
 }
 
-function parseBits(bits?: string | null): ChecklistStateBits {
-  if (bits == null) {
-    return "";
-  }
-
+function parseBits(bits: string): ChecklistStateBits {
   return /^[01]*$/.test(bits) ? bits : "";
 }
 
