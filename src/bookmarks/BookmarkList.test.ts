@@ -78,6 +78,16 @@ function dispatchWindowDragEvent(type: string, dataTransfer: TestDataTransfer) {
   return event;
 }
 
+function dispatchElementDragEvent(element: Element, type: string, dataTransfer: TestDataTransfer) {
+  const event = new Event(type, { cancelable: true });
+  Object.defineProperty(event, "dataTransfer", {
+    value: dataTransfer,
+  });
+
+  element.dispatchEvent(event);
+  return event;
+}
+
 describe("BookmarkList", () => {
   let wrapper: VueWrapper | undefined;
 
@@ -228,6 +238,40 @@ describe("BookmarkList", () => {
     expect(wrapper.get("a[href='/pastebin.com/one']").element.closest("li")?.className).toContain(
       "before:bg-blue-600",
     );
+  });
+
+  it("does not accept drops on removed bookmark placeholders", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+    wrapper = mountBookmarkList();
+    const dataTransfer: TestDataTransfer = {
+      dropEffect: "none",
+      effectAllowed: "move",
+      getData: vi.fn<(format: string) => string>(() => "/pastebin.com/two"),
+      setData: vi.fn<(format: string, data: string) => void>(),
+    };
+
+    await getButtonByLabel(wrapper, "Delete bookmark").trigger("click");
+    await vi.waitFor(() => {
+      expect(wrapper?.text()).toContain("Restore");
+    });
+    const removedRow = wrapper.findAll("li").find((row) => row.text().includes("Restore"));
+
+    if (removedRow === undefined) {
+      throw new Error("Expected a removed bookmark placeholder.");
+    }
+
+    await wrapper.get("a[href='/pastebin.com/two']").trigger("dragstart", { dataTransfer });
+    const dragOverEvent = dispatchElementDragEvent(removedRow.element, "dragover", dataTransfer);
+    const dropEvent = dispatchElementDragEvent(removedRow.element, "drop", dataTransfer);
+
+    expect(dragOverEvent.defaultPrevented).toBe(false);
+    expect(dropEvent.defaultPrevented).toBe(false);
+    expect(dataTransfer.dropEffect).toBe("none");
+    expect(bookmarks.bookmarks.value).toEqual([
+      { routePath: "/pastebin.com/two", title: "Two", position: 0 },
+    ]);
   });
 
   it("allows dropping outside the list after a drop indicator is selected", async () => {
