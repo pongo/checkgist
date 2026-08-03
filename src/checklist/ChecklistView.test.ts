@@ -1,6 +1,6 @@
 import type { ComarkNode, ComarkTree } from "comark";
 import { mount } from "@vue/test-utils";
-import { defineComponent, h } from "vue";
+import { defineComponent, h, nextTick } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Checklist } from "@/checklist";
@@ -105,9 +105,8 @@ const ComarkRendererStub = defineComponent({
   },
   setup(props) {
     return () =>
-      h(
-        "div",
-        (props.tree as ComarkTree).nodes.map((node) => {
+      h("div", [
+        ...(props.tree as ComarkTree).nodes.map((node) => {
           if (!Array.isArray(node) || node[0] !== "input") {
             return null;
           }
@@ -115,10 +114,14 @@ const ComarkRendererStub = defineComponent({
           const taskIndex = node[1]["data-checkgist-task-index"];
           return h("label", { class: RENDERED_TASK_LABEL_CLASS }, [
             h("input", node[1]),
+            h("span", `task-${taskIndex}`),
+            h("a", { href: `/documentation-${taskIndex}` }, "documentation"),
             h("code", `command-${taskIndex}`),
           ]);
         }),
-      );
+        // Markdown outside a task label must not be interpreted as a task interaction.
+        h("p", "Introduction"),
+      ]);
   },
 });
 
@@ -205,6 +208,90 @@ describe("ChecklistView", () => {
       checked: [true, false],
     });
     expect(wrapper.find<HTMLInputElement>("input").element.checked).toBe(false);
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("keeps native checkbox clicks from being toggled again by label handling", async () => {
+    const session = createSession();
+    session.files = [session.files[2]!];
+    const wrapper = mountSession(session);
+
+    const checkbox = wrapper.find<HTMLInputElement>("input");
+    checkbox.element.click();
+    await checkbox.trigger("change");
+    await nextTick();
+
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [true, true],
+    });
+    expect(routerReplace).toHaveBeenCalledTimes(1);
+    expect(routerReplace).toHaveBeenCalledWith({
+      path: "/pastebin.com/source-1",
+      query: { debug: "1" },
+      hash: "#11",
+    });
+  });
+
+  it("toggles a Task Item when its label text is clicked", async () => {
+    const session = createSession();
+    session.files = [session.files[2]!];
+    const wrapper = mountSession(session);
+
+    await wrapper.find("span").trigger("click");
+
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [true, true],
+    });
+    expect(wrapper.find<HTMLInputElement>("input").element.checked).toBe(true);
+    expect(routerReplace).toHaveBeenCalledWith({
+      path: "/pastebin.com/source-1",
+      query: { debug: "1" },
+      hash: "#11",
+    });
+  });
+
+  it("does not toggle a Task Item when its link is clicked", async () => {
+    const session = createSession();
+    const wrapper = mountSession(session);
+    wrapper.find("a").element.addEventListener("click", (event) => event.preventDefault());
+
+    await wrapper.find("a").trigger("click");
+
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [true, false],
+    });
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("ignores clicks outside Task Items", async () => {
+    const session = createSession();
+    const wrapper = mountSession(session);
+
+    await wrapper.get("p").trigger("click");
+
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [true, false],
+    });
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("copies empty inline code without toggling its Task Item", async () => {
+    const session = createSession();
+    const wrapper = mountSession(session);
+    const code = wrapper.find("code");
+    code.element.textContent = "";
+
+    await code.trigger("click");
+
+    expect(copyToClipboard).toHaveBeenCalledWith("");
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [true, false],
+    });
     expect(routerReplace).not.toHaveBeenCalled();
   });
 });
