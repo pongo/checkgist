@@ -60,6 +60,52 @@ describe("Task Item Tree", () => {
     expect(treeJson).toContain("Install deps");
   });
 
+  it("promotes paragraph content without discarding existing list item classes", () => {
+    const tree = createTree([
+      ["li", { class: "  " }, ["p", {}, "Set up project"]],
+      ["li", { class: "  custom-list-item  " }, ["p", {}, "Install deps"]],
+    ]);
+
+    expect(promoteOrdinaryListItems(tree)).toBe(2);
+
+    expect(tree.nodes).toEqual([
+      [
+        "li",
+        { class: "task-list-item" },
+        [
+          "label",
+          { class: taskItemLabelClassName },
+          [
+            "input",
+            {
+              class: "task-list-item-checkbox",
+              type: "checkbox",
+              [taskItemIndexAttribute]: "0",
+            },
+          ],
+          "Set up project",
+        ],
+      ],
+      [
+        "li",
+        { class: " custom-list-item  task-list-item" },
+        [
+          "label",
+          { class: taskItemLabelClassName },
+          [
+            "input",
+            {
+              class: "task-list-item-checkbox",
+              type: "checkbox",
+              [taskItemIndexAttribute]: "1",
+            },
+          ],
+          "Install deps",
+        ],
+      ],
+    ]);
+  });
+
   it("syncs Task Item State into prepared checkbox nodes", () => {
     const checkbox: ComarkElement = [
       "input",

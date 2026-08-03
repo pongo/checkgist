@@ -127,6 +127,31 @@ describe("buildChecklist", () => {
     expect(treeJson).not.toContain('["li",{},["p",{},"после публикации:"],["ul"');
   });
 
+  it("unwraps plain parent list item paragraphs before nested ordered Task Items", async () => {
+    const session = await buildChecklist(
+      createSource([
+        {
+          status: "ready",
+          id: "ordered-nested.md",
+          name: "ordered-nested.md",
+          content: "- release checklist:\n  1. [ ] Publish\n  2. [ ] Verify logs",
+        },
+      ]),
+    );
+
+    const file = session.files[0];
+    expect(file?.status).toBe("ready");
+    if (file?.status !== "ready") {
+      return;
+    }
+
+    const treeJson = JSON.stringify(file.tree.nodes);
+    expect(treeJson).toContain(
+      '["li",{},"release checklist:",["ol",{"class":"contains-task-list"}',
+    );
+    expect(treeJson).not.toContain('["li",{},["p",{},"release checklist:"],["ol"');
+  });
+
   it("renders Markdown content that has no Task Items", async () => {
     const session = await buildChecklist(
       createSource([
