@@ -11,6 +11,7 @@ import type { Bookmark } from "./db";
 const one: Bookmark = { routePath: "/pastebin.com/one", title: "One", position: 0 };
 const two: Bookmark = { routePath: "/pastebin.com/two", title: "Two", position: 1 };
 const three: Bookmark = { routePath: "/pastebin.com/three", title: "Three", position: 2 };
+const four: Bookmark = { routePath: "/pastebin.com/four", title: "Four", position: 3 };
 
 function createModel(bookmarks = ref<Bookmark[]>([one, two, three])) {
   const removeBookmark = vi.fn<(routePath: string) => Promise<Bookmark | null>>(
@@ -87,6 +88,20 @@ describe("bookmark list model", () => {
     ]);
   });
 
+  it("keeps multiple removed placeholders ordered by their row positions", async () => {
+    const { model } = createModel(ref([one, two, three, four]));
+
+    await model.deleteBookmark(three, 2);
+    await model.deleteBookmark(two, 1);
+
+    expect(model.rows.value).toEqual([
+      { type: "bookmark", bookmark: one },
+      { type: "removed", bookmark: two, position: 1 },
+      { type: "removed", bookmark: three, position: 2 },
+      { type: "bookmark", bookmark: four },
+    ]);
+  });
+
   it("restores a removed bookmark and clears its placeholder", async () => {
     const { bookmarks, model, restoreBookmark } = createModel();
 
@@ -119,6 +134,12 @@ describe("bookmark list model", () => {
     expect(getBookmarkDropIndex([one, two, three], two.routePath, one, "after")).toBe(1);
   });
 
+  it("rejects a reorder when the dragged bookmark is no longer present", () => {
+    expect(getBookmarkDropIndex([one, two, three], "/pastebin.com/missing", three, "before")).toBe(
+      -1,
+    );
+  });
+
   it("canonicalizes equivalent visual drop indicators", () => {
     expect(
       getCanonicalBookmarkDropIndicator([one, two, three], one.routePath, two, "after"),
@@ -134,6 +155,38 @@ describe("bookmark list model", () => {
     });
   });
 
+  it("canonicalizes a drop at the end of the list", () => {
+    expect(
+      getCanonicalBookmarkDropIndicator([one, two, three], one.routePath, three, "after"),
+    ).toEqual({
+      routePath: three.routePath,
+      position: "after",
+    });
+  });
+
+  it("does not create an indicator for a missing target bookmark", () => {
+    expect(
+      getCanonicalBookmarkDropIndicator(
+        [one, two, three],
+        "/pastebin.com/missing-source",
+        { routePath: "/pastebin.com/missing", title: "Missing", position: 3 },
+        "after",
+      ),
+    ).toBe(null);
+  });
+
+  it("returns no indicator for a self-drop at the end of the list", () => {
+    expect(
+      getCanonicalBookmarkDropIndicator([one, two, three], three.routePath, three, "after"),
+    ).toBe(null);
+  });
+
+  it("returns an empty route when no drag fallback is provided", () => {
+    const { model } = createModel();
+
+    expect(model.getDraggedRoutePath()).toBe("");
+  });
+
   it("reorders through the current drop indicator", async () => {
     const { bookmarks, model } = createModel();
 
@@ -147,5 +200,70 @@ describe("bookmark list model", () => {
       { ...three, position: 2 },
     ]);
     expect(model.dropIndicator.value).toBe(null);
+  });
+
+  it("reorders through the current indicator without an explicit fallback", async () => {
+    const { bookmarks, model } = createModel();
+
+    model.beginDrag(one);
+    model.previewDrop(three, "before");
+    await model.dropOnCurrentIndicator();
+
+    expect(bookmarks.value).toEqual([
+      { ...two, position: 0 },
+      { ...one, position: 1 },
+      { ...three, position: 2 },
+    ]);
+  });
+
+  it("clears drag state without reordering when dropping without a source", async () => {
+    const { bookmarks, model, reorderBookmark } = createModel();
+
+    await model.dropOnBookmark(two, "before");
+
+    expect(reorderBookmark).not.toHaveBeenCalled();
+    expect(bookmarks.value).toEqual([one, two, three]);
+    expect(model.draggedRoutePath.value).toBe(null);
+    expect(model.dropIndicator.value).toBe(null);
+  });
+
+  it("clears drag state without reordering on a self-drop", async () => {
+    const { bookmarks, model, reorderBookmark } = createModel();
+
+    model.beginDrag(one);
+    await model.dropOnBookmark(one, "before");
+
+    expect(reorderBookmark).not.toHaveBeenCalled();
+    expect(bookmarks.value).toEqual([one, two, three]);
+    expect(model.draggedRoutePath.value).toBe(null);
+    expect(model.dropIndicator.value).toBe(null);
+  });
+
+  it("allows a drop when only the current indicator identifies the drag", () => {
+    const { model } = createModel();
+
+    expect(model.allowDropInsideBoundary()).toBe(false);
+
+    model.previewDrop(two, "before", one.routePath);
+
+    expect(model.draggedRoutePath.value).toBe(null);
+    expect(model.dropIndicator.value).toEqual({
+      routePath: two.routePath,
+      position: "before",
+    });
+    expect(model.allowDropInsideBoundary()).toBe(true);
+  });
+
+  it("ignores a current indicator whose bookmark was removed", async () => {
+    const { bookmarks, model, reorderBookmark } = createModel();
+
+    model.beginDrag(one);
+    model.previewDrop(three, "before");
+    bookmarks.value = [one, two];
+
+    await expect(model.dropOnCurrentIndicator()).resolves.toBeUndefined();
+
+    expect(reorderBookmark).not.toHaveBeenCalled();
+    expect(bookmarks.value).toEqual([one, two]);
   });
 });
