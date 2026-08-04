@@ -3,7 +3,7 @@ import "fake-indexeddb/auto";
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { closeBookmarkDatabaseForTests } from "./db";
+import { addBookmark as addBookmarkToDatabase, closeBookmarkDatabaseForTests } from "./db";
 import { resetBookmarksForTests, useBookmarks } from "./useBookmarks";
 
 const requestPersistentStorageOnce = vi.hoisted(() => vi.fn<() => void>());
@@ -24,17 +24,18 @@ describe("useBookmarks", () => {
     requestPersistentStorageOnce.mockReset();
   });
 
-  it("loads bookmarks into a shared cache", async () => {
+  it("automatically loads persisted bookmarks into shared state on first use", async () => {
+    await addBookmarkToDatabase({ routePath: "/pastebin.com/one", title: "One" });
+
     const first = useBookmarks();
     const second = useBookmarks();
 
-    await first.ensureLoaded();
-    await first.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
-
-    expect(second.isReady.value).toBe(true);
-    expect(second.bookmarks.value).toEqual([
-      { routePath: "/pastebin.com/one", title: "One", position: 0 },
-    ]);
+    await vi.waitFor(() => {
+      expect(first.isReady.value).toBe(true);
+      expect(second.bookmarks.value).toEqual([
+        { routePath: "/pastebin.com/one", title: "One", position: 0 },
+      ]);
+    });
   });
 
   it("requests persistent storage once after successful new bookmark adds", async () => {

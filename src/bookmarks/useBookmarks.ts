@@ -19,16 +19,29 @@ const bookmarks = ref<Bookmark[]>([]);
 const status = ref<BookmarkStatus>("idle");
 const error = ref<unknown>(null);
 let loadPromise: Promise<void> | null = null;
+let stateVersion = 0;
 
 async function refreshBookmarks(): Promise<void> {
-  bookmarks.value = await listBookmarks();
+  const refreshVersion = stateVersion;
+  const nextBookmarks = await listBookmarks();
+
+  // Ignore reads started before invalidation so stale async work cannot restore old state.
+  if (refreshVersion !== stateVersion) {
+    return;
+  }
+
+  bookmarks.value = nextBookmarks;
+  error.value = null;
+  status.value = "ready";
 }
 
 function invalidateBookmarks(): void {
+  stateVersion += 1;
   bookmarks.value = [];
   error.value = null;
   status.value = "idle";
   loadPromise = null;
+  void ensureLoaded();
 }
 
 async function ensureLoaded(): Promise<void> {
@@ -41,18 +54,22 @@ async function ensureLoaded(): Promise<void> {
   }
 
   status.value = "loading";
-  loadPromise = refreshBookmarks()
-    .then(() => {
-      error.value = null;
-      status.value = "ready";
-    })
+  const loadVersion = stateVersion;
+  const currentLoad = refreshBookmarks()
     .catch((loadError: unknown) => {
+      if (loadVersion !== stateVersion) {
+        return;
+      }
+
       error.value = loadError;
       status.value = "error";
     })
     .finally(() => {
-      loadPromise = null;
+      if (loadPromise === currentLoad) {
+        loadPromise = null;
+      }
     });
+  loadPromise = currentLoad;
 
   return loadPromise;
 }
@@ -132,10 +149,12 @@ async function restoreBookmark(bookmark: Bookmark, toIndex: number): Promise<voi
 /**
  * Returns the shared Bookmark state and commands.
  *
- * Bookmark state is loaded lazily and shared across all callers; this composable
- * is not a factory for independent Bookmark collections.
+ * Loading starts on first use and Bookmark state is shared across all callers;
+ * this composable is not a factory for independent Bookmark collections.
  */
 export function useBookmarks() {
+  void ensureLoaded();
+
   return {
     bookmarks: readonly(bookmarks),
     status: readonly(status),
@@ -154,6 +173,7 @@ export function useBookmarks() {
 
 export async function resetBookmarksForTests(): Promise<void> {
   await closeBookmarkDatabaseForTests();
+  stateVersion += 1;
   bookmarks.value = [];
   status.value = "idle";
   error.value = null;
