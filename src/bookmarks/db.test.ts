@@ -116,6 +116,20 @@ describe("bookmark database", () => {
     ]);
   });
 
+  it("leaves bookmarks unchanged when reordering a missing bookmark", async () => {
+    await addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    await addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+
+    const reordered = await reorderBookmark("/pastebin.com/missing", 0);
+
+    const expected = [
+      { routePath: "/pastebin.com/one", title: "One", position: 0 },
+      { routePath: "/pastebin.com/two", title: "Two", position: 1 },
+    ];
+    expect(reordered).toEqual(expected);
+    expect(await listBookmarks()).toEqual(expected);
+  });
+
   it("restores a bookmark at the requested position", async () => {
     await addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
