@@ -88,6 +88,15 @@ describe("LocalDocumentPreview", () => {
     expect(wrapper.text()).not.toContain("First draft");
   });
 
+  it("cancels a scheduled parse when the preview is unmounted", async () => {
+    const wrapper = mountPreview("# Draft being closed");
+
+    wrapper.unmount();
+    await vi.advanceTimersByTimeAsync(150);
+
+    expect(prepareMarkdown).not.toHaveBeenCalled();
+  });
+
   it("keeps the latest preview when Markdown parses finish out of order", async () => {
     let resolveFirst: ((tree: ComarkTree) => void) | undefined;
     let resolveSecond: ((tree: ComarkTree) => void) | undefined;
