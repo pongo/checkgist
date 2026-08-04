@@ -69,6 +69,42 @@ describe("bookmark database", () => {
     ]);
   });
 
+  it("orders bookmarks with equal positions before reordering", async () => {
+    const legacyDatabase = await openDB<LegacyBookmarkDatabase>("checkgist", 1, {
+      upgrade(database) {
+        const store = database.createObjectStore("bookmarks", {
+          keyPath: "routePath",
+        });
+        store.createIndex("by-position", "position");
+      },
+    });
+    await legacyDatabase.transaction("bookmarks", "readwrite").store.put({
+      routePath: "B",
+      title: "B",
+      position: 0,
+    });
+    await legacyDatabase.transaction("bookmarks", "readwrite").store.put({
+      routePath: "a",
+      title: "a",
+      position: 0,
+    });
+    await legacyDatabase.transaction("bookmarks", "readwrite").store.put({
+      routePath: "c",
+      title: "c",
+      position: 0,
+    });
+    legacyDatabase.close();
+
+    const reordered = await reorderBookmark("c", 0);
+
+    expect(reordered).toEqual([
+      { routePath: "c", title: "c", position: 0 },
+      { routePath: "a", title: "a", position: 1 },
+      { routePath: "B", title: "B", position: 2 },
+    ]);
+    expect(await listBookmarks()).toEqual(reordered);
+  });
+
   it("keeps an existing bookmark when adding the same route again", async () => {
     await addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await addBookmark({ routePath: "/pastebin.com/one", title: "Updated" });
@@ -146,6 +182,16 @@ describe("bookmark database", () => {
       { routePath: "/pastebin.com/one", title: "One", position: 0 },
       { routePath: "/pastebin.com/two", title: "Two", position: 1 },
       { routePath: "/pastebin.com/three", title: "Three", position: 2 },
+    ]);
+  });
+
+  it("replaces an existing bookmark when restoring its route", async () => {
+    await addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+
+    await restoreBookmark({ routePath: "/pastebin.com/one", title: "Restored", position: 0 }, 0);
+
+    expect(await listBookmarks()).toEqual([
+      { routePath: "/pastebin.com/one", title: "Restored", position: 0 },
     ]);
   });
 });
