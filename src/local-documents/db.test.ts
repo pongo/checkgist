@@ -15,6 +15,7 @@ import {
 
 const firstId = "11111111-1111-4111-8111-111111111111";
 const secondId = "22222222-2222-4222-8222-222222222222";
+const invalidId = "not-a-local-document-id";
 
 function resetIndexedDb() {
   vi.stubGlobal("indexedDB", new IDBFactory());
@@ -40,6 +41,19 @@ describe("Local Document persistence", () => {
       updatedAt: 100,
     });
     expect(await getLocalDocument(firstId)).toEqual(document);
+  });
+
+  it("rejects malformed IDs before accessing IndexedDB", async () => {
+    vi.stubGlobal("indexedDB", undefined);
+
+    await expect(createLocalDocument(invalidId)).rejects.toThrow(
+      "Local Document IDs must be UUIDs.",
+    );
+    await expect(getLocalDocument(invalidId)).resolves.toBeNull();
+    await expect(
+      saveLocalDocument({ id: invalidId, title: "Valid title", content: "content" }),
+    ).resolves.toBeNull();
+    await expect(deleteLocalDocument(invalidId)).resolves.toBeNull();
   });
 
   it("trims a valid title while preserving content exactly and the creation timestamp", async () => {
