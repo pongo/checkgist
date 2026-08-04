@@ -216,6 +216,16 @@ describe("bookmark list model", () => {
     ]);
   });
 
+  it("keeps bookmarks unchanged when dropping on the list boundary without an indicator", async () => {
+    const { bookmarks, model, reorderBookmark } = createModel();
+
+    model.beginDrag(one);
+    await model.dropOnCurrentIndicator();
+
+    expect(reorderBookmark).not.toHaveBeenCalled();
+    expect(bookmarks.value).toEqual([one, two, three]);
+  });
+
   it("clears drag state without reordering when dropping without a source", async () => {
     const { bookmarks, model, reorderBookmark } = createModel();
 

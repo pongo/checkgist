@@ -206,11 +206,6 @@ export function createBookmarkListModel({
 
   async function dropOnCurrentIndicator(fallbackRoutePath = "") {
     const targetRoutePath = dropIndicator.value?.routePath;
-
-    if (targetRoutePath === undefined) {
-      return;
-    }
-
     const targetBookmark = bookmarks.value.find(
       (bookmark) => bookmark.routePath === targetRoutePath,
     );
