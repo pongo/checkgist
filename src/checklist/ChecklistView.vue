@@ -69,7 +69,7 @@ function onTaskLabelClick(file: ChecklistReadyFile, event: MouseEvent) {
   const code = target.closest("code");
   if (code !== null) {
     event.preventDefault();
-    void copyToClipboard(code.textContent ?? "");
+    void copyToClipboard(code.textContent);
     return;
   }
 
