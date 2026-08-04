@@ -16,6 +16,7 @@ import {
 const firstId = "11111111-1111-4111-8111-111111111111";
 const secondId = "22222222-2222-4222-8222-222222222222";
 const invalidId = "not-a-local-document-id";
+type UuidShapedId = `${string}-${string}-${string}-${string}-${string}`;
 
 function resetIndexedDb() {
   vi.stubGlobal("indexedDB", new IDBFactory());
@@ -76,6 +77,19 @@ describe("Local Document persistence", () => {
     });
   });
 
+  it("persists a title at the maximum permitted length", async () => {
+    const title = "a".repeat(200);
+    await createLocalDocument(firstId);
+
+    await expect(
+      saveLocalDocument({ id: firstId, title, content: "content" }),
+    ).resolves.toMatchObject({
+      id: firstId,
+      title,
+      content: "content",
+    });
+  });
+
   it.each(["   ", "a".repeat(201)])("rejects an invalid title %s", async (title) => {
     await createLocalDocument(firstId);
 
@@ -84,6 +98,17 @@ describe("Local Document persistence", () => {
     );
     expect((await getLocalDocument(firstId))?.title).toBe("Untitled document");
   });
+
+  it.each([`prefix-${firstId}` as UuidShapedId, `${firstId}-suffix` as UuidShapedId])(
+    "rejects an ID that contains a UUID but is not one",
+    async (invalidId) => {
+      vi.stubGlobal("indexedDB", undefined);
+
+      await expect(createLocalDocument(invalidId)).rejects.toThrow(
+        "Local Document IDs must be UUIDs.",
+      );
+    },
+  );
 
   it("orders documents by last successful save", async () => {
     const now = vi.spyOn(Date, "now").mockReturnValue(100);
