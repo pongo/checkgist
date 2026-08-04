@@ -40,6 +40,24 @@ describe("HomePage", () => {
     expect(document.activeElement).toBe(wrapper.get("input").element);
   });
 
+  it("starts with an empty, valid source URL input", () => {
+    wrapper = mount(HomePage, homePageMountOptions);
+
+    const input = wrapper.get<HTMLInputElement>("input");
+    expect(input.element.value).toBe("");
+    expect(input.attributes("aria-invalid")).toBe("false");
+    expect(wrapper.find("#source-url-error").exists()).toBe(false);
+  });
+
+  it("does not fail when unmounted before the scheduled input focus", async () => {
+    wrapper = mount(HomePage, homePageMountOptions);
+
+    wrapper.unmount();
+    wrapper = undefined;
+
+    await expect(nextTick()).resolves.toBeUndefined();
+  });
+
   it("opens a normalized route from the Open button", async () => {
     push.mockResolvedValueOnce(undefined);
     wrapper = mount(HomePage, homePageMountOptions);
@@ -75,5 +93,21 @@ describe("HomePage", () => {
     expect(supportedSitesLink.attributes("href")).toBe("https://github.com/pongo/checkgist");
     expect(supportedSitesLink.attributes("target")).toBe("_blank");
     expect(supportedSitesLink.attributes("rel")).toBe("noopener noreferrer");
+  });
+
+  it("clears the inline error when a later URL is supported", async () => {
+    push.mockResolvedValueOnce(undefined);
+    wrapper = mount(HomePage, homePageMountOptions);
+
+    await wrapper.get("input").setValue("HdpnureE");
+    await wrapper.get("form").trigger("submit");
+    expect(wrapper.get("#source-url-error").text()).toContain(unsupportedSourceUrlMessage);
+
+    await wrapper.get("input").setValue("gist.github.com/octocat/abc123");
+    await wrapper.get("form").trigger("submit");
+
+    expect(push).toHaveBeenCalledWith("/gist.github.com/abc123");
+    expect(wrapper.get("input").attributes("aria-invalid")).toBe("false");
+    expect(wrapper.find("#source-url-error").exists()).toBe(false);
   });
 });
