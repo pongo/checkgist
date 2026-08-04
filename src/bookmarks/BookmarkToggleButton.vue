@@ -26,10 +26,6 @@ const defaultTitle = computed(() => {
 });
 
 async function toggleBookmark() {
-  if (!isReady.value || isBusy.value) {
-    return;
-  }
-
   isBusy.value = true;
 
   try {
