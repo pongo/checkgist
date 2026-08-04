@@ -170,6 +170,22 @@ describe("ChecklistView", () => {
     });
   });
 
+  it("ignores changes from non-Task Item form controls", () => {
+    const session = createSession();
+    const wrapper = mountSession(session);
+    const select = document.createElement("select");
+    select.append(new Option("Default", "default"));
+
+    wrapper.get("article").element.append(select);
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [true, false],
+    });
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
   it("resets only one ready file and preserves checked state in other files", async () => {
     const session = createSession();
     const wrapper = mountSession(session);
