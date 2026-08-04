@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 
-import { IDBFactory } from "fake-indexeddb";
+import { forceCloseDatabase, IDBFactory } from "fake-indexeddb";
+import { unwrap } from "idb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -77,6 +78,44 @@ describe("Checkgist database lifecycle", () => {
 
     expect(upgradedDatabase.version).toBe(3);
     upgradedDatabase.close();
+  });
+
+  it("opens a fresh connection after the browser terminates the current one", async () => {
+    const terminatedDatabase = await openCheckgistDatabase();
+    await terminatedDatabase.put(bookmarksStoreName, {
+      routePath: "/pastebin.com/terminated",
+      title: "Terminated bookmark",
+      position: 0,
+    });
+
+    // fake-indexeddb declares this parameter as a constructor, but its API accepts a database instance.
+    forceCloseDatabase(
+      unwrap(terminatedDatabase) as unknown as Parameters<typeof forceCloseDatabase>[0],
+    );
+    resetIndexedDb();
+
+    const reopenedDatabase = await openCheckgistDatabase();
+
+    expect(
+      await reopenedDatabase.get(bookmarksStoreName, "/pastebin.com/terminated"),
+    ).toBeUndefined();
+    terminatedDatabase.close();
+  });
+
+  it("recovers from an unsuccessful database open", async () => {
+    const newerDatabase = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("checkgist", 3);
+      request.addEventListener("success", () => resolve(request.result));
+      request.addEventListener("error", () => reject(request.error));
+    });
+    newerDatabase.close();
+
+    await expect(openCheckgistDatabase()).rejects.toThrow(/version/i);
+    resetIndexedDb();
+
+    const database = await openCheckgistDatabase();
+
+    expect(database.objectStoreNames.contains(bookmarksStoreName)).toBe(true);
   });
 
   it("opens against a fresh IndexedDB factory after the test seam closes the connection", async () => {
