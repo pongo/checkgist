@@ -470,6 +470,21 @@ describe("ChecklistPage", () => {
     expect(copyLink.text()).toBe("Copy link");
   });
 
+  it("clears copied feedback when Checklist State navigation changes the URL", async () => {
+    vi.useFakeTimers();
+    const wrapper = await mountLoadedSource(createSource());
+    const copyLink = getChecklistLink(wrapper);
+
+    await copyLink.trigger("click");
+    await flushPromises();
+    expect(copyLink.text()).toBe("Copied");
+
+    setRouteLocation("/pastebin.com/HdpnureE#1");
+    await nextTick();
+
+    expect(copyLink.text()).toBe("Copy link");
+  });
+
   it("does not show a visible error when copying the Checklist URL fails", async () => {
     writeClipboardText.mockRejectedValueOnce(new Error("denied"));
     loadSource.mockResolvedValueOnce(createSource());
