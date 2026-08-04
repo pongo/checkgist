@@ -92,12 +92,8 @@ export async function reorderBookmark(routePath: string, toIndex: number): Promi
     return bookmarks;
   }
 
-  const [bookmark] = bookmarks.splice(fromIndex, 1);
-  if (bookmark === undefined) {
-    await tx.done;
-    return bookmarks;
-  }
-
+  // fromIndex was found in bookmarks, so removing one item must yield a bookmark.
+  const bookmark = bookmarks.splice(fromIndex, 1)[0]!;
   bookmarks.splice(Math.max(0, Math.min(toIndex, bookmarks.length)), 0, bookmark);
   const normalized = withDensePositions(bookmarks);
   await Promise.all([...normalized.map((nextBookmark) => tx.store.put(nextBookmark)), tx.done]);
