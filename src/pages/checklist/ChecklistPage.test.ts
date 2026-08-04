@@ -448,6 +448,47 @@ describe("ChecklistPage", () => {
     expect(document.title).toBe("Checkgist");
   });
 
+  it("shows loading feedback until the Source Service resolves", async () => {
+    let resolveSource: ((source: LoadedSource) => void) | undefined;
+    loadSource.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSource = resolve;
+      }),
+    );
+    const wrapper = mount(ChecklistPage);
+
+    expect(wrapper.text()).toContain("Loading source...");
+    expect(wrapper.find("[role='alert']").exists()).toBe(false);
+
+    resolveSource?.(createSource());
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Loading source...");
+    expect(wrapper.text()).toContain("Source description");
+  });
+
+  it("shows the unsupported URL message as a load error", async () => {
+    setRouteLocation("/");
+    const wrapper = mount(ChecklistPage);
+
+    await flushPromises();
+
+    expect(wrapper.get("[role='alert']").text()).toBe("Enter a supported URL");
+    expect(loadSource).not.toHaveBeenCalled();
+    expect(wrapper.text()).not.toContain("Loading source...");
+  });
+
+  it("aborts an active source load when the page unmounts", async () => {
+    loadSource.mockReturnValueOnce(new Promise<LoadedSource>(() => {}));
+    const wrapper = mount(ChecklistPage);
+
+    await nextTick();
+    const signal = loadSource.mock.calls.at(-1)?.[1].signal;
+    wrapper.unmount();
+
+    expect(signal?.aborted).toBe(true);
+  });
+
   it("copies the current Checklist URL including route and Task Item State hash", async () => {
     vi.useFakeTimers();
     setRouteLocation("/pastebin.com/HdpnureE#10");

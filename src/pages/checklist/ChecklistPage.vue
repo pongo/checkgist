@@ -15,16 +15,19 @@ const checklistView = ref<InstanceType<typeof ChecklistView> | null>(null);
 const lifecycle = useChecklistSourceLifecycle();
 const lifecycleState = lifecycle.state;
 const session = computed(() =>
+  // Stryker disable next-line ConditionalExpression: Every non-ready lifecycle state has a null session, so the mutation returns the same value.
   lifecycleState.value.status === "ready" ? lifecycleState.value.session : null,
 );
 const isLoading = computed(() => lifecycleState.value.status === "loading");
 const loadError = computed(() =>
+  // Stryker disable next-line ConditionalExpression: Only error and unsupported states have a message; every other state exposes an empty string.
   lifecycleState.value.status === "error" || lifecycleState.value.status === "unsupported"
     ? lifecycleState.value.message
     : "",
 );
 
 function resetCurrentChecklist() {
+  // Stryker disable next-line OptionalChaining: This control exists only after ChecklistView mounts and assigns the ref before it can receive a click.
   checklistView.value?.resetAllTasks();
 }
 
