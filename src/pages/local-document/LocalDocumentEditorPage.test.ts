@@ -1,6 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { nextTick, reactive, type Ref } from "vue";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import LocalDocumentEditorPage from "./LocalDocumentEditorPage.vue";
 
@@ -28,6 +28,7 @@ const routerPush = vi.hoisted(() => vi.fn<() => Promise<void>>());
 const routeLeaveGuard = vi.hoisted(() => ({ callback: undefined as (() => boolean) | undefined }));
 const editorFixture = vi.hoisted(() => ({ current: undefined as unknown as EditorFixture }));
 const route = reactive({ params: { documentId } });
+let mountedEditors: Array<{ unmount(): void }> = [];
 
 vi.mock("@/local-documents", async () => {
   const { ref } = await import("vue");
@@ -78,6 +79,7 @@ async function mountEditor() {
     },
   });
   await flushPromises();
+  mountedEditors.push(wrapper);
   return wrapper;
 }
 
@@ -100,6 +102,11 @@ function resetEditorMocks() {
 }
 
 beforeEach(resetEditorMocks);
+
+afterEach(() => {
+  for (const wrapper of mountedEditors) wrapper.unmount();
+  mountedEditors = [];
+});
 
 describe("LocalDocumentEditorPage preview workspace", () => {
   it("renders no transient feedback while the Local Document is loading", async () => {
@@ -230,6 +237,30 @@ describe("LocalDocumentEditorPage save protection", () => {
     expect(wrapper.text()).toContain("Storage is unavailable.");
     expect(routeLeaveGuard.callback?.()).toBe(false);
     expect(unload.defaultPrevented).toBe(true);
+  });
+
+  it("removes global save and unload protection when leaving the editor", async () => {
+    const wrapper = await mountEditor();
+    editorFixture.current.isDirty.value = true;
+    editorFixture.current.canSave.value = true;
+
+    wrapper.unmount();
+
+    const saveShortcut = new KeyboardEvent("keydown", {
+      key: "s",
+      code: "KeyS",
+      ctrlKey: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(saveShortcut);
+    await flushPromises();
+
+    const unload = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(unload);
+
+    expect(saveShortcut.defaultPrevented).toBe(false);
+    expect(save).not.toHaveBeenCalled();
+    expect(unload.defaultPrevented).toBe(false);
   });
 });
 
