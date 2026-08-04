@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 
 import { IDBFactory } from "fake-indexeddb";
+import { effectScope } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { addBookmark as addBookmarkToDatabase, closeBookmarkDatabaseForTests } from "./db";
@@ -24,18 +25,40 @@ describe("useBookmarks", () => {
     requestPersistentStorageOnce.mockReset();
   });
 
-  it("automatically loads persisted bookmarks into shared state on first use", async () => {
+  it("loads a fresh persisted snapshot for each composable instance", async () => {
     await addBookmarkToDatabase({ routePath: "/pastebin.com/one", title: "One" });
-
     const first = useBookmarks();
+    await first.ensureLoaded();
+
+    await addBookmarkToDatabase({ routePath: "/pastebin.com/two", title: "Two" });
     const second = useBookmarks();
+    await second.ensureLoaded();
+
+    expect(first.bookmarks.value).toEqual([
+      { routePath: "/pastebin.com/one", title: "One", position: 0 },
+    ]);
+    expect(second.bookmarks.value).toEqual([
+      { routePath: "/pastebin.com/one", title: "One", position: 0 },
+      { routePath: "/pastebin.com/two", title: "Two", position: 1 },
+    ]);
+  });
+
+  it("refreshes active Vue scopes after a same-tab mutation", async () => {
+    const scope = effectScope();
+    const activeBookmarks = scope.run(() => useBookmarks());
+
+    if (activeBookmarks === undefined) throw new Error("Expected an active Bookmark scope.");
+
+    await activeBookmarks.ensureLoaded();
+    await useBookmarks().addBookmark({ routePath: "/pastebin.com/one", title: "One" });
 
     await vi.waitFor(() => {
-      expect(first.isReady.value).toBe(true);
-      expect(second.bookmarks.value).toEqual([
+      expect(activeBookmarks.bookmarks.value).toEqual([
         { routePath: "/pastebin.com/one", title: "One", position: 0 },
       ]);
     });
+
+    scope.stop();
   });
 
   it("requests persistent storage once after successful new bookmark adds", async () => {

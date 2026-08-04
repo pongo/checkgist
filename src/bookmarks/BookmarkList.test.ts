@@ -6,7 +6,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { defineComponent, h } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { closeBookmarkDatabaseForTests } from "./db";
+import { closeBookmarkDatabaseForTests, listBookmarks, type Bookmark } from "./db";
 import BookmarkList from "./BookmarkList.vue";
 import { resetBookmarksForTests, useBookmarks } from "./useBookmarks";
 
@@ -41,6 +41,18 @@ function mountBookmarkList() {
         RouterLink: RouterLinkStub,
       },
     },
+  });
+}
+
+async function mountLoadedBookmarkList() {
+  const wrapper = mountBookmarkList();
+  await vi.waitFor(() => expect(wrapper.find("section").exists()).toBe(true));
+  return wrapper;
+}
+
+async function expectPersistedBookmarks(expected: Bookmark[]) {
+  await vi.waitFor(async () => {
+    expect(await listBookmarks()).toEqual(expected);
   });
 }
 
@@ -113,7 +125,7 @@ describe("BookmarkList", () => {
   it("renders bookmark links", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
 
     const link = wrapper.get("a[href='/pastebin.com/one']");
     expect(link.text()).toBe("One");
@@ -122,7 +134,7 @@ describe("BookmarkList", () => {
   it("renames a bookmark with Enter and trims whitespace", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
 
     await getButtonByLabel(wrapper, "Rename bookmark").trigger("click");
     await wrapper.get("input").setValue("  Release checklist  ");
@@ -136,7 +148,7 @@ describe("BookmarkList", () => {
   it("cancels rename with Escape", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
 
     await getButtonByLabel(wrapper, "Rename bookmark").trigger("click");
     await wrapper.get("input").setValue("Ignored");
@@ -150,7 +162,7 @@ describe("BookmarkList", () => {
   it("keeps the previous title when blur saves an empty title", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
 
     await getButtonByLabel(wrapper, "Rename bookmark").trigger("click");
     await wrapper.get("input").setValue("  ");
@@ -164,7 +176,7 @@ describe("BookmarkList", () => {
   it("shows a restore placeholder after deleting a bookmark", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
 
     await getButtonByLabel(wrapper, "Delete bookmark").trigger("click");
 
@@ -172,15 +184,15 @@ describe("BookmarkList", () => {
       expect(wrapper?.find("a[href='/pastebin.com/one']").exists()).toBe(false);
       expect(wrapper?.text()).toContain("One");
       expect(wrapper?.text()).toContain("Restore");
-      expect(bookmarks.bookmarks.value).toEqual([]);
     });
+    await expectPersistedBookmarks([]);
   });
 
   it("restores a deleted bookmark at its placeholder position", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
 
     await wrapper.get("button[aria-label='Delete bookmark']").trigger("click");
     await vi.waitFor(() => {
@@ -188,19 +200,17 @@ describe("BookmarkList", () => {
     });
     await wrapper.get("button:not([aria-label])").trigger("click");
 
-    await vi.waitFor(() => {
-      expect(bookmarks.bookmarks.value).toEqual([
-        { routePath: "/pastebin.com/one", title: "One", position: 0 },
-        { routePath: "/pastebin.com/two", title: "Two", position: 1 },
-      ]);
-    });
+    await expectPersistedBookmarks([
+      { routePath: "/pastebin.com/one", title: "One", position: 0 },
+      { routePath: "/pastebin.com/two", title: "Two", position: 1 },
+    ]);
   });
 
   it("reorders bookmarks with native drag events on the title link", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
     const dataTransfer: TestDataTransfer = {
       dropEffect: "none",
       effectAllowed: "move",
@@ -212,19 +222,17 @@ describe("BookmarkList", () => {
     await wrapper.get("a[href='/pastebin.com/one']").trigger("dragover", { dataTransfer });
     await wrapper.get("a[href='/pastebin.com/one']").trigger("drop", { dataTransfer });
 
-    await vi.waitFor(() => {
-      expect(bookmarks.bookmarks.value).toEqual([
-        { routePath: "/pastebin.com/two", title: "Two", position: 0 },
-        { routePath: "/pastebin.com/one", title: "One", position: 1 },
-      ]);
-    });
+    await expectPersistedBookmarks([
+      { routePath: "/pastebin.com/two", title: "Two", position: 0 },
+      { routePath: "/pastebin.com/one", title: "One", position: 1 },
+    ]);
   });
 
   it("shows a drop indicator while dragging over another bookmark", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
     const dataTransfer: TestDataTransfer = {
       dropEffect: "none",
       effectAllowed: "move",
@@ -244,7 +252,7 @@ describe("BookmarkList", () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
     const dataTransfer: TestDataTransfer = {
       dropEffect: "none",
       effectAllowed: "move",
@@ -269,16 +277,14 @@ describe("BookmarkList", () => {
     expect(dragOverEvent.defaultPrevented).toBe(false);
     expect(dropEvent.defaultPrevented).toBe(false);
     expect(dataTransfer.dropEffect).toBe("none");
-    expect(bookmarks.bookmarks.value).toEqual([
-      { routePath: "/pastebin.com/two", title: "Two", position: 0 },
-    ]);
+    await expectPersistedBookmarks([{ routePath: "/pastebin.com/two", title: "Two", position: 0 }]);
   });
 
   it("allows dropping outside the list after a drop indicator is selected", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
     const dataTransfer: TestDataTransfer = {
       dropEffect: "none",
       effectAllowed: "move",
@@ -291,21 +297,19 @@ describe("BookmarkList", () => {
     const dragOverEvent = dispatchWindowDragEvent("dragover", dataTransfer);
     dispatchWindowDragEvent("drop", dataTransfer);
 
-    await vi.waitFor(() => {
-      expect(dragOverEvent.defaultPrevented).toBe(true);
-      expect(dataTransfer.dropEffect).toBe("move");
-      expect(bookmarks.bookmarks.value).toEqual([
-        { routePath: "/pastebin.com/two", title: "Two", position: 0 },
-        { routePath: "/pastebin.com/one", title: "One", position: 1 },
-      ]);
-    });
+    expect(dragOverEvent.defaultPrevented).toBe(true);
+    expect(dataTransfer.dropEffect).toBe("move");
+    await expectPersistedBookmarks([
+      { routePath: "/pastebin.com/two", title: "Two", position: 0 },
+      { routePath: "/pastebin.com/one", title: "One", position: 1 },
+    ]);
   });
 
   it("allows internal bookmark dragenter over the list before an indicator is selected", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
     const dataTransfer: TestDataTransfer = {
       dropEffect: "none",
       effectAllowed: "move",
@@ -324,7 +328,7 @@ describe("BookmarkList", () => {
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/three", title: "Three" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
     const dataTransfer = {
       dropEffect: "",
       effectAllowed: "",
@@ -336,13 +340,11 @@ describe("BookmarkList", () => {
     await wrapper.get("a[href='/pastebin.com/three']").trigger("dragover", { dataTransfer });
     await wrapper.get("a[href='/pastebin.com/three']").trigger("drop", { dataTransfer });
 
-    await vi.waitFor(() => {
-      expect(bookmarks.bookmarks.value).toEqual([
-        { routePath: "/pastebin.com/two", title: "Two", position: 0 },
-        { routePath: "/pastebin.com/one", title: "One", position: 1 },
-        { routePath: "/pastebin.com/three", title: "Three", position: 2 },
-      ]);
-    });
+    await expectPersistedBookmarks([
+      { routePath: "/pastebin.com/two", title: "Two", position: 0 },
+      { routePath: "/pastebin.com/one", title: "One", position: 1 },
+      { routePath: "/pastebin.com/three", title: "Three", position: 2 },
+    ]);
   });
 
   it("keeps one visual drop indicator for the same downward insertion gap", async () => {
@@ -350,7 +352,7 @@ describe("BookmarkList", () => {
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
     await bookmarks.addBookmark({ routePath: "/pastebin.com/three", title: "Three" });
-    wrapper = mountBookmarkList();
+    wrapper = await mountLoadedBookmarkList();
     const dataTransfer: TestDataTransfer = {
       dropEffect: "none",
       effectAllowed: "move",

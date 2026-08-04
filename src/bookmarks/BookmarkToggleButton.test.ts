@@ -8,9 +8,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Checklist } from "@/checklist";
 
-import { closeBookmarkDatabaseForTests } from "./db";
+import {
+  addBookmark as addBookmarkToDatabase,
+  closeBookmarkDatabaseForTests,
+  listBookmarks,
+} from "./db";
 import BookmarkToggleButton from "./BookmarkToggleButton.vue";
-import { resetBookmarksForTests, useBookmarks } from "./useBookmarks";
+import { resetBookmarksForTests } from "./useBookmarks";
 
 const route = reactive({
   path: "/pastebin.com/HdpnureE",
@@ -39,6 +43,16 @@ function createSession(title = "HdpnureE"): Checklist {
   };
 }
 
+async function mountLoadedBookmarkToggle(title = "HdpnureE") {
+  const wrapper = mount(BookmarkToggleButton, {
+    props: {
+      session: createSession(title),
+    },
+  });
+  await vi.waitFor(() => expect(wrapper.find("button").exists()).toBe(true));
+  return wrapper;
+}
+
 describe("BookmarkToggleButton", () => {
   let wrapper: VueWrapper | undefined;
 
@@ -65,38 +79,30 @@ describe("BookmarkToggleButton", () => {
   });
 
   it("adds a bookmark for the clean route path", async () => {
-    const bookmarks = useBookmarks();
-    await bookmarks.ensureLoaded();
-    wrapper = mount(BookmarkToggleButton, {
-      props: {
-        session: createSession("Release tasks"),
-      },
-    });
+    wrapper = await mountLoadedBookmarkToggle("Release tasks");
 
     await wrapper.get("button").trigger("click");
 
     await vi.waitFor(() => {
       expect(wrapper?.get("button").text()).toBe("Bookmarked");
-      expect(bookmarks.bookmarks.value).toEqual([
-        { routePath: "/pastebin.com/HdpnureE", title: "Release tasks", position: 0 },
-      ]);
     });
+    expect(await listBookmarks()).toEqual([
+      { routePath: "/pastebin.com/HdpnureE", title: "Release tasks", position: 0 },
+    ]);
   });
 
   it("removes an existing bookmark by route path", async () => {
-    const bookmarks = useBookmarks();
-    await bookmarks.addBookmark({ routePath: "/pastebin.com/HdpnureE", title: "Custom title" });
-    wrapper = mount(BookmarkToggleButton, {
-      props: {
-        session: createSession(),
-      },
+    await addBookmarkToDatabase({
+      routePath: "/pastebin.com/HdpnureE",
+      title: "Custom title",
     });
+    wrapper = await mountLoadedBookmarkToggle();
 
     await wrapper.get("button").trigger("click");
 
     await vi.waitFor(() => {
       expect(wrapper?.get("button").text()).toBe("Bookmark");
-      expect(bookmarks.bookmarks.value).toEqual([]);
     });
+    expect(await listBookmarks()).toEqual([]);
   });
 });

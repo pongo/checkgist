@@ -54,6 +54,8 @@ Bookmark UI and local persistence.
 
 Bookmarks are saved references to Checklists. They do not own Checklist State. Use this folder for bookmark list behavior, bookmark toggling, ordering, and IndexedDB persistence for bookmarks.
 
+Bookmark consumers own scope-local reactive snapshots loaded from IndexedDB. Same-tab mutations ask other active Bookmark scopes to refresh; a newly mounted scope always reads persisted state.
+
 For working with IndexedDB see `docs/vendor/IndexedDB/idb.md` and `docs/vendor/IndexedDB/fake-indexeddb.md`.
 
 ### `src/shared/`
