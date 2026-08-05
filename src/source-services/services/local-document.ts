@@ -12,6 +12,8 @@ const localDocumentsSegment = "local";
 
 function normalizedBasePath(): string {
   const base = import.meta.env.BASE_URL;
+  // The root base path and an empty base path both map to URL.pathname below.
+  // Stryker disable next-line StringLiteral: replacing the root marker with an empty string preserves the resulting app path for browser URL pathnames
   return base === "/" ? "/" : `/${base.replace(/^\/|\/$/g, "")}/`;
 }
 
@@ -21,6 +23,9 @@ function appPathFromUrl(url: URL): string | null {
   }
 
   const basePath = normalizedBasePath();
+  // URL.pathname always starts with a slash, so the root branch is equivalent
+  // to the generic prefix-and-slice branch for the root base path.
+  // Stryker disable next-line ConditionalExpression, StringLiteral, BlockStatement: both branches return the same pathname when the base path is root
   if (basePath === "/") {
     return url.pathname;
   }
@@ -35,6 +40,7 @@ function referenceFromLocalSegments(path: string[]): LocalDocumentReference | nu
   if (
     prefix !== localDocumentsSegment ||
     extra !== undefined ||
+    // Stryker disable next-line StringLiteral: the fallback is only used for absent IDs, and any non-UUID sentinel remains invalid
     !isLocalDocumentId(documentId ?? "")
   ) {
     return null;

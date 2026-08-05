@@ -78,6 +78,21 @@ describe("Local Document source service", () => {
     expect(referenceFromUrlInput(incompleteUrl.href)).toBeNull();
   });
 
+  it.each(["/local/not-a-uuid/edit", "/local/not-a-uuid/preview", "/local/not-a-uuid/edit/extra"])(
+    "rejects malformed Local Document route shape %s",
+    (route) => {
+      expect(referenceFromUrlInput(applicationUrl(route).href)).toBeNull();
+    },
+  );
+
+  it.each([
+    "/other/" + documentId,
+    "/local/" + documentId + "/preview",
+    "/local/" + documentId + "/edit/extra",
+  ])("rejects valid IDs outside the canonical Local Document route %s", (route) => {
+    expect(referenceFromUrlInput(applicationUrl(route).href)).toBeNull();
+  });
+
   it("recognizes Local Document URLs only below a nested application base path", () => {
     vi.stubEnv("BASE_URL", "/projects/checkgist/");
     const sourceUrl = applicationUrl(localDocumentViewRoute(documentId));
@@ -86,10 +101,15 @@ describe("Local Document source service", () => {
       localDocumentViewRoute(documentId),
       window.location.origin,
     );
+    const sameOriginUrlWithWrongLongPrefix = new URL(
+      `/wrong-prefix-12345${localDocumentViewRoute(documentId)}`,
+      window.location.origin,
+    );
 
     expect(referenceFromUrlInput(sourceUrl.href)).toEqual({ type: "local-document", documentId });
     expect(routeForUrlInput(editorUrl.href)).toBe(localDocumentViewRoute(documentId));
     expect(referenceFromUrlInput(sameOriginUrlOutsideApp.href)).toBeNull();
+    expect(referenceFromUrlInput(sameOriginUrlWithWrongLongPrefix.href)).toBeNull();
   });
 
   it("loads a Local Document through the registered Checklist pipeline", async () => {
