@@ -7,6 +7,9 @@ const listLocalDocuments = vi.hoisted(() => vi.fn<() => Promise<LocalDocument[]>
 const deleteLocalDocument = vi.hoisted(() =>
   vi.fn<(id: string) => Promise<LocalDocument | null>>(),
 );
+const saveLocalDocument = vi.hoisted(() =>
+  vi.fn<(input: { id: string; title: string; content: string }) => Promise<LocalDocument | null>>(),
+);
 const removeBookmark = vi.hoisted(() => vi.fn<(routePath: string) => Promise<unknown>>());
 const invalidateBookmarks = vi.hoisted(() => vi.fn<() => void>());
 
@@ -18,6 +21,7 @@ vi.mock("./db", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./db")>()),
   listLocalDocuments,
   deleteLocalDocument,
+  saveLocalDocument,
 }));
 
 const document: LocalDocument = {
@@ -26,6 +30,12 @@ const document: LocalDocument = {
   content: "- [ ] Passport",
   createdAt: 1,
   updatedAt: 1,
+};
+
+const secondDocument: LocalDocument = {
+  ...document,
+  id: "22222222-2222-4222-8222-222222222222",
+  title: "Tickets",
 };
 
 function deferred<T>() {
@@ -40,6 +50,7 @@ beforeEach(async () => {
   await resetLocalDocumentsForTests();
   listLocalDocuments.mockReset();
   deleteLocalDocument.mockReset();
+  saveLocalDocument.mockReset();
   removeBookmark.mockReset();
   removeBookmark.mockResolvedValue(null);
   invalidateBookmarks.mockReset();
@@ -58,6 +69,75 @@ describe("useLocalDocuments snapshots", () => {
 
     expect(first.documents.value).toEqual([document]);
     expect(second.documents.value).toEqual([]);
+  });
+
+  it("reports an idle snapshot as not ready", () => {
+    expect(useLocalDocuments().isReady.value).toBe(false);
+  });
+
+  it("retries a failed load and exposes its error state", async () => {
+    const loadError = new Error("Storage is unavailable.");
+    listLocalDocuments.mockRejectedValueOnce(loadError).mockResolvedValueOnce([document]);
+    const localDocuments = useLocalDocuments();
+
+    await localDocuments.ensureLoaded();
+
+    expect(localDocuments.status.value).toBe("error");
+    expect(localDocuments.error.value).toBe(loadError);
+
+    await localDocuments.ensureLoaded();
+
+    expect(listLocalDocuments).toHaveBeenCalledTimes(2);
+    expect(localDocuments.status.value).toBe("ready");
+    expect(localDocuments.error.value).toBeNull();
+    expect(localDocuments.documents.value).toEqual([document]);
+  });
+});
+
+describe("useLocalDocuments saving", () => {
+  const input = { id: document.id, title: "Packing", content: "- [x] Passport" };
+
+  it("refreshes a loaded snapshot after a successful save", async () => {
+    const saved = { ...document, content: input.content, updatedAt: 2 };
+    listLocalDocuments.mockResolvedValueOnce([document]).mockResolvedValueOnce([saved]);
+    saveLocalDocument.mockResolvedValue(saved);
+    const localDocuments = useLocalDocuments();
+    await localDocuments.ensureLoaded();
+
+    await expect(localDocuments.saveDocument(input)).resolves.toEqual(saved);
+
+    expect(localDocuments.documents.value).toEqual([saved]);
+  });
+
+  it("does not populate an idle snapshot after saving", async () => {
+    listLocalDocuments.mockResolvedValue([document]);
+    saveLocalDocument.mockResolvedValue(document);
+    const localDocuments = useLocalDocuments();
+
+    await localDocuments.saveDocument(input);
+
+    expect(localDocuments.documents.value).toEqual([]);
+  });
+
+  it("does not replace a loaded snapshot when saving a missing document", async () => {
+    listLocalDocuments.mockResolvedValueOnce([document]).mockResolvedValueOnce([]);
+    saveLocalDocument.mockResolvedValue(null);
+    const localDocuments = useLocalDocuments();
+    await localDocuments.ensureLoaded();
+
+    await expect(localDocuments.saveDocument(input)).resolves.toBeNull();
+
+    expect(localDocuments.documents.value).toEqual([document]);
+  });
+
+  it("does not populate an idle snapshot when the document is already missing", async () => {
+    listLocalDocuments.mockResolvedValue([document]);
+    saveLocalDocument.mockResolvedValue(null);
+    const localDocuments = useLocalDocuments();
+
+    await expect(localDocuments.saveDocument(input)).resolves.toBeNull();
+
+    expect(localDocuments.documents.value).toEqual([]);
   });
 });
 
@@ -80,6 +160,17 @@ describe("useLocalDocuments mutation ordering", () => {
 });
 
 describe("useLocalDocuments deletion", () => {
+  it("removes only the deleted Local Document from a loaded snapshot", async () => {
+    listLocalDocuments.mockResolvedValue([document, secondDocument]);
+    deleteLocalDocument.mockResolvedValue(document);
+    const localDocuments = useLocalDocuments();
+    await localDocuments.ensureLoaded();
+
+    await expect(localDocuments.deleteDocument(document.id)).resolves.toBe(document);
+
+    expect(localDocuments.documents.value).toEqual([secondDocument]);
+  });
+
   it("removes the owned Bookmark after deleting a Local Document", async () => {
     deleteLocalDocument.mockResolvedValue(document);
 
