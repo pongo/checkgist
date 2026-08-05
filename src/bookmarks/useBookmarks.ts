@@ -56,6 +56,7 @@ export function useBookmarks() {
   }
 
   function invalidateBookmarks(): void {
+    // Stryker disable next-line AssignmentOperator: versions are only compared for equality, so either monotonic direction invalidates older reads.
     stateVersion += 1;
     bookmarks.value = [];
     error.value = null;

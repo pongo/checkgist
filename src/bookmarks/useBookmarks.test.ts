@@ -4,7 +4,11 @@ import { IDBFactory } from "fake-indexeddb";
 import { effectScope } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { addBookmark as addBookmarkToDatabase, closeBookmarkDatabaseForTests } from "./db";
+import {
+  addBookmark as addBookmarkToDatabase,
+  closeBookmarkDatabaseForTests,
+  listBookmarks as listBookmarksFromDatabase,
+} from "./db";
 import type { Bookmark } from "./db";
 import { resetBookmarksForTests, useBookmarks } from "./useBookmarks";
 
@@ -143,6 +147,149 @@ describe("useBookmarks", () => {
     }
   });
 
+  it("keeps the newer snapshot while an invalidated load is still pending", async () => {
+    let resolveStaleLoad: (bookmarks: Bookmark[]) => void = () => undefined;
+    let resolveCurrentLoad: (bookmarks: Bookmark[]) => void = () => undefined;
+    const staleLoad = new Promise<Bookmark[]>((resolve) => {
+      resolveStaleLoad = resolve;
+    });
+    const currentLoad = new Promise<Bookmark[]>((resolve) => {
+      resolveCurrentLoad = resolve;
+    });
+    listBookmarks.mockImplementationOnce(() => staleLoad).mockImplementationOnce(() => currentLoad);
+
+    const bookmarks = useBookmarks();
+    bookmarks.invalidate();
+    resolveStaleLoad([{ routePath: "/pastebin.com/stale", title: "Stale", position: 0 }]);
+    await vi.waitFor(() => expect(listBookmarks).toHaveBeenCalledTimes(2));
+
+    expect(bookmarks.status.value).toBe("loading");
+    expect(bookmarks.bookmarks.value).toEqual([]);
+    await new Promise((resolve) => setTimeout(resolve));
+    void bookmarks.ensureLoaded();
+    expect(listBookmarks).toHaveBeenCalledTimes(2);
+
+    resolveCurrentLoad([{ routePath: "/pastebin.com/current", title: "Current", position: 0 }]);
+    await bookmarks.ensureLoaded();
+
+    expect(bookmarks.bookmarks.value).toEqual([
+      { routePath: "/pastebin.com/current", title: "Current", position: 0 },
+    ]);
+  });
+
+  it("ignores an invalidated load error after the current snapshot is ready", async () => {
+    let rejectStaleLoad: (reason?: unknown) => void = () => undefined;
+    const staleLoad = new Promise<Bookmark[]>((_, reject) => {
+      rejectStaleLoad = reject;
+    });
+    listBookmarks.mockImplementationOnce(() => staleLoad);
+
+    const bookmarks = useBookmarks();
+    bookmarks.invalidate();
+    await bookmarks.ensureLoaded();
+    rejectStaleLoad(new Error("Stale load failed"));
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(bookmarks.status.value).toBe("ready");
+    expect(bookmarks.error.value).toBeNull();
+  });
+
+  it("retries an initial load after it fails", async () => {
+    listBookmarks.mockRejectedValueOnce(new Error("Initial load failed"));
+    const bookmarks = useBookmarks();
+
+    await bookmarks.ensureLoaded();
+    expect(bookmarks.status.value).toBe("error");
+
+    await bookmarks.ensureLoaded();
+
+    expect(bookmarks.status.value).toBe("ready");
+  });
+
+  it("does not change other Bookmarks when renaming one", async () => {
+    await addBookmarkToDatabase({ routePath: "/pastebin.com/one", title: "One" });
+    await addBookmarkToDatabase({ routePath: "/pastebin.com/two", title: "Two" });
+    const bookmarks = useBookmarks();
+    await bookmarks.ensureLoaded();
+
+    await bookmarks.renameBookmark("/pastebin.com/one", "Renamed");
+
+    expect(bookmarks.bookmarks.value).toEqual([
+      { routePath: "/pastebin.com/one", title: "Renamed", position: 0 },
+      { routePath: "/pastebin.com/two", title: "Two", position: 1 },
+    ]);
+  });
+
+  it("does not issue Bookmark commands while the persisted snapshot is unavailable", async () => {
+    vi.stubGlobal("indexedDB", undefined);
+    const bookmarks = useBookmarks();
+
+    await bookmarks.ensureLoaded();
+    await expect(
+      bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" }),
+    ).resolves.toBeNull();
+    await expect(bookmarks.removeBookmark("/pastebin.com/one")).resolves.toBeNull();
+    await expect(bookmarks.renameBookmark("/pastebin.com/one", "Renamed")).resolves.toBeNull();
+    await expect(bookmarks.reorderBookmark("/pastebin.com/one", 0)).resolves.toBeUndefined();
+    await expect(
+      bookmarks.restoreBookmark({ routePath: "/pastebin.com/one", title: "One", position: 0 }, 0),
+    ).resolves.toBeUndefined();
+  });
+
+  it("does not refresh other scopes after removing a missing Bookmark", async () => {
+    const scope = effectScope();
+    const activeBookmarks = scope.run(() => useBookmarks());
+
+    if (activeBookmarks === undefined) throw new Error("Expected an active Bookmark scope.");
+
+    await activeBookmarks.ensureLoaded();
+    const sourceBookmarks = useBookmarks();
+    await sourceBookmarks.ensureLoaded();
+    const refreshError = new Error("Source refresh failed");
+    listBookmarks.mockRejectedValueOnce(refreshError);
+
+    try {
+      await expect(sourceBookmarks.removeBookmark("/pastebin.com/missing")).rejects.toBe(
+        refreshError,
+      );
+      await new Promise((resolve) => setTimeout(resolve));
+
+      expect(activeBookmarks.status.value).toBe("ready");
+      expect(activeBookmarks.error.value).toBeNull();
+    } finally {
+      scope.stop();
+    }
+  });
+
+  it("refreshes active scopes after removing a Bookmark", async () => {
+    await addBookmarkToDatabase({ routePath: "/pastebin.com/one", title: "One" });
+    const scope = effectScope();
+    const activeBookmarks = scope.run(() => useBookmarks());
+
+    if (activeBookmarks === undefined) throw new Error("Expected an active Bookmark scope.");
+
+    try {
+      await activeBookmarks.ensureLoaded();
+      const sourceBookmarks = useBookmarks();
+      await sourceBookmarks.ensureLoaded();
+
+      await sourceBookmarks.removeBookmark("/pastebin.com/one");
+
+      await vi.waitFor(() => expect(activeBookmarks.bookmarks.value).toEqual([]));
+    } finally {
+      scope.stop();
+    }
+  });
+
+  it("resets the cached database before a test installs another IndexedDB factory", async () => {
+    await addBookmarkToDatabase({ routePath: "/pastebin.com/one", title: "One" });
+
+    await resetBookmarksForTests();
+    resetIndexedDb();
+
+    expect(await listBookmarksFromDatabase()).toEqual([]);
+  });
+
   it("requests persistent storage once after successful new bookmark adds", async () => {
     const bookmarks = useBookmarks();
 
@@ -151,6 +298,34 @@ describe("useBookmarks", () => {
     await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
 
     expect(requestPersistentStorageOnce).toHaveBeenCalledTimes(2);
+  });
+
+  it("requests persistent storage for a new Bookmark beside an existing one", async () => {
+    const bookmarks = useBookmarks();
+
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    requestPersistentStorageOnce.mockClear();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/two", title: "Two" });
+
+    expect(requestPersistentStorageOnce).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not reload the scope that applied its own Bookmark change", async () => {
+    const scope = effectScope();
+    const bookmarks = scope.run(() => useBookmarks());
+
+    if (bookmarks === undefined) throw new Error("Expected an active Bookmark scope.");
+
+    try {
+      await bookmarks.ensureLoaded();
+      listBookmarks.mockClear();
+
+      await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+
+      expect(listBookmarks).toHaveBeenCalledTimes(1);
+    } finally {
+      scope.stop();
+    }
   });
 
   it("enters error status when IndexedDB cannot load", async () => {
