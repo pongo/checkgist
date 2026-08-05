@@ -30,6 +30,8 @@ function applyChecklistStateOperationResult(result: ChecklistStateOperationResul
   }
 
   if (result.invalidateRender) {
+    // The render key only needs a new value to remount the Markdown renderer.
+    // Stryker disable next-line AssignmentOperator: incrementing or decrementing this private version changes only the fresh key value, not observable behavior
     markdownRenderVersion.value += 1;
   }
 

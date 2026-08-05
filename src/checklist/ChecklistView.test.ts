@@ -186,6 +186,24 @@ describe("ChecklistView", () => {
     expect(routerReplace).not.toHaveBeenCalled();
   });
 
+  it("does not navigate when a checkbox points outside the file Task Items", () => {
+    const session = createSession();
+    const wrapper = mountSession(session);
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.dataset.checkgistTaskIndex = "99";
+
+    wrapper.get("article").element.append(checkbox);
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(session.files[0]).toMatchObject({
+      status: "ready",
+      checked: [true, false],
+    });
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
   it("resets only one ready file and preserves checked state in other files", async () => {
     const session = createSession();
     const wrapper = mountSession(session);
@@ -292,6 +310,46 @@ describe("ChecklistView", () => {
       status: "ready",
       checked: [true, false],
     });
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("ignores clicks on a Task Item label without a checkbox", () => {
+    const session = createSession();
+    const wrapper = mountSession(session);
+    const label = document.createElement("label");
+    label.className = RENDERED_TASK_LABEL_CLASS;
+    label.textContent = "Missing checkbox";
+    wrapper.get("article").element.append(label);
+
+    expect(() => label.dispatchEvent(new MouseEvent("click", { bubbles: true }))).not.toThrow();
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("ignores clicks on a Task Item label with an unindexed checkbox", () => {
+    const session = createSession();
+    const wrapper = mountSession(session);
+    const label = document.createElement("label");
+    label.className = RENDERED_TASK_LABEL_CLASS;
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    label.append(checkbox);
+    wrapper.get("article").element.append(label);
+
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+    label.dispatchEvent(event);
+
+    expect(checkbox.checked).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("ignores clicks whose target is a text node", () => {
+    const session = createSession();
+    const wrapper = mountSession(session);
+    const text = document.createTextNode("plain text");
+    wrapper.get("article").element.append(text);
+
+    expect(() => text.dispatchEvent(new MouseEvent("click", { bubbles: true }))).not.toThrow();
     expect(routerReplace).not.toHaveBeenCalled();
   });
 
