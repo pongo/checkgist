@@ -176,10 +176,12 @@ export function createBookmarkListModel({
   async function dropOnBookmark(
     targetBookmark: Bookmark,
     position: DropIndicatorPosition,
+    // Stryker disable next-line StringLiteral: Any non-empty default is rejected as an absent Bookmark by getBookmarkDropIndex.
     fallbackRoutePath = "",
   ) {
     const routePath = getDraggedRoutePath(fallbackRoutePath);
 
+    // Stryker disable next-line ConditionalExpression: An empty source reaches getBookmarkDropIndex and produces -1, so it cannot reorder.
     if (routePath.length === 0 || routePath === targetBookmark.routePath) {
       clearDragState();
       return;
@@ -204,6 +206,7 @@ export function createBookmarkListModel({
     clearDragState();
   }
 
+  // Stryker disable next-line StringLiteral: An arbitrary default route cannot identify a stored Bookmark, so the drop is a no-op.
   async function dropOnCurrentIndicator(fallbackRoutePath = "") {
     const targetRoutePath = dropIndicator.value?.routePath;
     const targetBookmark = bookmarks.value.find(
