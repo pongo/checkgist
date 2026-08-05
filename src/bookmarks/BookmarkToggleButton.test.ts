@@ -91,6 +91,52 @@ describe("BookmarkToggleButton", () => {
     ]);
   });
 
+  it("treats a bookmark for another route as unrelated", async () => {
+    await addBookmarkToDatabase({
+      routePath: "/pastebin.com/another-checklist",
+      title: "Another checklist",
+    });
+    wrapper = await mountLoadedBookmarkToggle();
+
+    expect(wrapper.get("button").text()).toBe("Bookmark");
+
+    await wrapper.get("button").trigger("click");
+
+    await vi.waitFor(() => {
+      expect(wrapper?.get("button").text()).toBe("Bookmarked");
+    });
+    expect(await listBookmarks()).toEqual([
+      { routePath: "/pastebin.com/another-checklist", title: "Another checklist", position: 0 },
+      { routePath: "/pastebin.com/HdpnureE", title: "HdpnureE", position: 1 },
+    ]);
+  });
+
+  it("uses the route path when the source title is whitespace", async () => {
+    wrapper = await mountLoadedBookmarkToggle(" \t ");
+
+    await wrapper.get("button").trigger("click");
+
+    await vi.waitFor(() => {
+      expect(wrapper?.get("button").text()).toBe("Bookmarked");
+    });
+    expect(await listBookmarks()).toEqual([
+      { routePath: "/pastebin.com/HdpnureE", title: "/pastebin.com/HdpnureE", position: 0 },
+    ]);
+  });
+
+  it("is disabled while toggling and becomes available after the update", async () => {
+    wrapper = await mountLoadedBookmarkToggle();
+    const button = wrapper.get("button");
+
+    await button.trigger("click");
+
+    expect(button.attributes("disabled")).toBeDefined();
+    await vi.waitFor(() => {
+      expect(button.text()).toBe("Bookmarked");
+    });
+    expect(button.attributes("disabled")).toBeUndefined();
+  });
+
   it("removes an existing bookmark by route path", async () => {
     await addBookmarkToDatabase({
       routePath: "/pastebin.com/HdpnureE",
