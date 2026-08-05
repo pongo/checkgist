@@ -57,6 +57,7 @@ export async function loadChecklist(
   const source = await service.load(reference, { signal: options.signal });
   const session = await buildChecklist(source);
 
+  // Stryker disable next-line ConditionalExpression,LogicalOperator: Applying an absent state hash only repeats the Checklist's initial unchecked state.
   if (options.stateHash !== undefined && options.stateHash !== null) {
     applyChecklistStateHash(session, options.stateHash);
   }
