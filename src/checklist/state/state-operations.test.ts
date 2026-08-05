@@ -114,6 +114,7 @@ describe("Checklist State operations", () => {
     setChecklistTaskChecked(session, "one.md", 0, true);
 
     const errorFileResult = setChecklistTaskChecked(session, "broken.md", 0, true);
+    const negativeIndexResult = setChecklistTaskChecked(session, "two.md", -1, true);
     const outOfRangeResult = setChecklistTaskChecked(session, "two.md", 2, true);
     const nonIntegerResult = setChecklistTaskChecked(session, "two.md", 0.5, true);
 
@@ -123,6 +124,11 @@ describe("Checklist State operations", () => {
       invalidateRender: false,
     });
     expect(outOfRangeResult.changed).toBe(false);
+    expect(negativeIndexResult).toEqual({
+      changed: false,
+      hash: "#1",
+      invalidateRender: false,
+    });
     expect(nonIntegerResult.changed).toBe(false);
     expect(readyChecked(session)).toEqual([
       [true, false, false],

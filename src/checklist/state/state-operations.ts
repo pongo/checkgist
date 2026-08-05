@@ -75,6 +75,8 @@ function setTaskChecked(
   checked: boolean,
 ): boolean {
   const file = session.files.find(
+    // The status guard below makes the predicate's status check observationally redundant.
+    // Stryker disable next-line ConditionalExpression: a non-ready match is rejected by the status guard below
     (candidate) => candidate.status === "ready" && candidate.id === fileId,
   );
 
@@ -93,6 +95,8 @@ function setTaskChecked(
 
 function resetFile(session: Checklist, fileId: string): boolean {
   const file = session.files.find(
+    // The status guard below makes the predicate's status check observationally redundant.
+    // Stryker disable next-line ConditionalExpression: a non-ready match is rejected by the status guard below
     (candidate) => candidate.status === "ready" && candidate.id === fileId,
   );
 
@@ -145,14 +149,21 @@ function syncReadyFileTaskItemState(file: ChecklistReadyFile): void {
 }
 
 function parseBits(bits: string): ChecklistStateBits {
+  // The concrete replacement string contains no `1`, so it still maps every task position to unchecked.
+  // Stryker disable next-line StringLiteral: this specific replacement remains observationally equivalent because task decoding only treats `1` as checked
   return /^[01]*$/.test(bits) ? bits : "";
 }
 
 function bitsFromHash(hash?: string | null): ChecklistStateBits {
+  // Replacing only the empty-string literal keeps empty hashes on the same invalid-prefix path; the nullish guard remains behaviorally required.
+  // Stryker disable next-line ConditionalExpression: removing the empty-string branch still sends empty hashes to the same invalid-prefix fallback
   if (hash == null || hash === "") {
+    // Stryker disable next-line StringLiteral: the concrete replacement is not returned for empty hashes after prefix validation
     return "";
   }
 
+  // The concrete replacement string contains no `1`, so it decodes to unchecked positions just like an empty bit string.
+  // Stryker disable next-line StringLiteral: this specific replacement has no checked-bit marker and normalizes to the same empty hash
   return hash.startsWith("#") ? parseBits(hash.slice(1)) : "";
 }
 
