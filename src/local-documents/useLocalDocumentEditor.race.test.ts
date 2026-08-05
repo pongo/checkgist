@@ -50,6 +50,29 @@ describe("useLocalDocumentEditor route races", () => {
     deleteDocument.mockReset();
   });
 
+  it("does not read storage for an invalid Local Document ID", async () => {
+    const editor = useLocalDocumentEditor(ref("not-a-uuid"));
+
+    await nextTick();
+
+    expect(editor.state.value).toBe("missing");
+    expect(pending.size).toBe(0);
+  });
+
+  it("does not start persistence operations before the Local Document is ready", async () => {
+    const editor = useLocalDocumentEditor(ref(firstId));
+    await nextTick();
+    editor.title.value = "Draft";
+    editor.content.value = "draft";
+
+    expect(editor.canSave.value).toBe(false);
+    expect(editor.canDelete.value).toBe(false);
+    await expect(editor.save()).resolves.toBeNull();
+    await expect(editor.deleteDocument()).resolves.toBeNull();
+    expect(saveDocument).not.toHaveBeenCalled();
+    expect(deleteDocument).not.toHaveBeenCalled();
+  });
+
   it("keeps the latest route document when reads resolve out of order", async () => {
     const route = reactive({ documentId: firstId });
     const editor = useLocalDocumentEditor(computed(() => route.documentId));
@@ -121,6 +144,41 @@ describe("useLocalDocumentEditor route races", () => {
     expect(editor.error.value).toBe("");
   });
 
+  it("does not replace a newer same-route load with an earlier response", async () => {
+    const route = reactive({ documentId: firstId });
+    const editor = useLocalDocumentEditor(computed(() => route.documentId));
+
+    await nextTick();
+    route.documentId = secondId;
+    await nextTick();
+    route.documentId = firstId;
+    await nextTick();
+
+    getPending(firstId, 0)?.resolve({
+      id: firstId,
+      title: "Old first",
+      content: "old first",
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await flushPromises();
+
+    expect(editor.state.value).toBe("loading");
+
+    getPending(firstId, 1)?.resolve({
+      id: firstId,
+      title: "Fresh first",
+      content: "fresh first",
+      createdAt: 3,
+      updatedAt: 3,
+    });
+    await flushPromises();
+
+    expect(editor.title.value).toBe("Fresh first");
+    expect(editor.content.value).toBe("fresh first");
+    expect(editor.state.value).toBe("ready");
+  });
+
   it("ignores a load error when the current ID no longer matches the request", async () => {
     let currentId = firstId;
     const editor = useLocalDocumentEditor(() => currentId);
@@ -184,6 +242,35 @@ describe("useLocalDocumentEditor route races", () => {
     expect(editor.isDeleting.value).toBe(false);
   });
 
+  it("clears a deletion error when retrying deletion", async () => {
+    const editor = useLocalDocumentEditor(ref(firstId));
+    await nextTick();
+    getPending(firstId)?.resolve({
+      id: firstId,
+      title: "First",
+      content: "first",
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await flushPromises();
+    deleteDocument.mockRejectedValueOnce(new Error("Deletion failed."));
+
+    await expect(editor.deleteDocument()).rejects.toThrow("Deletion failed.");
+    expect(editor.error.value).toBe("Deletion failed.");
+
+    let resolveDeletion!: (value: { id: string }) => void;
+    deleteDocument.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveDeletion = resolve;
+      }),
+    );
+    const retrying = editor.deleteDocument();
+
+    expect(editor.error.value).toBe("");
+    resolveDeletion({ id: firstId });
+    await retrying;
+  });
+
   it("prevents delete while a save is active", async () => {
     getPending(firstId)?.resolve({
       id: firstId,
@@ -221,5 +308,190 @@ describe("useLocalDocumentEditor route races", () => {
     resolveSave({ id: firstId, title: "First", content: "changed" });
     await saving;
     expect(editor.isSaving.value).toBe(false);
+  });
+
+  it("does not apply an earlier save after returning to the same Local Document", async () => {
+    const route = reactive({ documentId: firstId });
+    const editor = useLocalDocumentEditor(computed(() => route.documentId));
+    await nextTick();
+    getPending(firstId)?.resolve({
+      id: firstId,
+      title: "First",
+      content: "first",
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await flushPromises();
+
+    let resolveSave!: (value: { id: string; title: string; content: string }) => void;
+    saveDocument.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSave = resolve;
+      }),
+    );
+    editor.content.value = "old draft";
+    const saving = editor.save();
+
+    route.documentId = secondId;
+    await nextTick();
+    route.documentId = firstId;
+    await nextTick();
+    getPending(firstId, 1)?.resolve({
+      id: firstId,
+      title: "Fresh first",
+      content: "fresh first",
+      createdAt: 3,
+      updatedAt: 3,
+    });
+    await flushPromises();
+
+    resolveSave({ id: firstId, title: "First", content: "old draft" });
+    await saving;
+
+    expect(editor.state.value).toBe("ready");
+    expect(editor.title.value).toBe("Fresh first");
+    expect(editor.content.value).toBe("fresh first");
+    expect(editor.isDirty.value).toBe(false);
+  });
+
+  it("keeps a newer save active when an earlier save fails after a route round trip", async () => {
+    const route = reactive({ documentId: firstId });
+    const editor = useLocalDocumentEditor(computed(() => route.documentId));
+    await nextTick();
+    getPending(firstId)?.resolve({
+      id: firstId,
+      title: "First",
+      content: "first",
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await flushPromises();
+
+    let rejectFirstSave!: (reason: unknown) => void;
+    let resolveSecondSave!: (value: { id: string; title: string; content: string }) => void;
+    saveDocument
+      .mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectFirstSave = reject;
+        }),
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSecondSave = resolve;
+        }),
+      );
+    editor.content.value = "old draft";
+    const firstSaving = editor.save();
+
+    route.documentId = secondId;
+    await nextTick();
+    route.documentId = firstId;
+    await nextTick();
+    getPending(firstId, 1)?.resolve({
+      id: firstId,
+      title: "Fresh first",
+      content: "fresh first",
+      createdAt: 3,
+      updatedAt: 3,
+    });
+    await flushPromises();
+
+    editor.content.value = "new draft";
+    const secondSaving = editor.save();
+    rejectFirstSave(new Error("Old save failed."));
+    await expect(firstSaving).rejects.toThrow("Old save failed.");
+
+    expect(editor.error.value).toBe("");
+    expect(editor.isSaving.value).toBe(true);
+
+    resolveSecondSave({ id: firstId, title: "Fresh first", content: "new draft" });
+    await secondSaving;
+
+    expect(editor.isSaving.value).toBe(false);
+    expect(editor.content.value).toBe("new draft");
+  });
+
+  it("does not mark a reloaded Local Document missing when an earlier deletion reports it absent", async () => {
+    const route = reactive({ documentId: firstId });
+    const editor = useLocalDocumentEditor(computed(() => route.documentId));
+    await nextTick();
+    getPending(firstId)?.resolve({
+      id: firstId,
+      title: "First",
+      content: "first",
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await flushPromises();
+
+    let resolveDeletion!: (value: null) => void;
+    deleteDocument.mockReturnValue(
+      new Promise((resolve) => {
+        resolveDeletion = resolve;
+      }),
+    );
+    const deleting = editor.deleteDocument();
+
+    route.documentId = secondId;
+    await nextTick();
+    route.documentId = firstId;
+    await nextTick();
+    getPending(firstId, 1)?.resolve({
+      id: firstId,
+      title: "Fresh first",
+      content: "fresh first",
+      createdAt: 3,
+      updatedAt: 3,
+    });
+    await flushPromises();
+
+    resolveDeletion(null);
+    await deleting;
+
+    expect(editor.state.value).toBe("ready");
+    expect(editor.title.value).toBe("Fresh first");
+    expect(editor.isDeleting.value).toBe(false);
+  });
+
+  it("does not show an earlier deletion error after returning to the same Local Document", async () => {
+    const route = reactive({ documentId: firstId });
+    const editor = useLocalDocumentEditor(computed(() => route.documentId));
+    await nextTick();
+    getPending(firstId)?.resolve({
+      id: firstId,
+      title: "First",
+      content: "first",
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await flushPromises();
+
+    let rejectDeletion!: (reason: unknown) => void;
+    deleteDocument.mockReturnValue(
+      new Promise((_, reject) => {
+        rejectDeletion = reject;
+      }),
+    );
+    const deleting = editor.deleteDocument();
+
+    route.documentId = secondId;
+    await nextTick();
+    route.documentId = firstId;
+    await nextTick();
+    getPending(firstId, 1)?.resolve({
+      id: firstId,
+      title: "Fresh first",
+      content: "fresh first",
+      createdAt: 3,
+      updatedAt: 3,
+    });
+    await flushPromises();
+
+    rejectDeletion(new Error("Old deletion failed."));
+    await expect(deleting).rejects.toThrow("Old deletion failed.");
+
+    expect(editor.state.value).toBe("ready");
+    expect(editor.error.value).toBe("");
+    expect(editor.isDeleting.value).toBe(false);
   });
 });
