@@ -46,9 +46,14 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+async function waitForInitialLoad(localDocuments: ReturnType<typeof useLocalDocuments>) {
+  await vi.waitFor(() => expect(localDocuments.status.value).not.toBe("loading"));
+}
+
 beforeEach(async () => {
   await resetLocalDocumentsForTests();
   listLocalDocuments.mockReset();
+  listLocalDocuments.mockResolvedValue([]);
   deleteLocalDocument.mockReset();
   saveLocalDocument.mockReset();
   removeBookmark.mockReset();
@@ -60,19 +65,22 @@ describe("useLocalDocuments snapshots", () => {
   it("keeps document snapshots local to each composable instance", async () => {
     listLocalDocuments.mockResolvedValueOnce([document]).mockResolvedValueOnce([]);
     const first = useLocalDocuments();
-    await first.ensureLoaded();
+    await waitForInitialLoad(first);
 
     const second = useLocalDocuments();
     expect(second.documents.value).toEqual([]);
 
-    await second.ensureLoaded();
+    await waitForInitialLoad(second);
 
     expect(first.documents.value).toEqual([document]);
     expect(second.documents.value).toEqual([]);
   });
 
-  it("reports an idle snapshot as not ready", () => {
-    expect(useLocalDocuments().isReady.value).toBe(false);
+  it("starts loading its snapshot immediately", () => {
+    const localDocuments = useLocalDocuments();
+
+    expect(localDocuments.status.value).toBe("loading");
+    expect(localDocuments.isReady.value).toBe(false);
   });
 
   it("retries a failed load and exposes its error state", async () => {
@@ -80,12 +88,12 @@ describe("useLocalDocuments snapshots", () => {
     listLocalDocuments.mockRejectedValueOnce(loadError).mockResolvedValueOnce([document]);
     const localDocuments = useLocalDocuments();
 
-    await localDocuments.ensureLoaded();
+    await waitForInitialLoad(localDocuments);
 
     expect(localDocuments.status.value).toBe("error");
     expect(localDocuments.error.value).toBe(loadError);
 
-    await localDocuments.ensureLoaded();
+    await localDocuments.refresh();
 
     expect(listLocalDocuments).toHaveBeenCalledTimes(2);
     expect(localDocuments.status.value).toBe("ready");
@@ -102,42 +110,22 @@ describe("useLocalDocuments saving", () => {
     listLocalDocuments.mockResolvedValueOnce([document]).mockResolvedValueOnce([saved]);
     saveLocalDocument.mockResolvedValue(saved);
     const localDocuments = useLocalDocuments();
-    await localDocuments.ensureLoaded();
+    await waitForInitialLoad(localDocuments);
 
     await expect(localDocuments.saveDocument(input)).resolves.toEqual(saved);
 
     expect(localDocuments.documents.value).toEqual([saved]);
   });
 
-  it("does not populate an idle snapshot after saving", async () => {
-    listLocalDocuments.mockResolvedValue([document]);
-    saveLocalDocument.mockResolvedValue(document);
-    const localDocuments = useLocalDocuments();
-
-    await localDocuments.saveDocument(input);
-
-    expect(localDocuments.documents.value).toEqual([]);
-  });
-
   it("does not replace a loaded snapshot when saving a missing document", async () => {
     listLocalDocuments.mockResolvedValueOnce([document]).mockResolvedValueOnce([]);
     saveLocalDocument.mockResolvedValue(null);
     const localDocuments = useLocalDocuments();
-    await localDocuments.ensureLoaded();
+    await waitForInitialLoad(localDocuments);
 
     await expect(localDocuments.saveDocument(input)).resolves.toBeNull();
 
     expect(localDocuments.documents.value).toEqual([document]);
-  });
-
-  it("does not populate an idle snapshot when the document is already missing", async () => {
-    listLocalDocuments.mockResolvedValue([document]);
-    saveLocalDocument.mockResolvedValue(null);
-    const localDocuments = useLocalDocuments();
-
-    await expect(localDocuments.saveDocument(input)).resolves.toBeNull();
-
-    expect(localDocuments.documents.value).toEqual([]);
   });
 });
 
@@ -148,10 +136,9 @@ describe("useLocalDocuments mutation ordering", () => {
     deleteLocalDocument.mockResolvedValue(document);
     const localDocuments = useLocalDocuments();
 
-    const loading = localDocuments.ensureLoaded();
     const deleting = localDocuments.deleteDocument(document.id);
     pendingList.resolve([document]);
-    await Promise.all([loading, deleting]);
+    await deleting;
 
     expect(deleteLocalDocument).toHaveBeenCalledOnce();
     expect(localDocuments.status.value).toBe("ready");
@@ -164,7 +151,7 @@ describe("useLocalDocuments deletion", () => {
     listLocalDocuments.mockResolvedValue([document, secondDocument]);
     deleteLocalDocument.mockResolvedValue(document);
     const localDocuments = useLocalDocuments();
-    await localDocuments.ensureLoaded();
+    await waitForInitialLoad(localDocuments);
 
     await expect(localDocuments.deleteDocument(document.id)).resolves.toBe(document);
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FilePlus2, Pencil, Trash2 } from "@lucide/vue";
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { localDocumentEditRoute, localDocumentViewRoute } from "./routes";
@@ -12,7 +12,6 @@ const {
   documents,
   error,
   isReady,
-  ensureLoaded,
   refresh: refreshDocuments,
   createDocument,
   deleteDocument,
@@ -53,10 +52,6 @@ async function deleteLocalDocument(document: LocalDocument) {
     deleteError.value = error instanceof Error ? error.message : "Failed to delete Local Document.";
   }
 }
-
-onMounted(() => {
-  void ensureLoaded();
-});
 </script>
 
 <template>

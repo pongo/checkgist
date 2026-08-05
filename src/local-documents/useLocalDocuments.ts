@@ -51,6 +51,7 @@ export function useLocalDocuments() {
   }
 
   async function ensureLoaded(): Promise<void> {
+    if (status.value === "ready") return;
     if (loadPromise !== null) return loadPromise;
 
     status.value = "loading";
@@ -64,6 +65,8 @@ export function useLocalDocuments() {
       });
     return loadPromise;
   }
+
+  void ensureLoaded();
 
   async function createDocument(): Promise<LocalDocument> {
     const document = await serializeStateOperation(async () => {
@@ -114,7 +117,6 @@ export function useLocalDocuments() {
     status: readonly(status),
     error: readonly(error),
     isReady: computed(() => status.value === "ready"),
-    ensureLoaded,
     refresh,
     getDocument,
     createDocument,

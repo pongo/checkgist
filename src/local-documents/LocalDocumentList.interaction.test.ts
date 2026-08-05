@@ -50,7 +50,6 @@ describe("LocalDocumentList interactions", () => {
   const documents = ref<LocalDocument[]>([]);
   const error = ref<unknown>(null);
   const isReady = ref(true);
-  const ensureLoaded = vi.fn<() => Promise<void>>();
   const refresh = vi.fn<() => Promise<void>>();
   const createDocument = vi.fn<() => Promise<LocalDocument>>();
   const deleteDocument = vi.fn<(id: string) => Promise<LocalDocument | null>>();
@@ -59,8 +58,6 @@ describe("LocalDocumentList interactions", () => {
     documents.value = [];
     error.value = null;
     isReady.value = true;
-    ensureLoaded.mockReset();
-    ensureLoaded.mockResolvedValue(undefined);
     refresh.mockReset();
     refresh.mockResolvedValue(undefined);
     createDocument.mockReset();
@@ -71,7 +68,6 @@ describe("LocalDocumentList interactions", () => {
       documents,
       error,
       isReady,
-      ensureLoaded,
       refresh,
       createDocument,
       deleteDocument,
