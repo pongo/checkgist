@@ -76,6 +76,9 @@ describe("LocalDocumentPreview", () => {
   it("waits 150 ms and renders the latest unsaved Markdown draft", async () => {
     const wrapper = mountPreview("# First draft");
 
+    expect(wrapper.find("[role='alert']").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Loading Markdown...");
+
     await vi.advanceTimersByTimeAsync(149);
     expect(prepareMarkdown).not.toHaveBeenCalled();
 
@@ -129,6 +132,31 @@ describe("LocalDocumentPreview", () => {
     expect(wrapper.text()).not.toContain("First draft");
   });
 
+  it("does not replace the latest preview with an error from a stale parse", async () => {
+    let rejectFirst: ((error: Error) => void) | undefined;
+    prepareMarkdown
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ tree: ComarkTree; taskItemCount: number }>((_, reject) => {
+            rejectFirst = reject;
+          }),
+      )
+      .mockResolvedValueOnce({
+        tree: createTree([["p", {}, "Latest draft"]]),
+        taskItemCount: 0,
+      });
+    const wrapper = mountPreview("First draft");
+
+    await vi.advanceTimersByTimeAsync(150);
+    await wrapper.setProps({ content: "Latest draft" });
+    await finishDebounce();
+    rejectFirst?.(new Error("stale parse failed"));
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Latest draft");
+    expect(wrapper.find("[role='alert']").exists()).toBe(false);
+  });
+
   it("keeps the draft and shows a visible error when Markdown parsing fails", async () => {
     prepareMarkdown.mockRejectedValueOnce(new Error("parse failed"));
     const wrapper = mountPreview("# Keep this draft");
@@ -162,5 +190,20 @@ describe("LocalDocumentPreview", () => {
 
     expect(taskItem.element.checked).toBe(false);
     expect(window.location.hash).toBe("");
+  });
+
+  it("does not cancel events from non-task inputs", async () => {
+    prepareMarkdown.mockResolvedValueOnce({
+      tree: createTree([["input", { type: "text", value: "Draft title" }]]),
+      taskItemCount: 0,
+    });
+    const wrapper = mountPreview("Draft title");
+
+    await finishDebounce();
+    const input = wrapper.get<HTMLInputElement>("input[type='text']");
+    const event = new Event("change", { bubbles: true, cancelable: true });
+
+    expect(input.element.dispatchEvent(event)).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
   });
 });

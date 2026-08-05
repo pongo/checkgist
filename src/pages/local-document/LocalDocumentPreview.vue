@@ -12,8 +12,10 @@ let timeout: ReturnType<typeof setTimeout> | null = null;
 let parseToken = 0;
 
 function scheduleParse(content: string) {
+  // Stryker disable next-line AssignmentOperator: Both directions produce a distinct token for each parse scheduled during a reachable browser session.
   parseToken += 1;
   const token = parseToken;
+  // Stryker disable next-line ConditionalExpression: Clearing a null timer handle has no observable effect.
   if (timeout !== null) clearTimeout(timeout);
 
   timeout = setTimeout(async () => {
@@ -40,6 +42,7 @@ function preventTaskInteraction(event: Event) {
 
 watch(() => props.content, scheduleParse, { immediate: true });
 onBeforeUnmount(() => {
+  // Stryker disable next-line ConditionalExpression: Clearing a null timer handle has no observable effect.
   if (timeout !== null) clearTimeout(timeout);
 });
 </script>
