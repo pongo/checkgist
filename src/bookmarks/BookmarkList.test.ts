@@ -136,6 +136,20 @@ describe("BookmarkList", () => {
     expect(link.text()).toBe("One");
   });
 
+  it("initializes rename input with the current title and selects it", async () => {
+    const bookmarks = useBookmarks();
+    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
+    wrapper = await mountLoadedBookmarkList();
+
+    await getButtonByLabel(wrapper, "Rename bookmark").trigger("click");
+
+    const input = wrapper.get("input").element as HTMLInputElement;
+    expect(input.value).toBe("One");
+    expect(document.activeElement).toBe(input);
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe(input.value.length);
+  });
+
   it("renames a bookmark with Enter and trims whitespace", async () => {
     const bookmarks = useBookmarks();
     await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
