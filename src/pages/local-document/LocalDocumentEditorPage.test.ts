@@ -69,6 +69,7 @@ vi.mock("vue-router", () => ({
 
 async function mountEditor() {
   const wrapper = mount(LocalDocumentEditorPage, {
+    attachTo: document.body,
     global: {
       stubs: {
         LocalDocumentPreview: {
@@ -156,6 +157,27 @@ describe("LocalDocumentEditorPage preview workspace", () => {
     expect(previewPane?.classList.contains("sm:w-1/2")).toBe(true);
     expect(previewPane?.classList.contains("overflow-hidden")).toBe(true);
   });
+
+  it("focuses the Markdown editor when the Local Document becomes ready", async () => {
+    editorFixture.current.state.value = "loading";
+
+    const wrapper = await mountEditor();
+
+    editorFixture.current.state.value = "ready";
+    await flushPromises();
+
+    expect(document.activeElement).toBe(
+      wrapper.get("textarea[aria-label='Markdown content']").element,
+    );
+  });
+
+  it("focuses the Markdown editor when it is ready on the initial render", async () => {
+    const wrapper = await mountEditor();
+
+    expect(document.activeElement).toBe(
+      wrapper.get("textarea[aria-label='Markdown content']").element,
+    );
+  });
 });
 
 describe("LocalDocumentEditorPage save protection", () => {
@@ -218,6 +240,24 @@ describe("LocalDocumentEditorPage save protection", () => {
     expect(save).toHaveBeenLastCalledWith();
   });
 
+  it.each([
+    ["an unmodified S key", { code: "KeyS" }],
+    ["another key with Ctrl", { code: "KeyP", ctrlKey: true }],
+    ["another key with Cmd", { code: "KeyP", metaKey: true }],
+  ])("does not save or intercept %s", async (_description, keyboardEventInit) => {
+    await mountEditor();
+
+    const shortcut = new KeyboardEvent("keydown", {
+      cancelable: true,
+      ...keyboardEventInit,
+    });
+    window.dispatchEvent(shortcut);
+    await flushPromises();
+
+    expect(shortcut.defaultPrevented).toBe(false);
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it("keeps dirty navigation and unload protection after a failed save", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(false);
     save.mockRejectedValue(new Error("Storage is unavailable."));
@@ -237,6 +277,15 @@ describe("LocalDocumentEditorPage save protection", () => {
     expect(wrapper.text()).toContain("Storage is unavailable.");
     expect(routeLeaveGuard.callback?.()).toBe(false);
     expect(unload.defaultPrevented).toBe(true);
+  });
+
+  it("asks before leaving a dirty Local Document", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    await mountEditor();
+    editorFixture.current.isDirty.value = true;
+
+    expect(routeLeaveGuard.callback?.()).toBe(false);
+    expect(confirm).toHaveBeenCalledWith("Discard unsaved changes?");
   });
 
   it("removes global save and unload protection when leaving the editor", async () => {

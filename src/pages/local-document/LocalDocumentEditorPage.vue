@@ -61,6 +61,7 @@ async function deleteCurrentDocument() {
 function beforeUnload(event: BeforeUnloadEvent) {
   if (isDirty.value && !isDeleting.value) {
     event.preventDefault();
+    // Stryker disable next-line StringLiteral: Modern browsers ignore custom beforeunload text; any assigned string requests the same generic confirmation.
     event.returnValue = "";
   }
 }
@@ -70,6 +71,7 @@ watch(
   async (nextState) => {
     if (nextState !== "ready") return;
     await nextTick();
+    // Stryker disable next-line OptionalChaining: The ready state renders the textarea before this tick, so its template ref exists when focus is requested.
     contentTextarea.value?.focus();
   },
   { immediate: true },
