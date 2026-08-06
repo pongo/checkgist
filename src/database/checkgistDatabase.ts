@@ -73,6 +73,7 @@ export function openCheckgistDatabase(): Promise<IDBPDatabase<CheckgistDatabase>
         store.createIndex(bookmarksByPositionIndexName, "position");
       }
 
+      // Stryker disable next-line EqualityOperator,ConditionalExpression: IndexedDB invokes upgrade only when the existing version is lower than the requested version (2).
       if (oldVersion < 2) {
         // The v1 Bookmark store remains untouched, preserving existing records.
         const store = db.createObjectStore(localDocumentsStoreName, { keyPath: "id" });
@@ -83,6 +84,7 @@ export function openCheckgistDatabase(): Promise<IDBPDatabase<CheckgistDatabase>
       database?.close();
       database = null;
 
+      // Stryker disable next-line ConditionalExpression: The blocking event is dispatched synchronously, so a newer cached promise cannot be installed before this listener returns.
       if (dbPromise === sharedPromise) {
         dbPromise = null;
       }
@@ -90,6 +92,7 @@ export function openCheckgistDatabase(): Promise<IDBPDatabase<CheckgistDatabase>
     terminated() {
       database = null;
 
+      // Stryker disable next-line ConditionalExpression: The terminated event is dispatched synchronously, so a newer cached promise cannot be installed before this listener returns.
       if (dbPromise === sharedPromise) {
         dbPromise = null;
       }
@@ -103,6 +106,7 @@ export function openCheckgistDatabase(): Promise<IDBPDatabase<CheckgistDatabase>
   dbPromise = sharedPromise;
 
   void sharedPromise.catch(() => {
+    // Stryker disable next-line ConditionalExpression: A failed open cannot install a database connection, and this catch is the only production path that clears its cached promise.
     if (dbPromise === sharedPromise) {
       dbPromise = null;
     }

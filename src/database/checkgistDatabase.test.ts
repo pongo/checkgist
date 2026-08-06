@@ -34,6 +34,13 @@ describe("Checkgist database lifecycle", () => {
     ).toBe(true);
   });
 
+  it("shares one opening Promise while its connection remains current", async () => {
+    const openingDatabase = openCheckgistDatabase();
+
+    expect(openCheckgistDatabase()).toBe(openingDatabase);
+    await openingDatabase;
+  });
+
   it("preserves version-1 Bookmark records while adding the Local Document store", async () => {
     const legacyDatabase = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("checkgist", 1);
@@ -67,7 +74,7 @@ describe("Checkgist database lifecycle", () => {
     ).toBe(true);
   });
 
-  it("closes its connection when a later schema version is opened", async () => {
+  it("clears its cached connection when a later schema version is opened", async () => {
     await openCheckgistDatabase();
 
     const upgradedDatabase = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -78,6 +85,8 @@ describe("Checkgist database lifecycle", () => {
 
     expect(upgradedDatabase.version).toBe(3);
     upgradedDatabase.close();
+
+    await expect(openCheckgistDatabase()).rejects.toThrow(/version/i);
   });
 
   it("opens a fresh connection after the browser terminates the current one", async () => {
@@ -126,5 +135,19 @@ describe("Checkgist database lifecycle", () => {
     const database = await openCheckgistDatabase();
 
     expect(database.objectStoreNames.contains(bookmarksStoreName)).toBe(true);
+  });
+
+  it("closes the cached connection before a test upgrades the same factory", async () => {
+    await openCheckgistDatabase();
+    await closeCheckgistDatabaseForTests();
+
+    const upgradedDatabase = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("checkgist", 3);
+      request.addEventListener("success", () => resolve(request.result));
+      request.addEventListener("error", () => reject(request.error));
+    });
+
+    expect(upgradedDatabase.version).toBe(3);
+    upgradedDatabase.close();
   });
 });
