@@ -41,6 +41,7 @@ const sourceAddressCatalog = createSourceAddressCatalog(sourceAddressRules);
 
 export function normalizeSourceUrlInput(input: string): URL | null {
   const trimmedInput = input.trim();
+  // Stryker disable next-line ConditionalExpression,BlockStatement: after an empty trimmed input continues, the fallback `https://` URL is invalid and the catch still returns null
   if (trimmedInput.length === 0) {
     return null;
   }
