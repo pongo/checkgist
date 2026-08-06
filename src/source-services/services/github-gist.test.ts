@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { githubGistService } from "./github-gist.ts";
+import { githubGistAddressRule, githubGistService } from "./github-gist.ts";
 import type { SourceFetcher } from "../types.ts";
 import { SourceLoadError } from "../types.ts";
 
@@ -251,4 +251,13 @@ describe("githubGistService.load", () => {
       githubGistService.load({ type: "github-gist", gistId: "gist-6" }, { fetcher }),
     ).rejects.toThrow("No files found in this gist.");
   });
+});
+
+describe("githubGistAddressRule.fromRoute", () => {
+  it.each([[["gist.github.com", ""]], [["gist.github.com", "gist-1", "revisions"]]])(
+    "rejects a non-canonical Gist route %s",
+    (path) => {
+      expect(githubGistAddressRule.fromRoute(path)).toBeNull();
+    },
+  );
 });

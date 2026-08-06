@@ -49,6 +49,7 @@ async function loadGistFile(
   if (file.truncated === true) {
     try {
       if (!isNonEmptySegment(file.raw_url)) {
+        // Stryker disable next-line StringLiteral: The catch block deliberately maps every raw-load failure to the same public file error.
         throw new Error("Missing raw URL.");
       }
 
