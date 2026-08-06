@@ -13,6 +13,12 @@ describe("formatBrowserTitle", () => {
     expect(formatBrowserTitle(title)).toBe(`${"a".repeat(57)}... - Checkgist`);
   });
 
+  it("keeps a Source Metadata title at the maximum length intact", () => {
+    const title = "a".repeat(60);
+
+    expect(formatBrowserTitle(title)).toBe(`${title} - Checkgist`);
+  });
+
   it("falls back to the app name for an empty title", () => {
     expect(formatBrowserTitle("   ")).toBe("Checkgist");
   });
