@@ -60,6 +60,82 @@ describe("Task Item Tree", () => {
     expect(treeJson).toContain("Install deps");
   });
 
+  it("keeps nested list structure outside an explicit Task Item label", () => {
+    const checkbox: ComarkElement = [
+      "input",
+      { class: "task-list-item-checkbox", type: "checkbox" },
+    ];
+    const nestedList: ComarkElement = ["ul", {}, ["li", {}, "Follow-up"]];
+    const tree = createTree([
+      ["li", { class: "task-list-item" }, checkbox, " Ship release", nestedList],
+    ]);
+
+    expect(prepareExplicitTaskItems(tree)).toBe(1);
+    expect(tree.nodes).toEqual([
+      [
+        "li",
+        { class: "task-list-item" },
+        [
+          "label",
+          { class: taskItemLabelClassName },
+          [
+            "input",
+            {
+              class: "task-list-item-checkbox",
+              type: "checkbox",
+              [taskItemIndexAttribute]: "0",
+            },
+          ],
+          " Ship release",
+        ],
+        nestedList,
+      ],
+    ]);
+  });
+
+  it("does not create an empty label for an explicit Task Item without inline content", () => {
+    const checkbox: ComarkElement = [
+      "input",
+      { class: "task-list-item-checkbox", type: "checkbox" },
+    ];
+    const tree = createTree([["li", { class: "task-list-item" }, checkbox]]);
+
+    expect(prepareExplicitTaskItems(tree)).toBe(1);
+    expect(tree.nodes).toEqual([
+      [
+        "li",
+        { class: "task-list-item" },
+        [
+          "input",
+          {
+            class: "task-list-item-checkbox",
+            type: "checkbox",
+            [taskItemIndexAttribute]: "0",
+          },
+        ],
+      ],
+    ]);
+  });
+
+  it("does not turn non-list checkbox-like elements into explicit Task Items", () => {
+    const tree = createTree([
+      [
+        "li",
+        { class: "task-list-item" },
+        ["input", { class: "task-list-item-checkbox", type: "text" }],
+      ],
+      [
+        "li",
+        { class: "task-list-item" },
+        ["button", { class: "task-list-item-checkbox", type: "checkbox" }],
+      ],
+      ["li", { class: "task-list-item" }, ["input", { class: "other-checkbox", type: "checkbox" }]],
+    ]);
+
+    expect(prepareExplicitTaskItems(tree)).toBe(0);
+    expect(JSON.stringify(tree.nodes)).not.toContain(taskItemIndexAttribute);
+  });
+
   it("promotes paragraph content without discarding existing list item classes", () => {
     const tree = createTree([
       ["li", { class: "  " }, ["p", {}, "Set up project"]],
@@ -106,6 +182,24 @@ describe("Task Item Tree", () => {
     ]);
   });
 
+  it("does not promote whitespace-only list items", () => {
+    const tree = createTree([["li", {}, " \n  "]]);
+
+    expect(promoteOrdinaryListItems(tree)).toBe(0);
+    expect(tree.nodes).toEqual([["li", {}, " \n  "]]);
+  });
+
+  it("keeps paragraphs before non-list blocks intact", () => {
+    const tree = createTree([
+      ["li", {}, ["p", {}, "Release notes"], ["blockquote", {}, "Context"]],
+    ]);
+
+    expect(prepareExplicitTaskItems(tree)).toBe(0);
+    expect(tree.nodes).toEqual([
+      ["li", {}, ["p", {}, "Release notes"], ["blockquote", {}, "Context"]],
+    ]);
+  });
+
   it("syncs Task Item State into prepared checkbox nodes", () => {
     const checkbox: ComarkElement = [
       "input",
@@ -124,6 +218,32 @@ describe("Task Item Tree", () => {
     expect(checkbox[1].checked).toBeUndefined();
   });
 
+  it("only syncs state to indexed input nodes with an integer Task Item index", () => {
+    const preparedCheckbox: ComarkElement = [
+      "input",
+      { type: "checkbox", [taskItemIndexAttribute]: "0" },
+    ];
+    const fractionalIndexCheckbox: ComarkElement = [
+      "input",
+      { type: "checkbox", [taskItemIndexAttribute]: "0.5" },
+    ];
+    const unpreparedInput: ComarkElement = ["input", { type: "checkbox" }];
+    const indexedContainer: ComarkElement = ["div", { [taskItemIndexAttribute]: "0" }];
+    const tree = createTree([
+      preparedCheckbox,
+      fractionalIndexCheckbox,
+      unpreparedInput,
+      indexedContainer,
+    ]);
+
+    syncTaskItemState(tree, [true]);
+
+    expect(preparedCheckbox[1].checked).toBe(true);
+    expect(fractionalIndexCheckbox[1].checked).toBeUndefined();
+    expect(unpreparedInput[1].checked).toBeUndefined();
+    expect(indexedContainer[1].checked).toBeUndefined();
+  });
+
   describe("DOM queries", () => {
     it("reads the file-local Task Item index from a rendered checkbox", () => {
       const checkbox = document.createElement("input");
@@ -133,6 +253,9 @@ describe("Task Item Tree", () => {
       expect(taskItemIndexFromCheckboxElement(checkbox)).toBe(3);
 
       checkbox.setAttribute(taskItemIndexAttribute, "not-an-index");
+      expect(taskItemIndexFromCheckboxElement(checkbox)).toBeNull();
+
+      checkbox.setAttribute(taskItemIndexAttribute, "3.5");
       expect(taskItemIndexFromCheckboxElement(checkbox)).toBeNull();
 
       checkbox.removeAttribute(taskItemIndexAttribute);
