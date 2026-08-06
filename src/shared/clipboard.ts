@@ -4,6 +4,7 @@ export async function copyToClipboard(text: string): Promise<void> {
     return navigator.clipboard.writeText(text);
   }
 
+  /* v8 ignore start */
   const textArea = document.createElement("textarea");
   textArea.value = text;
   // make the textarea out of viewport
@@ -18,4 +19,5 @@ export async function copyToClipboard(text: string): Promise<void> {
     document.execCommand("copy") ? res() : rej();
     textArea.remove();
   });
+  /* v8 ignore stop */
 }
