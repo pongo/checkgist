@@ -147,6 +147,19 @@ describe("useChecklistSourceLifecycle", () => {
     });
   });
 
+  it("resets the default browser title after an unsupported Source Reference", async () => {
+    document.title = "Previously loaded source - Checkgist";
+    const load = vi.fn<LoadChecklistSource>().mockResolvedValue({
+      status: "unsupported",
+      message: "Unsupported source URL.",
+    });
+    const lifecycle = useChecklistSourceLifecycle({ load });
+
+    await lifecycle.open(null);
+
+    expect(document.title).toBe("Checkgist");
+  });
+
   it("returns error state and resets the browser title for load failures", async () => {
     const { browser } = createBrowser();
     const load = vi

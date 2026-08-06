@@ -60,6 +60,7 @@ export function useChecklistSourceLifecycle(
   let stopHashStateListener: (() => void) | null = null;
 
   async function open(reference: SourceReference | null) {
+    // Stryker disable next-line AssignmentOperator: token sign is unobservable because only equality identifies stale loads
     activeLoadToken += 1;
     const loadToken = activeLoadToken;
     abortController?.abort();
@@ -95,6 +96,7 @@ export function useChecklistSourceLifecycle(
         message: "",
       };
       stopHashStateListener = browser.listenToHash(() =>
+        // Stryker disable next-line ConditionalExpression: every non-ready lifecycle state has a null session
         state.value.status === "ready" ? state.value.session : null,
       );
     } catch (error) {
@@ -112,6 +114,7 @@ export function useChecklistSourceLifecycle(
   }
 
   function dispose() {
+    // Stryker disable next-line AssignmentOperator: token sign is unobservable because only equality identifies stale loads
     activeLoadToken += 1;
     abortController?.abort();
     abortController = null;
