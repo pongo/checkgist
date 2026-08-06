@@ -65,7 +65,7 @@ function isAbsoluteHttpUrl(href: string): boolean {
 
 function hrefForAppRoute(route: string): string {
   const baseUrl = import.meta.env.BASE_URL;
-  return baseUrl === "/" ? route : `${baseUrl.replace(/\/$/, "")}${route}`;
+  return `${baseUrl.replace(/\/$/, "")}${route}`;
 }
 
 function visitNodes(nodes: ComarkNode[], visit: (node: ComarkNode) => void): void {
@@ -76,7 +76,7 @@ function visitNodes(nodes: ComarkNode[], visit: (node: ComarkNode) => void): voi
 }
 
 function isElement(node: ComarkNode): node is ComarkElement {
-  return Array.isArray(node) && node[0] !== null;
+  return Array.isArray(node);
 }
 
 function elementChildren(node: ComarkElement): ComarkNode[] {

@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { prepareMarkdown } from "./markdown-preparation";
 
 describe("prepareMarkdown", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("returns a prepared tree and explicit task count", async () => {
     const { tree, taskItemCount } = await prepareMarkdown("- [x] Done\n- [ ] Todo");
 
@@ -22,4 +26,20 @@ describe("prepareMarkdown", () => {
     expect(treeJson).not.toContain('["script"');
     expect(treeJson).not.toContain("javascript:");
   });
+
+  it.each([
+    ["http", "/"],
+    ["https", "/checkgist/"],
+  ])(
+    "rewrites supported %s Source URLs under the %s application base URL",
+    async (protocol, baseUrl) => {
+      vi.stubEnv("BASE_URL", baseUrl);
+
+      const { tree } = await prepareMarkdown(`[source](${protocol}://pastebin.com/raw/abc)`);
+
+      expect(JSON.stringify(tree.nodes)).toContain(
+        `"href":"${baseUrl === "/" ? "" : "/checkgist"}/pastebin.com/abc"`,
+      );
+    },
+  );
 });
