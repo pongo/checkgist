@@ -50,6 +50,11 @@
   background-color: light-dark(rgb(219 234 254), rgb(96 165 250 / 45%));
 }
 
+/* Extend the click target across the row */
+.checkgist-markdown .checkgist-task-label {
+  display: block;
+}
+
 .checkgist-markdown .task-list-item-checkbox {
   margin-left: -1.15em;
   vertical-align: bottom;
