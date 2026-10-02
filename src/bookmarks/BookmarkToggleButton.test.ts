@@ -7,14 +7,10 @@ import { reactive } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Checklist } from "@/checklist";
+import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
 
-import {
-  addBookmark as addBookmarkToDatabase,
-  closeBookmarkDatabaseForTests,
-  listBookmarks,
-} from "./db";
+import { addBookmark as addBookmarkToDatabase, listBookmarks } from "./db";
 import BookmarkToggleButton from "./BookmarkToggleButton.vue";
-import { resetBookmarksForTests } from "./useBookmarks";
 
 const route = reactive({
   path: "/pastebin.com/HdpnureE",
@@ -57,8 +53,7 @@ describe("BookmarkToggleButton", () => {
   let wrapper: VueWrapper | undefined;
 
   beforeEach(async () => {
-    await resetBookmarksForTests();
-    await closeBookmarkDatabaseForTests();
+    await closeCheckgistDatabaseForTests();
     resetIndexedDb();
     route.path = "/pastebin.com/HdpnureE";
   });

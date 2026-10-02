@@ -8,7 +8,6 @@ import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
 
 import LocalDocumentList from "./LocalDocumentList.vue";
 import { createLocalDocument, deleteLocalDocument, saveLocalDocument } from "./db";
-import { resetLocalDocumentsForTests } from "./useLocalDocuments";
 
 const push = vi.hoisted(() => vi.fn<(path: string) => Promise<void>>());
 const removeBookmark = vi.hoisted(() => vi.fn<(routePath: string) => Promise<unknown>>());
@@ -43,7 +42,6 @@ function resetIndexedDb() {
 
 describe("LocalDocumentList", () => {
   beforeEach(async () => {
-    await resetLocalDocumentsForTests();
     await closeCheckgistDatabaseForTests();
     resetIndexedDb();
     push.mockReset();
@@ -55,7 +53,7 @@ describe("LocalDocumentList", () => {
   });
 
   afterEach(async () => {
-    await resetLocalDocumentsForTests();
+    await closeCheckgistDatabaseForTests();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });

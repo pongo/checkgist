@@ -5,8 +5,9 @@ import { IDBFactory } from "fake-indexeddb";
 import { effectScope, ref } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
+
 import { createLocalDocument, deleteLocalDocument } from "./db";
-import { resetLocalDocumentsForTests } from "./useLocalDocuments";
 import { useLocalDocumentEditor } from "./useLocalDocumentEditor";
 
 const documentId = "11111111-1111-4111-8111-111111111111";
@@ -27,13 +28,13 @@ async function mountEditor(id = documentId) {
 }
 
 beforeEach(async () => {
-  await resetLocalDocumentsForTests();
+  await closeCheckgistDatabaseForTests();
   resetIndexedDb();
   vi.stubGlobal("crypto", { randomUUID: () => documentId });
 });
 
 afterEach(async () => {
-  await resetLocalDocumentsForTests();
+  await closeCheckgistDatabaseForTests();
   vi.unstubAllGlobals();
 });
 
@@ -94,7 +95,7 @@ describe("useLocalDocumentEditor", () => {
     const { editor, scope } = await mountEditor();
     editor.content.value = "- [ ] Passport";
 
-    await resetLocalDocumentsForTests();
+    await closeCheckgistDatabaseForTests();
     vi.stubGlobal("indexedDB", undefined);
     await expect(editor.save()).rejects.toThrow("open");
     await flushPromises();
@@ -136,7 +137,7 @@ describe("useLocalDocumentEditor", () => {
     await createLocalDocument(documentId);
     const { editor, scope } = await mountEditor();
 
-    await resetLocalDocumentsForTests();
+    await closeCheckgistDatabaseForTests();
     vi.stubGlobal("indexedDB", undefined);
     await expect(editor.deleteDocument()).rejects.toThrow("open");
     await flushPromises();

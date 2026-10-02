@@ -4,9 +4,10 @@ import { IDBFactory } from "fake-indexeddb";
 import { type DBSchema, openDB } from "idb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
+
 import {
   addBookmark,
-  closeBookmarkDatabaseForTests,
   listBookmarks,
   removeBookmark,
   renameBookmark,
@@ -34,7 +35,7 @@ function resetIndexedDb() {
 
 describe("bookmark database", () => {
   beforeEach(async () => {
-    await closeBookmarkDatabaseForTests();
+    await closeCheckgistDatabaseForTests();
     resetIndexedDb();
   });
 

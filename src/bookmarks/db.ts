@@ -6,7 +6,6 @@ import {
 import type { Bookmark } from "@/database/checkgistDatabase";
 
 export type { Bookmark } from "@/database/checkgistDatabase";
-export { closeCheckgistDatabaseForTests as closeBookmarkDatabaseForTests } from "@/database/checkgistDatabase";
 
 function withDensePositions(bookmarks: Bookmark[]): Bookmark[] {
   return bookmarks.map((bookmark, position) => ({ ...bookmark, position }));

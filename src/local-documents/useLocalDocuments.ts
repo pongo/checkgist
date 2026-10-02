@@ -2,7 +2,6 @@ import { computed, readonly, ref } from "vue";
 
 import { useBookmarks } from "@/bookmarks";
 import { requestPersistentStorageOnce } from "@/shared/persistent-storage";
-import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
 
 import {
   createLocalDocument as createLocalDocumentInDatabase,
@@ -123,9 +122,4 @@ export function useLocalDocuments() {
     saveDocument,
     deleteDocument,
   };
-}
-
-/** Closes shared database resources between tests. */
-export async function resetLocalDocumentsForTests(): Promise<void> {
-  await closeCheckgistDatabaseForTests();
 }

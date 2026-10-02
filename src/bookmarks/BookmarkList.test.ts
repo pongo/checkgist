@@ -6,9 +6,11 @@ import { IDBFactory } from "fake-indexeddb";
 import { defineComponent, h } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { closeBookmarkDatabaseForTests, listBookmarks, type Bookmark } from "./db";
+import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
+
+import { listBookmarks, type Bookmark } from "./db";
 import BookmarkList from "./BookmarkList.vue";
-import { resetBookmarksForTests, useBookmarks } from "./useBookmarks";
+import { useBookmarks } from "./useBookmarks";
 
 const RouterLinkStub = defineComponent({
   props: {
@@ -109,8 +111,7 @@ describe("BookmarkList", () => {
   let wrapper: VueWrapper | undefined;
 
   beforeEach(async () => {
-    await resetBookmarksForTests();
-    await closeBookmarkDatabaseForTests();
+    await closeCheckgistDatabaseForTests();
     resetIndexedDb();
   });
 

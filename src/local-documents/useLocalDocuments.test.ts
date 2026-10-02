@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
+
 import type { LocalDocument } from "./db";
-import { resetLocalDocumentsForTests, useLocalDocuments } from "./useLocalDocuments";
+import { useLocalDocuments } from "./useLocalDocuments";
 
 const listLocalDocuments = vi.hoisted(() => vi.fn<() => Promise<LocalDocument[]>>());
 const deleteLocalDocument = vi.hoisted(() =>
@@ -51,7 +53,7 @@ async function waitForInitialLoad(localDocuments: ReturnType<typeof useLocalDocu
 }
 
 beforeEach(async () => {
-  await resetLocalDocumentsForTests();
+  await closeCheckgistDatabaseForTests();
   listLocalDocuments.mockReset();
   listLocalDocuments.mockResolvedValue([]);
   deleteLocalDocument.mockReset();

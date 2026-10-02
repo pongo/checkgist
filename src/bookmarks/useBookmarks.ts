@@ -4,7 +4,6 @@ import { requestPersistentStorageOnce } from "@/shared/persistent-storage";
 
 import {
   addBookmark as addBookmarkToDatabase,
-  closeBookmarkDatabaseForTests,
   type Bookmark,
   listBookmarks,
   removeBookmark as removeBookmarkFromDatabase,
@@ -172,9 +171,4 @@ export function useBookmarks() {
     reorderBookmark,
     restoreBookmark,
   };
-}
-
-/** Closes shared Bookmark database resources between tests. */
-export async function resetBookmarksForTests(): Promise<void> {
-  await closeBookmarkDatabaseForTests();
 }

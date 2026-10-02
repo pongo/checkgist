@@ -4,13 +4,14 @@ import { IDBFactory } from "fake-indexeddb";
 import { effectScope } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { closeCheckgistDatabaseForTests } from "@/database/checkgistDatabase";
+
 import {
   addBookmark as addBookmarkToDatabase,
-  closeBookmarkDatabaseForTests,
   listBookmarks as listBookmarksFromDatabase,
 } from "./db";
 import type { Bookmark } from "./db";
-import { resetBookmarksForTests, useBookmarks } from "./useBookmarks";
+import { useBookmarks } from "./useBookmarks";
 
 const requestPersistentStorageOnce = vi.hoisted(() => vi.fn<() => void>());
 const listBookmarks = vi.hoisted(() => vi.fn<() => Promise<Bookmark[]>>());
@@ -31,8 +32,7 @@ function resetIndexedDb() {
 
 describe("useBookmarks", () => {
   beforeEach(async () => {
-    await resetBookmarksForTests();
-    await closeBookmarkDatabaseForTests();
+    await closeCheckgistDatabaseForTests();
     resetIndexedDb();
     requestPersistentStorageOnce.mockReset();
     listBookmarks.mockClear();
@@ -284,7 +284,7 @@ describe("useBookmarks", () => {
   it("resets the cached database before a test installs another IndexedDB factory", async () => {
     await addBookmarkToDatabase({ routePath: "/pastebin.com/one", title: "One" });
 
-    await resetBookmarksForTests();
+    await closeCheckgistDatabaseForTests();
     resetIndexedDb();
 
     expect(await listBookmarksFromDatabase()).toEqual([]);
