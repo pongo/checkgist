@@ -15,6 +15,7 @@ import {
 } from "./task-items/task-item-tree";
 import type { ChecklistReadyFile, Checklist } from "./types";
 import { copyToClipboard } from "@/shared/clipboard.ts";
+import { createVariants } from "@/shared/useVariants";
 
 const props = defineProps<{
   session: Checklist;
@@ -23,6 +24,15 @@ const props = defineProps<{
 const route = useRoute();
 const router = useRouter();
 const markdownRenderVersion = ref(0);
+
+const { provideAppVariants } = createVariants({
+  TaskHover: {
+    key: "1",
+    /* "neutral", "accent", "outline", "stripe", "circle", "checkbox", "text" */
+    variants: ["none", "circle", "checkbox"] as const,
+  },
+});
+const { variants } = provideAppVariants();
 
 function applyChecklistStateOperationResult(result: ChecklistStateOperationResult) {
   if (!result.changed) {
@@ -148,6 +158,7 @@ defineExpose({
 
         <article
           class="markdown-body checkgist-markdown px-4 py-5"
+          :data-task-hover="variants.TaskHover"
           @click="onTaskLabelClick(file, $event)"
           @change="onTaskChange(file, $event)"
         >
@@ -170,3 +181,80 @@ defineExpose({
     </section>
   </div>
 </template>
+
+<style scoped>
+@media (hover: hover) {
+  .checkgist-markdown :deep(.checkgist-task-label) {
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* Cover the checkbox's negative margin without changing Markdown list spacing.
+     The isolated layer stays behind inline content and cannot intercept clicks. */
+  .checkgist-markdown :deep(.checkgist-task-label)::before {
+    content: "";
+    position: absolute;
+    inset: -1px -4px -1px -1.4em;
+    z-index: -1;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  .checkgist-markdown[data-task-hover="neutral"] :deep(.checkgist-task-label:hover)::before {
+    background: light-dark(rgb(0 0 0 / 5%), rgb(255 255 255 / 8%));
+  }
+
+  .checkgist-markdown[data-task-hover="accent"] :deep(.checkgist-task-label:hover)::before {
+    background: light-dark(rgb(59 130 246 / 10%), rgb(96 165 250 / 15%));
+  }
+
+  .checkgist-markdown[data-task-hover="outline"] :deep(.checkgist-task-label:hover)::before {
+    box-shadow: inset 0 0 0 1px light-dark(rgb(113 113 122 / 45%), rgb(161 161 170 / 55%));
+  }
+
+  .checkgist-markdown[data-task-hover="stripe"] :deep(.checkgist-task-label:hover)::before {
+    right: auto;
+    left: -1.6em;
+    width: 2px;
+    background: light-dark(#2563eb, #60a5fa);
+  }
+
+  .checkgist-markdown[data-task-hover="circle"] :deep(.checkgist-task-label) {
+    /* Keep repeated anchor names local to each task. */
+    anchor-scope: --task-checkbox;
+  }
+
+  .checkgist-markdown[data-task-hover="circle"] :deep(.task-list-item-checkbox) {
+    anchor-name: --task-checkbox;
+  }
+
+  .checkgist-markdown[data-task-hover="circle"] :deep(.checkgist-task-label:hover)::after {
+    /* Use an after-pseudo so the checkbox is laid out before its anchored marker. */
+    content: "";
+    position: absolute;
+    position-anchor: --task-checkbox;
+    inset: 0.5lh auto auto -2em;
+    width: 0.5em;
+    height: 0.5em;
+    transform: translateY(-50%);
+    border-radius: 50%;
+    background: #ccc;
+    pointer-events: none;
+  }
+
+  @supports (anchor-scope: --task-checkbox) and (top: anchor(center)) {
+    .checkgist-markdown[data-task-hover="circle"] :deep(.checkgist-task-label:hover)::after {
+      top: anchor(center, 0.5lh);
+    }
+  }
+
+  .checkgist-markdown[data-task-hover="checkbox"]
+    :deep(.checkgist-task-label:hover .task-list-item-checkbox) {
+    box-shadow: 0 0 0 3px light-dark(rgb(59 130 246 / 20%), rgb(96 165 250 / 30%));
+  }
+
+  .checkgist-markdown[data-task-hover="text"] :deep(.checkgist-task-label:hover) {
+    color: light-dark(#1d4ed8, #93c5fd);
+  }
+}
+</style>
