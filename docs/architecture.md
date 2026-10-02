@@ -23,8 +23,8 @@ Route-level pages.
 Source Service integration boundary for external and locally owned sources.
 
 - `addressing.ts` is the Source Addressing catalog. It owns Source URL normalization, supported Source Reference recognition, canonical app route generation, and Vue route records.
-- `registry.ts` is the Source Service loading registry. It maps a Source Reference type to the adapter that can load the corresponding Loaded Source.
 - `services/` contains one adapter per supported Source Service. Keep service-specific address rules beside the loading adapter, and register each supported Source Service once in `services/index.ts` as an address-rule/loading-adapter pair.
+- `services/index.ts` derives the addressing rules and Source Service loading registry from those pairs. The registry maps a Source Reference type to the adapter that can load the corresponding Loaded Source.
 
 Add a new Source Service here first, then register its address rule and loading adapter together in `services/index.ts`. Do not hardcode Source Service routes in `src/app/router.ts`; route records are produced by the Source Addressing catalog.
 
