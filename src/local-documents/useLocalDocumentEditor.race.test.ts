@@ -56,6 +56,11 @@ describe("useLocalDocumentEditor route races", () => {
     await nextTick();
 
     expect(editor.state.value).toBe("missing");
+    expect(editor.title.value).toBe("");
+    expect(editor.content.value).toBe("");
+    expect(editor.isDirty.value).toBe(false);
+    expect(editor.canSave.value).toBe(false);
+    expect(editor.canDelete.value).toBe(false);
     expect(pending.size).toBe(0);
   });
 

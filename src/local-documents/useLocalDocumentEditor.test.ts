@@ -60,16 +60,7 @@ describe("useLocalDocumentEditor", () => {
     scope.stop();
   });
 
-  it("reports invalid and missing route IDs without reading storage", async () => {
-    const invalid = await mountEditor("not-a-uuid");
-    expect(invalid.editor.state.value).toBe("missing");
-    expect(invalid.editor.title.value).toBe("");
-    expect(invalid.editor.content.value).toBe("");
-    expect(invalid.editor.isDirty.value).toBe(false);
-    expect(invalid.editor.canSave.value).toBe(false);
-    expect(invalid.editor.canDelete.value).toBe(false);
-    invalid.scope.stop();
-
+  it("reports a missing Local Document for a valid route ID absent from storage", async () => {
     const missing = await mountEditor("22222222-2222-4222-8222-222222222222");
     expect(missing.editor.state.value).toBe("missing");
     missing.scope.stop();

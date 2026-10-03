@@ -233,12 +233,15 @@ describe("BookmarkList", () => {
     wrapper = await mountLoadedBookmarkList();
     const dataTransfer: TestDataTransfer = {
       dropEffect: "none",
-      effectAllowed: "move",
+      effectAllowed: "none",
       getData: vi.fn<(format: string) => string>(() => "/pastebin.com/two"),
       setData: vi.fn<(format: string, data: string) => void>(),
     };
 
     await wrapper.get("a[href='/pastebin.com/two']").trigger("dragstart", { dataTransfer });
+    expect(dataTransfer.setData).toHaveBeenCalledWith("text/plain", "/pastebin.com/two");
+    expect(dataTransfer.effectAllowed).toBe("move");
+
     await wrapper.get("a[href='/pastebin.com/one']").trigger("dragover", { dataTransfer });
     await wrapper.get("a[href='/pastebin.com/one']").trigger("drop", { dataTransfer });
 
@@ -246,23 +249,6 @@ describe("BookmarkList", () => {
       { routePath: "/pastebin.com/two", title: "Two", position: 0 },
       { routePath: "/pastebin.com/one", title: "One", position: 1 },
     ]);
-  });
-
-  it("publishes the dragged bookmark route as plain text with a move effect", async () => {
-    const bookmarks = useBookmarks();
-    await bookmarks.addBookmark({ routePath: "/pastebin.com/one", title: "One" });
-    wrapper = await mountLoadedBookmarkList();
-    const dataTransfer: TestDataTransfer = {
-      dropEffect: "none",
-      effectAllowed: "none",
-      getData: vi.fn<(format: string) => string>(() => ""),
-      setData: vi.fn<(format: string, data: string) => void>(),
-    };
-
-    await wrapper.get("a[href='/pastebin.com/one']").trigger("dragstart", { dataTransfer });
-
-    expect(dataTransfer.setData).toHaveBeenCalledWith("text/plain", "/pastebin.com/one");
-    expect(dataTransfer.effectAllowed).toBe("move");
   });
 
   it("uses plain-text transfer data to place a zero-height target before the bookmark", async () => {

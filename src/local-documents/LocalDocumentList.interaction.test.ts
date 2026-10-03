@@ -141,6 +141,7 @@ describe("LocalDocumentList interactions", () => {
     await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
 
     expect(deleteDocument).not.toHaveBeenCalled();
+    expect(window.confirm).toHaveBeenCalledWith("Delete “Project notes”? This cannot be undone.");
     expect(wrapper.text()).toContain("Project notes");
   });
 

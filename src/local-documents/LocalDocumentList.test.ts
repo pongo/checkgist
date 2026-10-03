@@ -109,22 +109,6 @@ describe("LocalDocumentList", () => {
     await vi.waitFor(() => expect(secondHomeVisit.text()).toContain("Renamed elsewhere"));
   });
 
-  it("keeps the document when deletion is canceled", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
-    const wrapper = mount(LocalDocumentList, mountOptions);
-    await vi.waitFor(() => expect(wrapper.text()).toContain("No local documents yet"));
-    await wrapper.get("button").trigger("click");
-    await vi.waitFor(() => expect(wrapper.text()).toContain("Untitled document"));
-
-    await wrapper.get("button[aria-label='Delete Local Document']").trigger("click");
-
-    expect(window.confirm).toHaveBeenCalledWith(
-      "Delete “Untitled document”? This cannot be undone.",
-    );
-    expect(wrapper.text()).toContain("Untitled document");
-    expect(removeBookmark).not.toHaveBeenCalled();
-  });
-
   it("removes a confirmed document", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const wrapper = mount(LocalDocumentList, mountOptions);

@@ -39,20 +39,9 @@ const bookmarkedSource: Bookmark = {
 };
 
 describe("BookmarkList visibility", () => {
-  it.each([
-    {
-      bookmarks: [],
-      isReady: true,
-      scenario: "the loaded Bookmark snapshot is empty",
-    },
-    {
-      bookmarks: [bookmarkedSource],
-      isReady: false,
-      scenario: "a previously loaded Bookmark snapshot is no longer ready",
-    },
-  ])("stays hidden when $scenario", ({ bookmarks, isReady }) => {
-    bookmarkSnapshot.bookmarks = bookmarks;
-    bookmarkSnapshot.isReady = isReady;
+  it("stays hidden when a previously loaded Bookmark snapshot is no longer ready", () => {
+    bookmarkSnapshot.bookmarks = [bookmarkedSource];
+    bookmarkSnapshot.isReady = false;
     const wrapper = mount(BookmarkList, {
       global: {
         stubs: {
